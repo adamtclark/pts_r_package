@@ -28,6 +28,7 @@ source("../pttstability/R/particlefilter.R")
 
 
 ## Simulate data
+print(procuse)
 pars<-list(obs=c(log(1e-2), log(0.1)),
            proc=c(-2, log(procuse)),
            pcol=c(logit(0.2), log(1e-2)),
