@@ -1,0 +1,23 @@
+Package: pttstability
+Title: A package for fitting state space models using EDM
+Version: 0.0.0.9000
+Authors@R: person("Adam", "Clark", email = "adam.tclark@gmail.com", role = c("aut", "cre"))
+Description: The pttstability (or "ParTicle-Taylor Stability" package) is a collection of functions
+	that can be used to estimate the parameters of a stochastic state space model (i.e. a model where
+	a time series is observed with error). The goal of this package is to estimate the variability
+	around a deterministic process, both in terms of observation error - i.e. variability due to
+	imperfect observations that does not influence system state - and in terms of process noise - i.e.
+	stochastic variation in the actual state of the process. Unlike classical methods for estmiating
+	variability, this package does not necesarilly assume that the deterministic state is fixed (i.e.
+	a fixed-point equilibrium), meaning that variability around a dynamic trajectory can be estimated
+	(e.g. stochastic fluctuations during predator-prey dynamics).
+Depends: R (>= 3.4)
+Imports:
+	BayesianTools,
+	graphics,
+	rEDM (>= 0.7),
+	stats
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1
