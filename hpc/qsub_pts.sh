@@ -7,7 +7,7 @@
 #$ -l h_rt=4:00:00 
 #$ -l h_vmem=6G
 #$ -pe smp 1
-#$ -t 1-1
+#$ -t 1-20
 
 date
 module load R
