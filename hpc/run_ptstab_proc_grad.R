@@ -12,15 +12,11 @@ if(length(commArgin)==0) {
   commArgin<-round(runif(1)*1e6)
   commArg_ps<-1
 } else {
-  commArg_ps<-commArgin
+  commArg_ps<-as.numeric(commArgin)
 }
-
-print(commArgin)
-print(commArg_ps)
 
 #process error to use
 procuse<-seq(1,2,length=20)[commArg_ps]
-
 print(procuse)
 
 require(BayesianTools)
