@@ -21,6 +21,8 @@ print(commArg_ps)
 #process error to use
 procuse<-seq(1,2,length=20)[commArg_ps]
 
+print(procuse)
+
 require(BayesianTools)
 require(rEDM)
 
