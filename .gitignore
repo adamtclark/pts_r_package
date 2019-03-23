@@ -2,3 +2,5 @@
 .Rbuildignore
 .Rhistory
 .Rproj.user
+hpc/datout/*
+hpc/plotout/*
