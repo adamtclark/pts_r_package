@@ -16,7 +16,9 @@ if(length(commArgin)==0) {
 }
 
 #process error to use
-procuse<-seq(1,2,length=20)[commArg_ps]
+nsteps<-20; nitertot<-100
+prcsq<-rep(seq(1,2, length=nsteps), each=nitertot)
+procuse<-prcsq[commArg_ps]
 print(procuse)
 
 require(BayesianTools)
@@ -70,7 +72,7 @@ out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
                    settings = list(iterations=niter, burnin=nburn))
 
 #save outputs
-save(list = c("out_detfun0", "out_EDM", "procuse"), file = paste("datout/mcmcout_", commArgin, ".rda", sep=""))
+save(list = c("out_detfun0", "out_EDM", "procuse", "datout"), file = paste("datout/mcmcout_", commArgin, ".rda", sep=""))
 
 
 
