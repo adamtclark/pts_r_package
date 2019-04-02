@@ -4,3 +4,5 @@
 .Rproj.user
 hpc/datout/*
 hpc/plotout/*
+*.history
+hpc/summarydata/*
