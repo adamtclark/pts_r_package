@@ -9,7 +9,7 @@ Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 \usage{
 particleFilterLL(y, pars, N = 1000, detfun = detfun0,
   procfun = procfun0, obsfun = obsfun0, colfun = colfun0,
-  edmdat = NULL)
+  edmdat = NULL, dotraceback = FALSE)
 }
 \arguments{
 \item{y}{A numeric vector of observed values, from which the likelihood of parameters and functions will be determined.}
@@ -29,6 +29,8 @@ then function should simulate N draws from the observation function, centered ar
 
 \item{edmdat}{A list including arguments to be passed to block_lnlp from rEDM package - see block_lnlp help file for details. Can also include optional matrix "extra_columns", a matrix with length(y) rows including extra covariates for attractor reconstruction, which defaults to NULL (i.e. no additional columns).
 Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.}
+
+\item{dotraceback}{A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE}
 }
 \value{
 LL, P, rN, x, dem(col, mor)

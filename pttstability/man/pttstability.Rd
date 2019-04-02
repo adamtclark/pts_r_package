@@ -71,9 +71,10 @@ y<-datout$obs
 ## Run filter
 N = 1e3
 #based on detful0
-filterout_det<-particleFilterLL(y, pars=pars, N, detfun = detfun0)
+filterout_det<-particleFilterLL(y, pars=pars, N, detfun = detfun0, dotraceback = TRUE)
 #based on EDM
-filterout_edm<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2))
+filterout_edm<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2),
+                                dotraceback = TRUE)
 
 #plot filter output
 par(mar=c(4,4,2,2), mfrow=c(3,1))
@@ -156,15 +157,18 @@ for(i in 1:6) {
 }
 
 ## Plot demographic rates
-pfout_detfun0<-particleFilterLL(y, pars=pars, N, detfun = detfun0)
-pfout_EDM<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2))
+pfout_detfun0<-particleFilterLL(y, pars=pars, N, detfun = detfun0, dotraceback = TRUE)
+pfout_EDM<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2),
+                            dotraceback = TRUE)
 
 par(mar=c(4,4,2,2), mfrow=c(2,1))
 matplot(1:nrow(pfout_detfun0$dem$col),
-        cbind(pfout_detfun0$dem$col[,1], pfout_EDM$dem$col[,1]),
+        cbind(pfout_detfun0$dem$col[,1]/pfout_detfun0$dem$col[,2],
+              pfout_EDM$dem$col[,1]/pfout_EDM$dem$col[,2]),
         pch=1, col=c(2,4), xlab="time", ylab="pr[col]")
 matplot(1:nrow(pfout_detfun0$dem$col),
-        cbind(pfout_detfun0$dem$mor[,1], pfout_EDM$dem$mor[,1]),
+        cbind(pfout_detfun0$dem$mor[,1]/pfout_detfun0$dem$mor[,2],
+              pfout_EDM$dem$mor[,1]/pfout_EDM$dem$mor[,2]),
         pch=1, col=c(2,4), xlab="time", ylab="pr[ext]")
 }
 }

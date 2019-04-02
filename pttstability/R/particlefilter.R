@@ -124,12 +124,13 @@ colfun0<-function(co, xt) {
 #' @param colfun A function simulating colonization events, that takes in two arguments: co, a vector of parameter values taken from pars$pcol, and xt, a number or numeric vector of abundances at time t, before colonization has occurred. Returns predicted abundances after colonization has occurred. Defaults to colful0.
 #' @param edmdat A list including arguments to be passed to block_lnlp from rEDM package - see block_lnlp help file for details. Can also include optional matrix "extra_columns", a matrix with length(y) rows including extra covariates for attractor reconstruction, which defaults to NULL (i.e. no additional columns).
 #' Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.
+#' @param dotraceback A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE
 #' @source Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 #' @keywords particle filter, stability, time-series, Taylor power law
 #' @return LL, P, rN, x, dem(col, mor)
 #' @export
 
-particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL) {
+particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE) {
   #Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 
   #extract parameters
@@ -229,13 +230,13 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
     x[cps, t] = procfun(sp = sp, xt = x[cps, t])
 
     #compute demographics
-    nt <- sum(x[ind[, t - 1], t - 1]>0)
-    mor[t,1] = sum(x[ind[, t - 1], t - 1]>0 & x[, t]==0)/nt
-    mor[t,2] = nt
+    #nt <- sum(x[ind[, t - 1], t - 1]>0)
+    #mor[t,1] = sum(x[ind[, t - 1], t - 1]>0 & x[, t]==0)/nt
+    #mor[t,2] = nt
 
-    nt <- sum(x[ind[, t - 1], t - 1]==0)
-    col[t,1] = sum(x[ind[, t - 1], t - 1]==0 & x[, t]>0)/nt
-    col[t,2] = nt
+    #nt <- sum(x[ind[, t - 1], t - 1]==0)
+    #col[t,1] = sum(x[ind[, t - 1], t - 1]==0 & x[, t]>0)/nt
+    #col[t,2] = nt
 
     # Compute new weights, likelihood contribution and effective sample size
     logW = obsfun(so = so, yt = y[t], xt = x[,t])
@@ -246,13 +247,31 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
   }
 
   # Traceback to generate simulated path
-  ind[, n] = sample(N, size = N, prob = scaledWeights, replace = TRUE)
-  itrace = ind[, n]
-  rx[n] = mean(x[itrace, n])
-  for (t in (n - 1):1) {
-    itrace = ind[itrace, t]
-    rx[t] = mean(x[itrace, t])
-  }
+  if(dotraceback) {
+    ind[, n] = sample(N, size = N, prob = scaledWeights, replace = TRUE)
+    itrace = ind[, n]
+    rx[n] = mean(x[itrace, n])
+    xtp1<-x[itrace, n]
+    for (t in (n - 1):1) {
+      itrace = ind[itrace, t]
+      rx[t] = mean(x[itrace, t])
 
-  return(list(LL = sum(log(P[is.finite(P) & P>0])), P = P, rN = rx, x=x, dem=list(col=col, mor=mor)))
+      #get demographics
+      xtp0<-x[itrace, t]
+
+      mor[t,1]<-sum(xtp0>0 & xtp1==0)
+      col[t,1]<-sum(xtp0==0 & xtp1>0)
+
+      mor[t,2]<-sum(xtp0>0)
+      col[t,2]<-sum(xtp0==0)
+
+      xtp1<-xtp0
+    }
+    mumor<-sum((mor[,1]/mor[,2])*mor[,2],na.rm=T)/sum(mor[,2],na.rm=T)
+    mucol<-sum((col[,1]/col[,2])*col[,2],na.rm=T)/sum(col[,2],na.rm=T)
+
+    return(list(LL = sum(log(P[is.finite(P) & P>0])), P = P, rN = rx, x=x, ind=ind, dem=list(col=col, mor=mor, mucol=mucol, mumor=mumor)))
+  } else {
+    return(list(LL = sum(log(P[is.finite(P) & P>0])), P = P, rN = NA, x=NA, ind=NA, dem=NA))
+  }
 }
