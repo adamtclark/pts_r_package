@@ -197,8 +197,8 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
 
   #run for all timesteps
   for (t in tstart:n) {
-    if (logWMax == -Inf) {
-      return(list(LL = -Inf, rN = NULL))
+    if (!is.finite(logWMax)) {
+      return(list(LL = -Inf, rN = NA, x=NA, ind=NA, dem=NA))
     }
 
     # Resample particles
