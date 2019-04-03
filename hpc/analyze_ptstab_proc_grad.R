@@ -18,6 +18,10 @@ pars<-list(obs=c(log(1e-2), log(0.1)),
 nsteps<-20; nitertot<-100
 prcsq<-rep(seq(1,2, length=nsteps), each=nitertot)
 flst<-dir("datout")
+rmps<-grep("full", flst)
+if(length(rmps)>0) {
+  flst<-flst[-rmps]
+}
 
 qtllst<-c(0.025, pnorm(-1:1), 0.975)
 simdatsum<-array(dim=c(length(qtllst),6,length(prcsq),2))
@@ -125,23 +129,23 @@ pdf("plotout/plot_pstab_proc_grad.pdf", width=12, height=8, colormodel = "cmyk",
       segments(prclst+dxl[2], qtlout_EDM[1,i,], prclst+dxl[2], qtlout_EDM[5,i,], col=collst[2], lend=2, lwd=1)
     }
   }
+
+
+
+
+  #plot rates
+  par(mfrow=c(1,2))
+  plot(range(prclst), range(qtlout_col[3,,]), type="n", xlab="proc err. Z", ylab="est col. rate")
+  lines(prclst, qtlout_col[3,1,], col="black", type="b")
+  lines(prclst, qtlout_col[3,2,], col="blue", type="b")
+  lines(prclst, qtlout_col[3,3,], col="red", type="b")
+  lines(prclst, qtlout_col[3,4,], col="green", type="b")
+
+  plot(range(prclst), range(qtlout_mor[3,,]), type="n", xlab="proc err. Z", ylab="est mor. rate")
+  lines(prclst, qtlout_mor[3,1,], col="black", type="b")
+  lines(prclst, qtlout_mor[3,2,], col="blue", type="b")
+  lines(prclst, qtlout_mor[3,3,], col="red", type="b")
+  lines(prclst, qtlout_mor[3,4,], col="green", type="b")
 dev.off()
-
-
-
-#plot rates
-par(mfrow=c(1,2))
-plot(range(prclst), range(qtlout_col[3,,]), type="n", xlab="proc err. Z", ylab="est col. rate")
-lines(prclst, qtlout_col[3,1,], col="black", type="b")
-lines(prclst, qtlout_col[3,2,], col="blue", type="b")
-lines(prclst, qtlout_col[3,3,], col="red", type="b")
-lines(prclst, qtlout_col[3,4,], col="green", type="b")
-
-plot(range(prclst), range(qtlout_mor[3,,]), type="n", xlab="proc err. Z", ylab="est mor. rate")
-lines(prclst, qtlout_mor[3,1,], col="black", type="b")
-lines(prclst, qtlout_mor[3,2,], col="blue", type="b")
-lines(prclst, qtlout_mor[3,3,], col="red", type="b")
-lines(prclst, qtlout_mor[3,4,], col="green", type="b")
-
 
 
