@@ -19,9 +19,9 @@ makedynamics(n = 1000, n0 = NULL, obs = c(log(0.01), log(0.1)),
 
 \item{pcol}{a numeric vector of length two, including probability of colonization per timestep given that abundance = 0, and abundance after colonization}
 
-\item{r}{intrinsic growth rate for May's logistic function}
+\item{r}{intrinsic growth rate for Ricker model}
 
-\item{K}{carrying capacity for May's logistic function}
+\item{K}{carrying capacity for Ricker model}
 
 \item{doplot}{a logical specifying wether output should be plotted - defaults to FALSE}
 }
@@ -29,7 +29,7 @@ makedynamics(n = 1000, n0 = NULL, obs = c(log(0.01), log(0.1)),
 An n-by-3 dataframe of states, including obs (observed values), truth (true values), and noproc (values without process noise)
 }
 \description{
-Simulates a time series with known process noise and observation error functions. Implemented May's chaotic logistic function, X(t+1) = X(t) exp(r (1-X(t)/K)).
+Simulates a time series with known process noise and observation error functions. Implemented Ricker model, X(t+1) = X(t) exp(r (1-X(t)/K)).
 }
 \examples{
  #run function

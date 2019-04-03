@@ -1,6 +1,6 @@
 #' default deterministic function
 #'
-#' Simulates deterministic component of May's chaotic growth model, of the form xt+1 = xt exp(exp(sdet[1])*(1-xt/exp(sdet[2])))
+#' Simulates deterministic component of Ricker model, of the form xt+1 = xt exp(exp(sdet[1])*(1-xt/exp(sdet[2])))
 #' @param sdet a numeric vector of length two, specifying growth rate and carrying capacity
 #' @param xt a number or numeric vector of abundances at time t
 #' @keywords deterministic function, discrete-time model, time-series, fake data

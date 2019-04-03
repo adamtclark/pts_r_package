@@ -1,13 +1,13 @@
 #' Simulate fake data
 #'
-#' Simulates a time series with known process noise and observation error functions. Implemented May's chaotic logistic function, X(t+1) = X(t) exp(r (1-X(t)/K)).
+#' Simulates a time series with known process noise and observation error functions. Implemented Ricker model, X(t+1) = X(t) exp(r (1-X(t)/K)).
 #' @param n number of timesteps to simulate
 #' @param n0 starting population size - defaults to NULL, which starts at K/10
 #' @param obs a numeric vector of length two (b0, b1) specifying observation error, parameterizing the function sd(obs) = b0 + b1*X, where X is the system state
 #' @param proc a numeric vector of length two (lc, z) specifying process noise, parameterizing the function var(proc) = exp(lc + z*log(X)), where X is the system state
 #' @param pcol a numeric vector of length two, including probability of colonization per timestep given that abundance = 0, and abundance after colonization
-#' @param r intrinsic growth rate for May's logistic function
-#' @param K carrying capacity for May's logistic function
+#' @param r intrinsic growth rate for Ricker model
+#' @param K carrying capacity for Ricker model
 #' @param doplot a logical specifying wether output should be plotted - defaults to FALSE
 #' @keywords Taylor power law, stability, time-series, fake data
 #' @return An n-by-3 dataframe of states, including obs (observed values), truth (true values), and noproc (values without process noise)
