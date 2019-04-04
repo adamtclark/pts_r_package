@@ -27,6 +27,8 @@ simdatsum<-array(dim=c(length(qtllst),6,length(flst),2))
 trueparsum<-matrix(nrow=length(flst),ncol=6)
 colrates<-matrix(nrow=length(flst), ncol=4)
 morrates<-matrix(nrow=length(flst), ncol=4)
+simplexdat<-matrix(nrow=length(flst), ncol=3)
+colnames(simplexdat)<-c("rho", "mae", "rmse")
 
 if(FALSE) {
   for(ifl in 1:length(flst)) {
@@ -71,6 +73,19 @@ if(FALSE) {
       print(round(ifl/length(flst),3))
     }
   }
+
+  #for(ifl in 1:length(flst)) {
+  #  flnm<-paste("datout/", flst[ifl], sep="")
+  #  load(flnm)
+
+    smp_out<-unlist(simplex(datout$obs, E = 2, silent = TRUE))
+    simplexdat[ifl,]<-smp_out[6:8]
+
+  #  if(ifl/20 == floor(ifl/20)) {
+  #    print(round(ifl/length(flst),3))
+  #  }
+  #}
+
   save.image("summarydata/saved_summary_full.rda")
 } else {
   load("summarydata/saved_summary_full.rda")
@@ -82,12 +97,10 @@ pltnames<-c("obs b0", "obs b1", "proc b0", "proc b1", "colp", "col0")
 collst<-adjustcolor(c(4,2),alpha.f = 0.3)
 dxl<-c(-0.01, 0.01)
 
-pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "cmyk", useDingbats = FALSE)
-  m<-rbind(c(1,3,5),
-           c(1,3,5),
-           c(1,3,5),
-           c(2,4,6))
-  m<-rbind(m, m+max(m))
+pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=4, colormodel = "cmyk", useDingbats = FALSE)
+  m<-rbind(c(1,2,3),
+           c(1,2,3),
+           c(1,2,3))
   layout(m)
 
   par(mar=c(4,4,2,2))
@@ -141,20 +154,19 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "c
     polygon(px2,py2,
             col = collst[2])
 
-    par(mar=c(1,4,1,2))
-    if(uselog=="xy") {
-      hist(log(trueparsum[pssbs,i]), xlim=log(range(simdatsum[3,i,pssbs,])), breaks=20, xlab="", main="", axes=F, ylab="")
-    } else {
-      hist(trueparsum[pssbs,i], xlim=range(simdatsum[3,i,pssbs,]), breaks=20, xlab="", main="", axes=F, ylab="")
-    }
-    par(mar=c(4,4,2,2))
+    par(new=TRUE)
 
+    if(uselog=="xy") {
+      hist(log(trueparsum[pssbs,i]), xlim=log(range(simdatsum[3,i,pssbs,])), breaks=20, xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(trueparsum)))
+    } else {
+      hist(trueparsum[pssbs,i], xlim=range(simdatsum[3,i,pssbs,]), breaks=20, xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(trueparsum)))
+    }
   }
 
 
 
   #plot rates
-  m<-cbind(c(1,1,2), c(1,1,2), c(3,3,4), c(3,3,4))
+  m<-cbind(c(1,1), c(1,1), c(2,2), c(2,2))
   layout(m)
 
   plot(range(colrates,na.rm=T), range(colrates,na.rm=T), type="n", xlab="true col. rate", ylab="est col. rate")
@@ -176,8 +188,8 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "c
     polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
   }
 
-  hist(colrates[,1], breaks = 20, probability = FALSE, xlim=range(colrates,na.rm=T), xlab="", main="", axes=F, ylab="")
-
+  par(new=TRUE)
+  hist(colrates[,1], breaks = 20, probability = FALSE, xlim=range(colrates,na.rm=T), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(colrates)))
 
 
   plot(range(morrates,na.rm=T), range(morrates,na.rm=T), type="n", xlab="true mor. rate", ylab="est mor. rate", main="")
@@ -201,7 +213,50 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "c
     polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
   }
 
-  hist(morrates[,1], breaks = 20, probability = FALSE, xlim=range(morrates,na.rm=T), xlab="", main="", axes=F, ylab="")
+  par(new=TRUE)
+  hist(morrates[,1], breaks = 20, probability = FALSE, xlim=range(morrates,na.rm=T), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(colrates)))
+
+
+
+  par(mfrow=c(1,3), mar=c(4,4,2,2))
+  for(i in 1:6) {
+    x<-simplexdat[,3]; y<-sqrt(((t(simdatsum[3,i,,2])-trueparsum[,i])^2))
+    plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab=paste("rmse", pltnames[i]))
+    abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+    lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+    matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
+    par(new=TRUE)
+    hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
+  }
+
+
+  #Plot simplex error
+  par(mfrow=c(1,3), mar=c(4,4,2,2))
+  x<-simplexdat[,3]; y<-sqrt(rowSums((t(simdatsum[3,,,2])-trueparsum[,])^2))
+  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab="rmse, parameters")
+  abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+  lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+  matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
+  par(new=TRUE)
+  hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
+
+  x<-simplexdat[,3]; y<-sqrt((colrates[,1]-colrates[,4])^2)
+  sbs<-which(is.finite(x) & is.finite(y) & y>0) ; x<-x[sbs]; y<-y[sbs]
+  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab="rmse, col.")
+  abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+  lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+  matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
+  par(new=TRUE)
+  hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
+
+  x<-simplexdat[,3]; y<-sqrt((morrates[,1]-morrates[,4])^2)
+  sbs<-which(is.finite(x) & is.finite(y) & y>0) ; x<-x[sbs]; y<-y[sbs]
+  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab="rmse, mor.")
+  abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+  lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+  matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
+  par(new=TRUE)
+  hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
 
 dev.off()
 
