@@ -4,6 +4,7 @@ setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 
 #load packages and functions
 require(BayesianTools); require(rEDM)
+require(msir)
 source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
 source("../pttstability/R/logit_funs.R")
@@ -82,7 +83,14 @@ collst<-adjustcolor(c(4,2),alpha.f = 0.3)
 dxl<-c(-0.01, 0.01)
 
 pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "cmyk", useDingbats = FALSE)
-  par(mfrow=c(2,3), mar=c(4,4,2,2))
+  m<-rbind(c(1,3,5),
+           c(1,3,5),
+           c(1,3,5),
+           c(2,4,6))
+  m<-rbind(m, m+max(m))
+  layout(m)
+
+  par(mar=c(4,4,2,2))
   for(i in 1:length(pltnames)) {
     if(min(simdatsum[3,i,,])>0 & min(trueparsum[,i])>0) {
       uselog<-"xy"
@@ -98,8 +106,8 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "c
 
     matplot(trueparsum[pssbs,i], simdatsum[3,i,pssbs,],
             col=collst, type="p", pch=1, cex=0.5,
-            ylim=range(simdatsum[3,i,,]),
-            xlim=range(simdatsum[3,i,,]),
+            ylim=range(simdatsum[3,i,pssbs,]),
+            xlim=range(simdatsum[3,i,pssbs,]),
             xlab="true", ylab="estimated", main=pltnames[i], log=uselog)
     abline(a=0, b=1, lty=3)
 
@@ -113,30 +121,42 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "c
       x<-log(x); y1<-log(y1); y2<-log(y2)
     }
 
-    lom1<-lm(y1~x, weights = 1/sd1)
-    lom2<-lm(y2~x, weights = 1/sd1)
+    lom1<-loess.sd(y1~x, weights = 1/sd1, nsigma = 1)
+    lom2<-loess.sd(y2~x, weights = 1/sd1, nsigma = 1)
 
-    xsq<-seq(min(x), max(x), length=1000)
-    pd1<-predict(lom1, newdata = data.frame(x=xsq), se.fit = TRUE, interval="confidence")
-    pd2<-predict(lom2, newdata = data.frame(x=xsq), se.fit = TRUE, interval="confidence")
-
-    pd1y<-c(pd1$fit[,2], rev(pd1$fit[,3]))
-    pd2y<-c(pd2$fit[,2], rev(pd2$fit[,3]))
+    px1<-c((sort(lom1$x)), rev((sort(lom1$x))))
+    py1<-c((lom1$upper[order(lom1$x)]), rev((lom1$lower[order(lom1$x)])))
+    px2<-c((sort(lom2$x)), rev((sort(lom2$x))))
+    py2<-c((lom2$upper[order(lom2$x)]), rev((lom2$lower[order(lom2$x)])))
 
     if(uselog=="xy") {
-      pd1y<-exp(pd1y)
-      pd2y<-exp(pd2y)
-      xsq<-exp(xsq)
+      px1<-exp(px1)
+      py1<-exp(py1)
+      px2<-exp(px2)
+      py2<-exp(py2)
     }
 
-    polygon(c(xsq, rev(xsq)), pd1y, border = NA, col = collst[1])
-    polygon(c(xsq, rev(xsq)), pd2y, border = NA, col = collst[2])
+    polygon(px1,py1,
+            col = collst[1])
+    polygon(px2,py2,
+            col = collst[2])
+
+    par(mar=c(1,4,1,2))
+    if(uselog=="xy") {
+      hist(log(trueparsum[pssbs,i]), xlim=log(range(simdatsum[3,i,pssbs,])), breaks=20, xlab="", main="", axes=F, ylab="")
+    } else {
+      hist(trueparsum[pssbs,i], xlim=range(simdatsum[3,i,pssbs,]), breaks=20, xlab="", main="", axes=F, ylab="")
+    }
+    par(mar=c(4,4,2,2))
+
   }
 
 
 
   #plot rates
-  par(mfrow=c(1,2))
+  m<-cbind(c(1,1,2), c(1,1,2), c(3,3,4), c(3,3,4))
+  layout(m)
+
   plot(range(colrates,na.rm=T), range(colrates,na.rm=T), type="n", xlab="true col. rate", ylab="est col. rate")
   points(colrates[,1], colrates[,2], col=adjustcolor("black", 0.5), cex=0.5)
   points(colrates[,1], colrates[,3], col=collst[1], cex=0.5)
@@ -148,39 +168,41 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=8, colormodel = "c
     x<-colrates[sbs,1]
     y1<-colrates[sbs,i]
 
-    lom1<-lm(y1~x)
+    lom1<-loess.sd(y1~x, nsigma = 1)
 
-    xsq<-seq(min(x), max(x), length=1000)
-    pd1<-predict(lom1, newdata = data.frame(x=xsq), se.fit = TRUE, interval="confidence")
+    xsq<-sort(lom1$x)
+    pd1y<-c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)]))
 
-    pd1y<-c(pd1$fit[,2], rev(pd1$fit[,3]))
-
-    polygon(c(xsq, rev(xsq)), pd1y, border = NA, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
+    polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
   }
 
+  hist(colrates[,1], breaks = 20, probability = FALSE, xlim=range(colrates,na.rm=T), xlab="", main="", axes=F, ylab="")
 
 
-  plot(range(morrates,na.rm=T), range(morrates,na.rm=T), type="n", xlab="true mor. rate", ylab="est mor. rate")
+
+  plot(range(morrates,na.rm=T), range(morrates,na.rm=T), type="n", xlab="true mor. rate", ylab="est mor. rate", main="")
   points(morrates[,1], morrates[,2], col=adjustcolor("black", 0.3), cex=0.5)
   points(morrates[,1], morrates[,3], col=collst[1], cex=0.5)
   points(morrates[,1], morrates[,4], col=collst[2], cex=0.5)
   abline(a=0, b=1, lty=3)
-
 
   for(i in 2:4) {
     sbs<-which(is.finite(rowSums(morrates)))
     x<-morrates[sbs,1]
     y1<-morrates[sbs,i]
 
-    lom1<-lm(y1~x)
+    lom1<-loess.sd(y1~x, nsigma = 1)
 
-    xsq<-seq(min(x), max(x), length=1000)
-    pd1<-predict(lom1, newdata = data.frame(x=xsq), se.fit = TRUE, interval="confidence")
+    lom1<-loess.sd(y1~x, nsigma = 1)
 
-    pd1y<-c(pd1$fit[,2], rev(pd1$fit[,3]))
+    xsq<-sort(lom1$x)
+    pd1y<-c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)]))
 
-    polygon(c(xsq, rev(xsq)), pd1y, border = NA, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
+    polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
   }
+
+  hist(morrates[,1], breaks = 20, probability = FALSE, xlim=range(morrates,na.rm=T), xlab="", main="", axes=F, ylab="")
+
 dev.off()
 
 
