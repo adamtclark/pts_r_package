@@ -71,8 +71,21 @@ bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = pr
 out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
                    settings = list(iterations=niter, burnin=nburn))
 
+#run PF's
+smp_detfun0_untr<-(getSample(out_detfun0))
+smp_EDM_untr<-(getSample(out_EDM))
+
+pfdet<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_detfun0_untr)), detfun = detfun0, dotraceback = TRUE)
+pfedm<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_EDM_untr)), detfun = EDMfun0, edmdat = list(E=2), dotraceback = TRUE)
+pftrue<-particleFilterLL(y=datout$obs, pars=pars, detfun = detfun0, dotraceback = TRUE)
+
+truecol<-sum(datout$true[-1]>0 & datout$true[-length(datout$true)]==0)/sum(datout$true[-length(datout$true)]==0)
+truemor<-sum(datout$true[-1]==0 & datout$true[-length(datout$true)]>0)/sum(datout$true[-length(datout$true)]>0)
+
+demdat<-list(pfdet=pfdet, pfedm=pfedm, pftrue=pftrue, truecol=truecol, truemor=truemor)
+
 #save outputs
-save(list = c("out_detfun0", "out_EDM", "procuse", "datout"), file = paste("datout/mcmcout_", commArgin, ".rda", sep=""))
+save(list = c("out_detfun0", "out_EDM", "procuse", "datout", "demdat"), file = paste("datout/mcmcout_", commArgin, ".rda", sep=""))
 
 
 
