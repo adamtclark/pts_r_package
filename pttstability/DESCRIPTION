@@ -1,6 +1,6 @@
 Package: pttstability
 Title: A package for fitting state space models using EDM
-Version: 0.0.0.9000
+Version: 1.0
 Authors@R: person("Adam", "Clark", email = "adam.tclark@gmail.com", role = c("aut", "cre"))
 Description: The pttstability (or "ParTicle-Taylor Stability" package) is a collection of functions
 	that can be used to estimate the parameters of a stochastic state space model (i.e. a model where

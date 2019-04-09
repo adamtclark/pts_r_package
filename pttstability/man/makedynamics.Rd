@@ -2,7 +2,7 @@
 % Please edit documentation in R/fake_data.R
 \name{makedynamics}
 \alias{makedynamics}
-\title{Simulate fake data}
+\title{Simulate Ricker model}
 \usage{
 makedynamics(n = 1000, n0 = NULL, obs = c(log(0.01), log(0.1)),
   proc = c(-2, log(1.2)), pcol = c(logit(0.2), log(0.01)),
