@@ -58,7 +58,7 @@ their own (including for observation error, process noise, deterministic dynamic
 
 \examples{
 #Set seed
-set.seed(1904)
+set.seed(41019)
 
 ## Simulate data
 pars<-list(obs=c(log(1e-2), log(0.1)),
@@ -110,10 +110,10 @@ demdat_true<-getcm(datout_long$true)
 
 #plot rates
 par(mar=c(4,4,2,2), mfrow=c(2,1))
-hist(etdfilter_det$demdat$text, xlim=c(10, 30),
+hist(etdfilter_det$demdat$text, xlim=c(10, 25),
      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to extinction", main="")
 par(new=TRUE)
-hist(etdfilter_edm$demdat$text, xlim=c(10, 30),
+hist(etdfilter_edm$demdat$text, xlim=c(10, 25),
      col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
 abline(v=1/demdat_true$pm, lwd=2, lty=2)
 
