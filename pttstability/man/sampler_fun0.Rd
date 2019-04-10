@@ -4,7 +4,7 @@
 \alias{sampler_fun0}
 \title{Default sampler function for prior}
 \usage{
-sampler_fun0(n = 1, pars = pars, priorsd = c(0.5, 0.5, 1, 0.5, 0.5,
+sampler_fun0(n = 1, pars = pars, priorsd = c(0.5, 0.5, 2, 0.5, 0.5,
   0.5))
 }
 \arguments{

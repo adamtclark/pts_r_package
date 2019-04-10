@@ -22,7 +22,7 @@ parseparam0<-function(param, detparam=c(log(3),log(1))) {
   } else {
     return("error: param must be either length 6 or 8")
   }
-  
+
   return(pars)
 }
 
@@ -44,7 +44,7 @@ parseparam0<-function(param, detparam=c(log(3),log(1))) {
 
 likelihood0 <- function(param, y=y, parseparam=parseparam0, N=1e3, detfun=detfun0, edmdat=NULL) {
   pars<-parseparam(param)
-  
+
   tmp<-particleFilterLL(y, pars, N=N, detfun = detfun, edmdat = edmdat)
   tmp$LL
 }
@@ -94,19 +94,19 @@ lognormal_imode = function(mu, sd){
 #' @return returns log likelihood of parameters given priors.
 #' @export
 
-density_fun0 = function(param, pars=pars, priorsd=c(0.5, 0.5, 1, 0.5, 0.5, 0.5)){
+density_fun0 = function(param, pars=pars, priorsd=c(0.5, 0.5, 2, 0.5, 0.5, 0.5)){
   dsum = dnorm(param[1], mean = lognormal_imode(pars$obs[1], priorsd[1]), sd =  priorsd[1], log = TRUE)
   dsum = dsum+dnorm(param[2], mean = lognormal_imode(pars$obs[2], priorsd[2]), sd =  priorsd[2], log = TRUE)
   dsum = dsum+dnorm(param[3], mean = pars$proc[1], sd = priorsd[3], log = TRUE)
   dsum = dsum+dnorm(param[4], mean = lognormal_imode(pars$proc[2], priorsd[4]), sd = priorsd[4], log = TRUE)
   dsum = dsum+dnorm(param[5], mean = logitnormal_imode(pars$pcol[1], priorsd[5]), sd = priorsd[5], log = TRUE)
   dsum = dsum+dnorm(param[6], mean = lognormal_imode(pars$pcol[2], priorsd[6]), sd = priorsd[6], log = TRUE)
-  
+
   if(length(param)==8) {
     dsum = dsum+dnorm(param[7], mean = lognormal_imode(pars$det[1], priorsd[7]), sd = priorsd[7], log = TRUE)
     dsum = dsum+dnorm(param[8], mean = lognormal_imode(pars$det[2], priorsd[8]), sd = priorsd[8], log = TRUE)
   }
-  
+
   return(dsum)
 }
 
@@ -122,14 +122,14 @@ density_fun0 = function(param, pars=pars, priorsd=c(0.5, 0.5, 1, 0.5, 0.5, 0.5))
 #' @import stats
 #' @export
 
-sampler_fun0 = function(n=1, pars=pars, priorsd=c(0.5, 0.5, 1, 0.5, 0.5, 0.5)){
+sampler_fun0 = function(n=1, pars=pars, priorsd=c(0.5, 0.5, 2, 0.5, 0.5, 0.5)){
   d1 = rnorm(n, mean = lognormal_imode(pars$obs[1], priorsd[1]), sd = priorsd[1])
   d2 = rnorm(n, mean = lognormal_imode(pars$obs[2], priorsd[2]), sd = priorsd[2])
-  d3 = rnorm(n, mean = pars$proc[1], sd = 2*priorsd[3])
+  d3 = rnorm(n, mean = pars$proc[1], sd = priorsd[3])
   d4 = rnorm(n, mean = lognormal_imode(pars$proc[2], priorsd[4]), sd=priorsd[4])
   d5 = rnorm(n, mean = logitnormal_imode(pars$pcol[1], priorsd[5]), sd = priorsd[5])
   d6 = rnorm(n, mean = lognormal_imode(pars$pcol[2], priorsd[6]), sd=priorsd[6])
-  
+
   if(length(priorsd)==8) {
     d7 = rnorm(n, mean = lognormal_imode(pars$det[1], priorsd[7]), sd=priorsd[7])
     d8 = rnorm(n, mean = lognormal_imode(pars$det[2], priorsd[8]), sd=priorsd[8])
@@ -143,7 +143,7 @@ sampler_fun0 = function(n=1, pars=pars, priorsd=c(0.5, 0.5, 1, 0.5, 0.5, 0.5)){
 #' Default inverse transormation function
 #'
 #' Takes in a matrix, where each column represents a parameter. Returns parameters in untransformed space.
-#' @param x an nxm matrix with 
+#' @param x an nxm matrix with
 #' @keywords stability, time-series, MCMC optimization
 #' @return returns back-transformed values of parameters
 #' @export

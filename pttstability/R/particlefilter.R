@@ -229,15 +229,6 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
     cps[!cps]<-x[!cps, t]>0 #which are >0 now?
     x[cps, t] = procfun(sp = sp, xt = x[cps, t])
 
-    #compute demographics
-    #nt <- sum(x[ind[, t - 1], t - 1]>0)
-    #mor[t,1] = sum(x[ind[, t - 1], t - 1]>0 & x[, t]==0)/nt
-    #mor[t,2] = nt
-
-    #nt <- sum(x[ind[, t - 1], t - 1]==0)
-    #col[t,1] = sum(x[ind[, t - 1], t - 1]==0 & x[, t]>0)/nt
-    #col[t,2] = nt
-
     # Compute new weights, likelihood contribution and effective sample size
     logW = obsfun(so = so, yt = y[t], xt = x[,t])
 
