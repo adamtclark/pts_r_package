@@ -284,12 +284,13 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
 #' Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.
 #' @param minval Minimum value, below will observations will be assumed to be zero. Can be helpful for simplex projections, as rounding errors can result in slightly nonzero values. Defaults to 1e-6.
 #' @param trimq Either NULL (no limits), or a vector of length 2, including the lower and upper quantiles to keep for extinction and colonization projections. Can be helpful for excluding degenerate particles. Defaults to c(0.01, 0.99).
+#' @param randstart Randomize starting positions within the time vector for the new particles? If FALSE, then all particles start at the end of the observed time series. Otherwise particles start at randomly chosen points, which can be helpful for getting better coverage of the full dynamic manifold. Defaults to TRUE.
 #' @source Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 #' @keywords particle filter, stability, time-series, Taylor power law
 #' @return LL, P, rN, x, dem(col, mor)
 #' @export
 
-extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, minval=1e-6, trimq=c(0.01, 0.99)) {
+extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, minval=1e-6, trimq=c(0.01, 0.99), randstart=TRUE) {
   #Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 
   #extract parameters
@@ -317,8 +318,13 @@ extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfu
   }
 
   #set up initial timestep
+  if(randstart) {
+    nps<-sample(x = 1:n, size = N, replace=TRUE)
+  } else {
+    nps<-rep(n, N)
+  }
   if(is.null(edmdat)) {
-    xnew[,1]<-xsort[,n]
+    xnew[,1]<-xsort[cbind(1:N, nps)]
     tstart<-2
   } else { #If using lagged embeddings, calculate first N positions
     #set defaults
@@ -335,8 +341,9 @@ extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfu
     if(is.null(edmdat$num_neighbors))
       edmdat$num_neighbors<-ifelse(edmdat$method=="simplex", "e+1", 0)
 
+    nps[nps<edmdat$E]<-edmdat$E
     for(i in 1:edmdat$E) {
-      xnew[, edmdat$E - (i-1)] = xsort[,n-(i-1)]
+      xnew[, edmdat$E - (i-1)] = xsort[cbind(1:N, nps-(i-1))]
     }
 
     tstart<-edmdat$E+1

@@ -9,7 +9,8 @@ Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 \usage{
 extend_particleFilter(pfout, pars, Next = 1000, detfun = detfun0,
   procfun = procfun0, obsfun = obsfun0, colfun = colfun0,
-  edmdat = NULL, minval = 1e-06, trimq = c(0.01, 0.99))
+  edmdat = NULL, minval = 1e-06, trimq = c(0.01, 0.99),
+  randstart = TRUE)
 }
 \arguments{
 \item{pfout}{Output from a previous run of the particleFilterLL function.}
@@ -33,6 +34,8 @@ Default for edmdat is NULL, which implies that EDM will not be applied - instead
 \item{minval}{Minimum value, below will observations will be assumed to be zero. Can be helpful for simplex projections, as rounding errors can result in slightly nonzero values. Defaults to 1e-6.}
 
 \item{trimq}{Either NULL (no limits), or a vector of length 2, including the lower and upper quantiles to keep for extinction and colonization projections. Can be helpful for excluding degenerate particles. Defaults to c(0.01, 0.99).}
+
+\item{randstart}{Randomize starting positions within the time vector for the new particles? If FALSE, then all particles start at the end of the observed time series. Otherwise particles start at randomly chosen points, which can be helpful for getting better coverage of the full dynamic manifold. Defaults to TRUE.}
 }
 \value{
 LL, P, rN, x, dem(col, mor)
