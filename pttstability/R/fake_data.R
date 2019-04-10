@@ -98,6 +98,7 @@ makedynamics<-function(n=1000, n0=NULL,
 #' @param dat a numeric vector, including the timeseries
 #' @keywords stability, time-series
 #' @return a list including colonization and mortality probability per time step (pc and pm, respectively), and pocc, the expected fraction of time that the species will be present
+#' @export
 
 getcm<-function(dat) {
   #time to colonization

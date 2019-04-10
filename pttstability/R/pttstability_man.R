@@ -44,6 +44,9 @@
 #' @source Hartig, F., et al. (2019). BayesianTools: General-Purpose MCMC and SMC Samplers and Tools for Bayesian Statistics. R package version 0.1.6.
 #' @name pttstability
 #' @examples
+#' #Set seed
+#' set.seed(1904)
+#'
 #' ## Simulate data
 #' pars<-list(obs=c(log(1e-2), log(0.1)),
 #'            proc=c(-2, log(1.2)),
@@ -81,6 +84,36 @@
 #'      xlab="predicted", ylab="observed", col=4); points(filterout_edm$rN, y, col=2)
 #' abline(a=0, b=1, lty=2)
 #' legend("topleft", c("detfun0", "EDM"), pch=1, col=c(4,2), bty="n")
+#'
+#' #estimate demographic rates from extended timeseries
+#' etdfilter_det<-extend_particleFilter(pfout=filterout_det, pars=pars,
+#'      Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+#' etdfilter_edm<-extend_particleFilter(pfout=filterout_edm, pars=pars,
+#'      Next = 1e3, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
+#' #compare to results from a long simulation
+#' datout_long<-makedynamics(n = 2e4, obs = pars$obs, proc = pars$proc,
+#'      r = pars$det[1], K = pars$det[2], pcol = pars$pcol)
+#' demdat_true<-getcm(datout_long$true)
+#'
+#' #plot rates
+#' par(mar=c(4,4,2,2), mfrow=c(2,1))
+#' hist(etdfilter_det$demdat$text, xlim=c(10, 30),
+#'      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to extinction", main="")
+#' par(new=TRUE)
+#' hist(etdfilter_edm$demdat$text, xlim=c(10, 30),
+#'      col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
+#' abline(v=1/demdat_true$pm, lwd=2, lty=2)
+#'
+#' hist(etdfilter_det$demdat$tcol, xlim=c(5, 12),
+#'      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to colonization", main="")
+#' par(new=TRUE)
+#' hist(etdfilter_edm$demdat$tcol, xlim=c(5, 12),
+#'      col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
+#' abline(v=1/demdat_true$pc, lwd=2, lty=2)
+#'
+#' legend("topright", c("deterministic est.", "EDM est.", "true value"),
+#'      fill = adjustcolor(c("blue", "red", NA), alpha.f = 0.5),
+#'      lty=c(NA, NA, 2), lwd=c(NA, NA, 2), col=c(NA, NA, 1), border = c(1,1,NA))
 #'
 #'
 #' ## Run optimizer

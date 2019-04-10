@@ -266,3 +266,141 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
     return(list(LL = sum(log(P[is.finite(P) & P>0])), P = P, rN = NA, x=NA, ind=NA, dem=NA))
   }
 }
+
+
+#' Extend output from particle filter
+#'
+#' Function for extending the particles (i.e. extrapolating timeseries into the future), based on output from particleFilterLL function.
+#' Function is adapted from the R code of Knape and Valpine (2012), Ecology 93:256-263.
+#' @param pfout Output from a previous run of the particleFilterLL function.
+#' @param pars A list of parameter values. Must include elements obs (observation error parameters), proc (process noise parameters), and pcol (colonization parameters), which are passed on the their respecive functions, described below. If edmdat=NULL, then element det (deterministic process parameters) must be included.
+#' @param Next Length of extended filter - i.e. number of timesteps to predict forward. Defaults to 1e3.
+#' @param detfun A function that simulates deterministic dynamics, which takes in arguments sdet (parameters for deterministic model, taken from pars$proc), and xt, observed abundances at time t. Returns estimated abundances at time t+1 based on deterministic function (either a parametric function or an EDM function). Defaults to detfun0.
+#' @param procfun A function that simulates process noise, which takes in arguments sp (parameters for process noise function, taken from pars$proc) and xt (abundances prior to process noise). Returns abundances after process noise has occurred. Defaults to procfun0.
+#' @param obsfun An observation function, which takes in up to five variables, including so (a vector of parameter values, inherited from pars$obs), yt (a number, showing observed abundance at time t), xt (predicted abundances), binary value "inverse", and number "N". If inverse = TRUE,
+#' then function should simulate N draws from the observation function, centered around value yt. If inverse = FALSE, then function should return log probability denisty of observed value yt given predicted values in xt. Defaults to obsfun0.
+#' @param colfun A function simulating colonization events, that takes in two arguments: co, a vector of parameter values taken from pars$pcol, and xt, a number or numeric vector of abundances at time t, before colonization has occurred. Returns predicted abundances after colonization has occurred. Defaults to colful0.
+#' @param edmdat A list including arguments to be passed to block_lnlp from rEDM package - see block_lnlp help file for details. Can also include optional matrix "extra_columns", a matrix with length(y) rows including extra covariates for attractor reconstruction, which defaults to NULL (i.e. no additional columns).
+#' Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.
+#' @param minval Minimum value, below will observations will be assumed to be zero. Can be helpful for simplex projections, as rounding errors can result in slightly nonzero values. Defaults to 1e-6.
+#' @param trimq Either NULL (no limits), or a vector of length 2, including the lower and upper quantiles to keep for extinction and colonization projections. Can be helpful for excluding degenerate particles. Defaults to c(0.01, 0.99).
+#' @source Adapted from Knape and Valpine (2012), Ecology 93:256-263.
+#' @keywords particle filter, stability, time-series, Taylor power law
+#' @return LL, P, rN, x, dem(col, mor)
+#' @export
+
+extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, minval=1e-6, trimq=c(0.01, 0.99)) {
+  #Adapted from Knape and Valpine (2012), Ecology 93:256-263.
+
+  #extract parameters
+  so = pars$obs             # observation error
+  sp = pars$proc            # process noise
+  sdet = c(pars$det)        # deterministic function
+  co<-pars$pcol             # colonization
+
+  #matrices for storing simulations
+  N = nrow(pfout$x)                     # Number of particles
+  n = ncol(pfout$x)                     # Length of the time series
+
+  xsort = matrix(rep(0, N * n), c(N, n))      # A matrix containing the past particles
+  xnew = matrix(rep(0, N * Next), c(N, Next)) # A matrix containing the future estimates
+
+  x = pfout$x
+  ind = pfout$ind                       # Index for the previous position of each particle
+
+  #sort particles
+  itrace = ind[, n]
+  xsort[,n] = x[itrace, n]
+  for (t in (n - 1):1) {
+    itrace = ind[itrace, t]
+    xsort[,t] = x[itrace, t]
+  }
+
+  #set up initial timestep
+  if(is.null(edmdat)) {
+    xnew[,1]<-xsort[,n]
+    tstart<-2
+  } else { #If using lagged embeddings, calculate first N positions
+    #set defaults
+    if(is.null(edmdat$E))
+      edmdat$E<-2
+    if(is.null(edmdat$lib))
+      edmdat$lib<-c(1, n)
+    if(is.null(edmdat$norm))
+      edmdat$norm<-2
+    if(is.null(edmdat$method))
+      edmdat$method="simplex"
+    if(is.null(edmdat$tp))
+      edmdat$tp<-0
+    if(is.null(edmdat$num_neighbors))
+      edmdat$num_neighbors<-ifelse(edmdat$method=="simplex", "e+1", 0)
+
+    for(i in 1:edmdat$E) {
+      xnew[, edmdat$E - (i-1)] = xsort[,n-(i-1)]
+    }
+
+    tstart<-edmdat$E+1
+
+    #make y block
+    yuse<-colMeans(xsort)
+    yuse[yuse<minval]<-0
+    yblock<-as.matrix(make_block(yuse, max_lag=edmdat$E+1, lib = edmdat$lib)[,-1])
+
+    if(!is.null(edmdat$extra_columns)) { #additional predictors, if applicable
+      yblock<-cbind(yblock, edmdat$extra_columns)
+    }
+  }
+
+  #run for all timesteps
+  for (t in tstart:Next) {
+    # Project particles forward
+    #colonization
+    cps<-xnew[, t - 1]>0 #which are >0?
+    xnew[!cps, t] = colfun(co=co, xt=xnew[, t - 1][!cps]) #colonize empty sites
+
+    #deterministic
+    if(sum(cps)>0) {
+      if(is.null(edmdat$E)) {
+        xnew[cps, t] = detfun(sdet = sdet, xt = xnew[, t - 1][cps]) #deterministic change in filled, non-colonized sites
+      } else {
+        smcps<-sum(cps,na.rm=T)
+        xtedm<-cbind(NA, xnew[cps,(t-1):(t-edmdat$E)])
+
+        if(!is.null(edmdat$extra_columns)) { #additional predictors for s-mapping
+          xtedm<-cbind(xtedm, unname(edmdat$extra_columns[rep(t-1, nrow(xtedm)),]))
+        }
+
+        xnew[cps, t] = detfun(edmdat, xt=xtedm, yblock)
+      }
+    }
+    xnew[, t][xnew[, t]<=minval]<-0
+
+    #process noise
+    cps[!cps]<-xnew[!cps, t]>0 #which are >0 now?
+    xnew[cps, t] = procfun(sp = sp, xt = xnew[cps, t])
+  }
+
+
+  #Calculate demographic rates
+  text<-1/(rowSums((xnew[,-1]<=minval & xnew[,-ncol(xnew)]>minval))/pmax(1, rowSums(xnew[,-ncol(xnew)]>minval)))
+  tcol<-1/(rowSums((xnew[,-1]>minval & xnew[,-ncol(xnew)]<=minval))/pmax(1, rowSums(xnew[,-ncol(xnew)]<=minval)))
+  text[!is.finite(text)]<-NA
+  tcol[!is.finite(tcol)]<-NA
+
+  #trim extreme values
+  if(!is.null(trimq)) {
+    tmp<-quantile(text, trimq, na.rm=T)
+    text[text<tmp[1]]<-NA
+    text[text>tmp[2]]<-NA
+
+    tmp<-quantile(tcol, trimq, na.rm=T)
+    tcol[tcol<tmp[1]]<-NA
+    tcol[tcol>tmp[2]]<-NA
+  }
+
+  return(list(xnew=xnew, xsort=xsort, demdat=list(text=text, tcol=tcol)))
+}
+
+
+
+
