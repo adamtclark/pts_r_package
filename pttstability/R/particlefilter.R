@@ -285,12 +285,13 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
 #' @param minval Minimum value, below will observations will be assumed to be zero. Can be helpful for simplex projections, as rounding errors can result in slightly nonzero values. Defaults to 1e-6.
 #' @param trimq Either NULL (no limits), or a vector of length 2, including the lower and upper quantiles to keep for extinction and colonization projections. Can be helpful for excluding degenerate particles. Defaults to c(0.01, 0.99).
 #' @param randstart Randomize starting positions within the time vector for the new particles? If FALSE, then all particles start at the end of the observed time series. Otherwise particles start at randomly chosen points, which can be helpful for getting better coverage of the full dynamic manifold. Defaults to TRUE.
+#' @param concatts Concatenate original and extended particles? Defaults to FALSE.
 #' @source Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 #' @keywords particle filter, stability, time-series, Taylor power law
 #' @return LL, P, rN, x, dem(col, mor)
 #' @export
 
-extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, minval=1e-6, trimq=c(0.01, 0.99), randstart=TRUE) {
+extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, minval=1e-16, trimq=c(0.01, 0.99), randstart=TRUE, concatts=FALSE) {
   #Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 
   #extract parameters
@@ -317,74 +318,79 @@ extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfu
     xsort[,t] = x[itrace, t]
   }
 
-  #set up initial timestep
-  if(randstart) {
-    nps<-sample(x = 1:n, size = N, replace=TRUE)
-  } else {
-    nps<-rep(n, N)
-  }
-  if(is.null(edmdat)) {
-    xnew[,1]<-xsort[cbind(1:N, nps)]
-    tstart<-2
-  } else { #If using lagged embeddings, calculate first N positions
-    #set defaults
-    if(is.null(edmdat$E))
-      edmdat$E<-2
-    if(is.null(edmdat$lib))
-      edmdat$lib<-c(1, n)
-    if(is.null(edmdat$norm))
-      edmdat$norm<-2
-    if(is.null(edmdat$method))
-      edmdat$method="simplex"
-    if(is.null(edmdat$tp))
-      edmdat$tp<-0
-    if(is.null(edmdat$num_neighbors))
-      edmdat$num_neighbors<-ifelse(edmdat$method=="simplex", "e+1", 0)
-
-    nps[nps<edmdat$E]<-edmdat$E
-    for(i in 1:edmdat$E) {
-      xnew[, edmdat$E - (i-1)] = xsort[cbind(1:N, nps-(i-1))]
+  if(Next>0) {
+    #set up initial timestep
+    if(randstart) {
+      nps<-sample(x = 1:n, size = N, replace=TRUE)
+    } else {
+      nps<-rep(n, N)
     }
+    if(is.null(edmdat)) {
+      xnew[,1]<-xsort[cbind(1:N, nps)]
+      tstart<-2
+    } else { #If using lagged embeddings, calculate first N positions
+      #set defaults
+      if(is.null(edmdat$E))
+        edmdat$E<-2
+      if(is.null(edmdat$lib))
+        edmdat$lib<-c(1, n)
+      if(is.null(edmdat$norm))
+        edmdat$norm<-2
+      if(is.null(edmdat$method))
+        edmdat$method="simplex"
+      if(is.null(edmdat$tp))
+        edmdat$tp<-0
+      if(is.null(edmdat$num_neighbors))
+        edmdat$num_neighbors<-ifelse(edmdat$method=="simplex", "e+1", 0)
 
-    tstart<-edmdat$E+1
+      nps[nps<edmdat$E]<-edmdat$E
+      for(i in 1:edmdat$E) {
+        xnew[, edmdat$E - (i-1)] = xsort[cbind(1:N, nps-(i-1))]
+      }
 
-    #make y block
-    yuse<-colMeans(xsort)
-    yuse[yuse<minval]<-0
-    yblock<-as.matrix(make_block(yuse, max_lag=edmdat$E+1, lib = edmdat$lib)[,-1])
+      tstart<-edmdat$E+1
 
-    if(!is.null(edmdat$extra_columns)) { #additional predictors, if applicable
-      yblock<-cbind(yblock, edmdat$extra_columns)
-    }
-  }
+      #make y block
+      yuse<-colMeans(xsort)
+      yuse[yuse<minval]<-0
+      yblock<-as.matrix(make_block(yuse, max_lag=edmdat$E+1, lib = edmdat$lib)[,-1])
 
-  #run for all timesteps
-  for (t in tstart:Next) {
-    # Project particles forward
-    #colonization
-    cps<-xnew[, t - 1]>0 #which are >0?
-    xnew[!cps, t] = colfun(co=co, xt=xnew[, t - 1][!cps]) #colonize empty sites
-
-    #deterministic
-    if(sum(cps)>0) {
-      if(is.null(edmdat$E)) {
-        xnew[cps, t] = detfun(sdet = sdet, xt = xnew[, t - 1][cps]) #deterministic change in filled, non-colonized sites
-      } else {
-        smcps<-sum(cps,na.rm=T)
-        xtedm<-cbind(NA, xnew[cps,(t-1):(t-edmdat$E)])
-
-        if(!is.null(edmdat$extra_columns)) { #additional predictors for s-mapping
-          xtedm<-cbind(xtedm, unname(edmdat$extra_columns[rep(t-1, nrow(xtedm)),]))
-        }
-
-        xnew[cps, t] = detfun(edmdat, xt=xtedm, yblock)
+      if(!is.null(edmdat$extra_columns)) { #additional predictors, if applicable
+        yblock<-cbind(yblock, edmdat$extra_columns)
       }
     }
-    xnew[, t][xnew[, t]<=minval]<-0
 
-    #process noise
-    cps[!cps]<-xnew[!cps, t]>0 #which are >0 now?
-    xnew[cps, t] = procfun(sp = sp, xt = xnew[cps, t])
+    #run for all timesteps
+    for (t in tstart:Next) {
+      # Project particles forward
+      #colonization
+      cps<-xnew[, t - 1]>0 #which are >0?
+      xnew[!cps, t] = colfun(co=co, xt=xnew[, t - 1][!cps]) #colonize empty sites
+
+      #deterministic
+      if(sum(cps)>0) {
+        if(is.null(edmdat$E)) {
+          xnew[cps, t] = detfun(sdet = sdet, xt = xnew[, t - 1][cps]) #deterministic change in filled, non-colonized sites
+        } else {
+          smcps<-sum(cps,na.rm=T)
+          xtedm<-cbind(NA, xnew[cps,(t-1):(t-edmdat$E)])
+
+          if(!is.null(edmdat$extra_columns)) { #additional predictors for s-mapping
+            xtedm<-cbind(xtedm, unname(edmdat$extra_columns[rep(t-1, nrow(xtedm)),]))
+          }
+
+          xnew[cps, t] = detfun(edmdat, xt=xtedm, yblock)
+        }
+      }
+      xnew[, t][xnew[, t]<=minval]<-0
+
+      #process noise
+      cps[!cps]<-xnew[!cps, t]>0 #which are >0 now?
+      xnew[cps, t] = procfun(sp = sp, xt = xnew[cps, t])
+    }
+  }
+  if(concatts) {
+    xnew<-cbind(xsort, xnew)
   }
 
 
