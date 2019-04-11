@@ -12,5 +12,5 @@
 date
 module load R
 cd /home/clarka/pts_r_package/hpc/
-./run_ptstab_proc_varyL.R $SGE_TASK_ID
+./run_ptstab_proc_grad_varyL.R $SGE_TASK_ID
 date
