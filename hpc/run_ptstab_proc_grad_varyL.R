@@ -14,10 +14,6 @@ if(length(commArgin)==0) {
 } else {
   commArg_ps<-as.numeric(commArgin)
 }
-
-#process error to use
-nsteps<-6; nitertot<-100
-lsq<-rep(c(10, 20, 30, 50, 75, 100), each=nitertot)
 print(commArg_ps)
 
 require(BayesianTools)
@@ -30,13 +26,17 @@ source("../pttstability/R/particlefilter.R")
 
 
 ## Simulate data
+#sample from priors
 pars<-list(obs=c(log(1e-2), log(0.1)),
            proc=c(-2, log(1.5)),
            pcol=c(logit(0.2), log(1e-2)),
            det=c(log(3),log(1)))
-pars_sim<-pars
 
-datout<-makedynamics(n = lsq[commArg_ps], obs = pars_sim$obs, proc = pars_sim$proc, r = pars_sim$det[1],
+pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars))
+
+lsq<-sample(c(10, 20, 30, 50, 75, 100),1)
+
+datout<-makedynamics(n = lsq, obs = pars_sim$obs, proc = pars_sim$proc, r = pars_sim$det[1],
                      K = pars_sim$det[2], pcol = pars_sim$pcol)
 y<-datout$obs
 
@@ -54,8 +54,8 @@ prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
 
 #number of MCMC iterations - increase for more accurate results
 #note - runtime will be long for EDM example
-niter<-5001
-nburn<-1002
+niter<-10002
+nburn<-2001
 
 #with detfun0
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
@@ -73,18 +73,35 @@ out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
 #run PF's
 smp_detfun0_untr<-(getSample(out_detfun0))
 smp_EDM_untr<-(getSample(out_EDM))
+#smp_detfun0_untr<-smp_EDM_untr<-t(unlist(pars_sim)[1:6])
 
 pfdet<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_detfun0_untr)), detfun = detfun0, dotraceback = TRUE)
 pfedm<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_EDM_untr)), detfun = EDMfun0, edmdat = list(E=2), dotraceback = TRUE)
 pftrue<-particleFilterLL(y=datout$obs, pars=pars, detfun = detfun0, dotraceback = TRUE)
 
-truecol<-sum(datout$true[-1]>0 & datout$true[-length(datout$true)]==0)/sum(datout$true[-length(datout$true)]==0)
-truemor<-sum(datout$true[-1]==0 & datout$true[-length(datout$true)]>0)/sum(datout$true[-length(datout$true)]>0)
 
-demdat<-list(pfdet=pfdet, pfedm=pfedm, pftrue=pftrue, truecol=truecol, truemor=truemor)
+#calculate demographic rates
+datout_long<-makedynamics(n = 2e4, obs = pars_sim$obs, proc = pars_sim$proc,
+                          r = pars_sim$det[1], K = pars_sim$det[2], pcol = pars_sim$pcol)
+
+etdfilter_det<-extend_particleFilter(pfout=pfdet, pars=parseparam0(colMeans(smp_detfun0_untr)),
+                                     Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+etdfilter_edm<-extend_particleFilter(pfout=pfedm, pars=parseparam0(colMeans(smp_EDM_untr)),
+                                     Next = 1e3, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
+etdfilter_true<-extend_particleFilter(pfout=pftrue, pars=pars_sim,
+                                     Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+#mean(1/etdfilter_det$demdat$text,na.rm=T)
+#mean(1/etdfilter_edm$demdat$text,na.rm=T)
+#mean(1/etdfilter_true$demdat$text,na.rm=T)
+#getcm(datout_long$true)$pm
+
+demdat_true<-getcm(datout_long$true)
+demdat_short<-getcm(datout$true)
+
+demdat<-list(demdat_true=demdat_true, demdat_short=demdat_short, demdat_det=etdfilter_det$demdat, demdat_edm=etdfilter_edm$demdat)
 
 #save outputs
-save(list = c("out_detfun0", "out_EDM", "pars_sim", "datout", "demdat"), file = paste("datout/mcmcout_", commArgin, "_varyL.rda", sep=""))
+save(list = c("out_detfun0", "out_EDM", "pars_sim", "datout", "demdat", "lsq"), file = paste("datout/mcmcout_", commArgin, "_varyLfull.rda", sep=""))
 
 
 
