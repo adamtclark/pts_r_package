@@ -1,6 +1,6 @@
 #!/bin/bash
 #------------------------------------------
-#$ -N pts_all
+#$ -N pts
 #$ -o iman.out$JOB_ID
 #$ -j y
 #$ -S /bin/bash
@@ -12,5 +12,5 @@
 date
 module load R
 cd /home/clarka/pts_r_package/hpc/
-./run_ptstab_proc_grad_allvar.R $SGE_TASK_ID
+./run_ptstab_proc_grad_vardet.R $SGE_TASK_ID
 date
