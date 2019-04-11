@@ -97,7 +97,7 @@ etdfilter_true<-extend_particleFilter(pfout=pftrue, pars=pars_sim,
 demdat_true<-getcm(datout_long$true)
 demdat_short<-getcm(datout$true)
 
-demdat<-list(demdat_true=demdat_true, demdat_short=demdat_short, demdat_det=etdfilter_det$demdat, demdat_edm=etdfilter_edm$demdat)
+demdat<-list(demdat_true=demdat_true, demdat_short=demdat_short, demdat_det=etdfilter_det$demdat, demdat_edm=etdfilter_edm$demdat, demdat_filt_true=etdfilter_true$demdat)
 
 #save outputs
 save(list = c("out_detfun0", "out_EDM", "pars_sim", "datout", "demdat"), file = paste("datout/mcmcout_", commArgin, "_full.rda", sep=""))

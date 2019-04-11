@@ -17,7 +17,7 @@ pars<-list(obs=c(log(1e-2), log(0.1)),
            det=c(log(3),log(1)))
 
 flst<-dir("datout")
-rmps<-grep("full", flst)
+rmps<-grep("_full.rda", flst)
 if(length(rmps)>0) {
   flst<-flst[rmps]
 }
@@ -25,8 +25,10 @@ if(length(rmps)>0) {
 qtllst<-c(0.025, pnorm(-1:1), 0.975)
 simdatsum<-array(dim=c(length(qtllst),6,length(flst),2))
 trueparsum<-matrix(nrow=length(flst),ncol=6)
-colrates<-matrix(nrow=length(flst), ncol=4)
-morrates<-matrix(nrow=length(flst), ncol=4)
+colrates<-matrix(nrow=length(flst), ncol=2)
+morrates<-matrix(nrow=length(flst), ncol=2)
+colrates_q<-array(dim=c(length(flst), 3, 5))
+morrates_q<-array(dim=c(length(flst), 3, 5))
 simplexdat<-matrix(nrow=length(flst), ncol=3)
 colnames(simplexdat)<-c("rho", "mae", "rmse")
 
@@ -52,39 +54,30 @@ if(FALSE) {
     trueparsum[ifl,]<-truepars_transformed[1:6]
 
     #get col/mor
-    pfdet<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_detfun0_untr)), detfun = detfun0, dotraceback = TRUE)
-    pfedm<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_EDM_untr)), detfun = EDMfun0, edmdat = list(E=2), dotraceback = TRUE)
-    pftrue<-particleFilterLL(y=datout$obs, pars=pars, detfun = detfun0, dotraceback = TRUE)
+    colrates[ifl,1]<-1/demdat$demdat_true$pc
+    colrates[ifl,2]<-1/demdat$demdat_short$pc
 
-    truecol<-sum(datout$true[-1]>0 & datout$true[-length(datout$true)]==0)/sum(datout$true[-length(datout$true)]==0)
-    truemor<-sum(datout$true[-1]==0 & datout$true[-length(datout$true)]>0)/sum(datout$true[-length(datout$true)]>0)
+    #TODO - remove when corrected simulation is run
+    demdat$demdat_filt_true<-demdat$demdat_det
 
-    colrates[ifl,1]<-truecol
-    colrates[ifl,2]<-pftrue$dem$mucol
-    colrates[ifl,3]<-pfdet$dem$mucol
-    colrates[ifl,4]<-pfedm$dem$mucol
+    colrates_q[ifl,1,]<-quantile(demdat$demdat_filt_true$tcol, qtllst, na.rm=T)
+    colrates_q[ifl,2,]<-quantile(demdat$demdat_det$tcol, qtllst, na.rm=T)
+    colrates_q[ifl,3,]<-quantile(demdat$demdat_edm$tcol, qtllst, na.rm=T)
 
-    morrates[ifl,1]<-truemor
-    morrates[ifl,2]<-pftrue$dem$mumor
-    morrates[ifl,3]<-pfdet$dem$mumor
-    morrates[ifl,4]<-pfedm$dem$mumor
+    morrates[ifl,1]<-1/demdat$demdat_true$pm
+    morrates[ifl,2]<-1/demdat$demdat_short$pm
+
+    morrates_q[ifl,1,]<-quantile(demdat$demdat_filt_true$text, qtllst, na.rm=T)
+    morrates_q[ifl,2,]<-quantile(demdat$demdat_det$text, qtllst, na.rm=T)
+    morrates_q[ifl,3,]<-quantile(demdat$demdat_edm$text, qtllst, na.rm=T)
+
+    smp_out<-unlist(simplex(datout$obs, E = 2, silent = TRUE))
+    simplexdat[ifl,]<-smp_out[6:8]
 
     if(ifl/20 == floor(ifl/20)) {
       print(round(ifl/length(flst),3))
     }
   }
-
-  #for(ifl in 1:length(flst)) {
-  #  flnm<-paste("datout/", flst[ifl], sep="")
-  #  load(flnm)
-
-    smp_out<-unlist(simplex(datout$obs, E = 2, silent = TRUE))
-    simplexdat[ifl,]<-smp_out[6:8]
-
-  #  if(ifl/20 == floor(ifl/20)) {
-  #    print(round(ifl/length(flst),3))
-  #  }
-  #}
 
   save.image("summarydata/saved_summary_full.rda")
 } else {
@@ -94,14 +87,15 @@ if(FALSE) {
 
 #plot parameters
 pltnames<-c("obs b0", "obs b1", "proc b0", "proc b1", "colp", "col0")
-collst<-adjustcolor(c(4,2),alpha.f = 0.3)
+collst<-adjustcolor(c(1,3,4,2),alpha.f = 0.3)
 dxl<-c(-0.01, 0.01)
 
 pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=4, colormodel = "cmyk", useDingbats = FALSE)
   m<-rbind(c(1,2,3),
-           c(1,2,3),
-           c(1,2,3))
+           c(4,5,6))
   layout(m)
+
+  #THINK ABOUT ADDING CI's?
 
   par(mar=c(4,4,2,2))
   for(i in 1:length(pltnames)) {
@@ -118,7 +112,7 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=4, colormodel = "c
     }
 
     matplot(trueparsum[pssbs,i], simdatsum[3,i,pssbs,],
-            col=collst, type="p", pch=1, cex=0.5,
+            col=collst[c(3:4)], type="p", pch=1, cex=0.5,
             ylim=range(simdatsum[3,i,pssbs,]),
             xlim=range(simdatsum[3,i,pssbs,]),
             xlab="true", ylab="estimated", main=pltnames[i], log=uselog)
@@ -150,9 +144,9 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=4, colormodel = "c
     }
 
     polygon(px1,py1,
-            col = collst[1])
+            col = collst[3])
     polygon(px2,py2,
-            col = collst[2])
+            col = collst[4])
 
     par(new=TRUE)
 
@@ -166,56 +160,90 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=4, colormodel = "c
 
 
   #plot rates
+
+  #THINK ABOUT ADDING CI's?
+
   m<-cbind(c(1,1), c(1,1), c(2,2), c(2,2))
   layout(m)
 
-  plot(range(colrates,na.rm=T), range(colrates,na.rm=T), type="n", xlab="true col. rate", ylab="est col. rate")
-  points(colrates[,1], colrates[,2], col=adjustcolor("black", 0.5), cex=0.5)
-  points(colrates[,1], colrates[,3], col=collst[1], cex=0.5)
-  points(colrates[,1], colrates[,4], col=collst[2], cex=0.5)
+  #col
+  plot(range(c(colrates, colrates_q[,,3]),na.rm=T), range(c(colrates, colrates_q[,,3]),na.rm=T), type="n", xlab="true col. rate", ylab="est col. rate", log="xy")
+  points(colrates[,1], colrates[,2], col=collst[1], cex=0.5)
+  points(colrates[,1], colrates_q[,1,3], col=collst[2], cex=0.5)
+  points(colrates[,1], colrates_q[,2,3], col=collst[3], cex=0.5)
+  points(colrates[,1], colrates_q[,3,3], col=collst[4], cex=0.5)
   abline(a=0, b=1, lty=3)
 
-  for(i in 2:4) {
-    sbs<-which(is.finite(rowSums(colrates)))
+  sbs<-which(is.finite(colrates[,2]) & is.finite(colrates[,1]))
+  x<-colrates[sbs,1]
+  y1<-colrates[sbs,2]
+
+  lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
+
+  xsq<-exp(sort(lom1$x))
+  pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
+
+  polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[1])
+
+  for(i in 1:3) {
+    sbs<-which(is.finite(colrates_q[,i,3]) & is.finite(colrates[,1]))
     x<-colrates[sbs,1]
-    y1<-colrates[sbs,i]
+    y1<-colrates_q[sbs,i,3]
 
-    lom1<-loess.sd(y1~x, nsigma = 1)
+    lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
 
-    xsq<-sort(lom1$x)
-    pd1y<-c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)]))
+    xsq<-exp(sort(lom1$x))
+    pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
 
-    polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
+    polygon(c(xsq, rev(xsq)), pd1y, col = collst[i+1])
+  }
+
+  par(new=TRUE)
+  hist(colrates[,1], breaks = 20, probability = FALSE, xlim=range(colrates,na.rm=T), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(colrates)))
+
+  #mor
+  plot(range(c(morrates[is.finite(morrates)], morrates_q[,,3][is.finite(morrates_q[,,3])]),na.rm=T),
+       range(c(morrates[is.finite(morrates)], morrates_q[,,3][is.finite(morrates_q[,,3])]),na.rm=T),
+       type="n", xlab="true col. rate", ylab="est col. rate", log="xy")
+  points(morrates[,1], morrates[,2], col=collst[1], cex=0.5)
+  points(morrates[,1], morrates_q[,1,3], col=collst[2], cex=0.5)
+  points(morrates[,1], morrates_q[,2,3], col=collst[3], cex=0.5)
+  points(morrates[,1], morrates_q[,3,3], col=collst[4], cex=0.5)
+  abline(a=0, b=1, lty=3)
+
+  sbs<-which(is.finite(morrates[,2]) & is.finite(morrates[,1]))
+  x<-morrates[sbs,1]
+  y1<-morrates[sbs,2]
+
+  lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
+
+  xsq<-exp(sort(lom1$x))
+  pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
+
+  polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[1])
+
+  for(i in 1:3) {
+    sbs<-which(is.finite(morrates_q[,i,3]) & is.finite(morrates[,1]))
+    x<-morrates[sbs,1]
+    y1<-morrates_q[sbs,i,3]
+
+    lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
+
+    xsq<-exp(sort(lom1$x))
+    pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
+
+    polygon(c(xsq, rev(xsq)), pd1y, col = collst[i+1])
   }
 
   par(new=TRUE)
   hist(colrates[,1], breaks = 20, probability = FALSE, xlim=range(colrates,na.rm=T), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(colrates)))
 
 
-  plot(range(morrates,na.rm=T), range(morrates,na.rm=T), type="n", xlab="true mor. rate", ylab="est mor. rate", main="")
-  points(morrates[,1], morrates[,2], col=adjustcolor("black", 0.3), cex=0.5)
-  points(morrates[,1], morrates[,3], col=collst[1], cex=0.5)
-  points(morrates[,1], morrates[,4], col=collst[2], cex=0.5)
-  abline(a=0, b=1, lty=3)
 
-  for(i in 2:4) {
-    sbs<-which(is.finite(rowSums(morrates)))
-    x<-morrates[sbs,1]
-    y1<-morrates[sbs,i]
 
-    lom1<-loess.sd(y1~x, nsigma = 1)
 
-    lom1<-loess.sd(y1~x, nsigma = 1)
 
-    xsq<-sort(lom1$x)
-    pd1y<-c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)]))
-
-    polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[i-1])
-  }
-
-  par(new=TRUE)
-  hist(morrates[,1], breaks = 20, probability = FALSE, xlim=range(morrates,na.rm=T), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(colrates)))
-
+  #ERROR PLOTS
 
 
   par(mfrow=c(1,3), mar=c(4,4,2,2))
