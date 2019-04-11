@@ -1,6 +1,6 @@
 #!/bin/bash
 #------------------------------------------
-#$ -N pts
+#$ -N pts_L
 #$ -o iman.out$JOB_ID
 #$ -j y
 #$ -S /bin/bash
