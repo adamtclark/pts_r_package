@@ -94,7 +94,7 @@ lognormal_imode = function(mu, sd){
 #' @return returns log likelihood of parameters given priors.
 #' @export
 
-density_fun0 = function(param, pars=pars, priorsd=c(0.5, 0.5, 2, 0.5, 0.5, 0.5)){
+density_fun0 = function(param, pars=pars, priorsd=c(1, 1, 3, 1, 1.2, 1)){
   dsum = dnorm(param[1], mean = lognormal_imode(pars$obs[1], priorsd[1]), sd =  priorsd[1], log = TRUE)
   dsum = dsum+dnorm(param[2], mean = lognormal_imode(pars$obs[2], priorsd[2]), sd =  priorsd[2], log = TRUE)
   dsum = dsum+dnorm(param[3], mean = pars$proc[1], sd = priorsd[3], log = TRUE)
@@ -124,7 +124,7 @@ density_fun0 = function(param, pars=pars, priorsd=c(0.5, 0.5, 2, 0.5, 0.5, 0.5))
 #' @import stats
 #' @export
 
-sampler_fun0 = function(n=1, pars=pars, priorsd=c(0.5, 0.5, 2, 0.5, 0.5, 0.5), minv=-9.9, maxv=9.9){
+sampler_fun0 = function(n=1, pars=pars, priorsd=c(1, 1, 3, 1, 1.2, 1), minv=-9.9, maxv=9.9){
   d1 = rnorm(n, mean = lognormal_imode(pars$obs[1], priorsd[1]), sd = priorsd[1])
   d2 = rnorm(n, mean = lognormal_imode(pars$obs[2], priorsd[2]), sd = priorsd[2])
   d3 = rnorm(n, mean = pars$proc[1], sd = priorsd[3])
