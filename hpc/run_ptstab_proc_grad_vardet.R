@@ -72,7 +72,9 @@ parseparam_NEW<-function(param, detparam=c(log(3),log(1))) {
   return(pars)
 }
 
-sampler_fun_NEW<-function(n=1, pars=pars, priorsd=c(0.5, 0.5, 0.5, 0.5, 2, 0.5, 0.5), minv=-9.9, maxv=9.9){
+sampler_fun_NEW<-function(n=1, pars=pars, priorsd=c(0.9, 0.9, 0.9, 1.4, 4, 1.4, 0.9),
+                          minv=c(rep(-6.9,4),-29.9,rep(-6.9,2)),
+                          maxv=c(rep(2.9,4),29.9,rep(2.9,2))){
   d1 = rnorm(n, mean = lognormal_imode(pars$obs[1], priorsd[1]), sd = priorsd[1])
   d2 = rnorm(n, mean = lognormal_imode(pars$obs[2], priorsd[2]), sd = priorsd[2])
   d3 = rnorm(n, mean = lognormal_imode(pars$proc[1], priorsd[3]), sd = priorsd[3])
@@ -81,20 +83,20 @@ sampler_fun_NEW<-function(n=1, pars=pars, priorsd=c(0.5, 0.5, 0.5, 0.5, 2, 0.5, 
   d6 = rnorm(n, mean = logitnormal_imode(pars$pcol[1], priorsd[6]), sd = priorsd[6])
   d7 = rnorm(n, mean = lognormal_imode(pars$pcol[2], priorsd[7]), sd=priorsd[7])
 
-  d1[d1<minv]<-minv; d1[d1>maxv]<-maxv
-  d2[d2<minv]<-minv; d2[d2>maxv]<-maxv
-  d3[d3<minv]<-minv; d3[d3>maxv]<-maxv
-  d4[d4<minv]<-minv; d4[d4>maxv]<-maxv
-  d5[d5<minv]<-minv; d5[d5>maxv]<-maxv
-  d6[d6<minv]<-minv; d6[d6>maxv]<-maxv
-  d7[d7<minv]<-minv; d7[d7>maxv]<-maxv
+  d1[d1<minv[1]]<-minv[1]; d1[d1>maxv[1]]<-maxv[1]
+  d2[d2<minv[2]]<-minv[2]; d2[d2>maxv[2]]<-maxv[2]
+  d3[d3<minv[3]]<-minv[3]; d3[d3>maxv[3]]<-maxv[3]
+  d4[d4<minv[4]]<-minv[4]; d4[d4>maxv[4]]<-maxv[4]
+  d5[d5<minv[5]]<-minv[5]; d5[d5>maxv[5]]<-maxv[5]
+  d6[d6<minv[6]]<-minv[6]; d6[d6>maxv[6]]<-maxv[6]
+  d7[d7<minv[7]]<-minv[7]; d7[d7>maxv[7]]<-maxv[7]
 
   if(length(priorsd)==9) {
     d8 = rnorm(n, mean = lognormal_imode(pars$det[1], priorsd[8]), sd=priorsd[8])
     d9 = rnorm(n, mean = lognormal_imode(pars$det[2], priorsd[9]), sd=priorsd[9])
 
-    d8[d8<minv]<-minv; d8[d8>maxv]<-maxv
-    d9[d9<minv]<-minv; d9[d9>maxv]<-maxv
+    d8[d8<minv[8]]<-minv[8]; d8[d8>maxv[8]]<-maxv[8]
+    d9[d9<minv[9]]<-minv[9]; d9[d9>maxv[9]]<-maxv[9]
 
     return(cbind(d1,d2,d3,d4,d5,d6,d7,d8,d9))
   } else {
@@ -110,7 +112,7 @@ inv_fun_NEW<-function(x) {
   }
 }
 
-density_fun_NEW<-function(param, pars=pars, priorsd=c(0.5, 0.5, 0.5, 0.5, 2, 0.5, 0.5)){
+density_fun_NEW<-function(param, pars=pars, priorsd=c(0.9, 0.9, 0.9, 1.4, 4, 1.4, 0.9)){
   dsum = dnorm(param[1], mean = lognormal_imode(pars$obs[1], priorsd[1]), sd =  priorsd[1], log = TRUE)
   dsum = dsum+dnorm(param[2], mean = lognormal_imode(pars$obs[2], priorsd[2]), sd =  priorsd[2], log = TRUE)
 
@@ -151,7 +153,7 @@ pars0<-list(obs=c(log(1e-2), log(0.1)),
            pcol=c(logit(0.2), log(1e-2)),
            det=c(log(3),log(1)))
 
-pars_sim<-parseparam_NEW(sampler_fun_NEW(n=1, pars = pars))
+pars_sim<-parseparam_NEW(sampler_fun_NEW(n=1, pars = pars, priorsd = c(0.5, 0.5, 0.5, 0.5, 2, 0.5, 0.5)))
 
 datout<-makedynamics_general(n=100, n0=0.1,
                      pdet=pars_sim$det, proc=pars_sim$proc,
@@ -171,19 +173,20 @@ N = 1e3
 ## Run optimizer
 param<-unlist(pars)[1:7]
 param0<-unlist(pars0)[1:6]
-
 #create priors
 #det, new functions
 density_fun_USE<-function(param) density_fun_NEW(param = param, pars = pars)
 sampler_fun_USE<-function(x) sampler_fun_NEW(n = 1, pars = pars)
 prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = rep(-10,7), upper = rep(10,7))
+                     lower = c(rep(-6.9,4),-29.9,rep(-6.9,2)),
+                     upper = c(rep(2.9,4),29.9,rep(2.9,2)))
 
 #EDM, Taylor
 density_fun_EDM<-function(param) density_fun0(param = param0, pars = pars0)
 sampler_fun_EDM<-function(x) sampler_fun0(n = 1, pars = pars0)
 prior_EDM <- createPrior(density = density_fun_EDM, sampler = sampler_fun_EDM,
-                     lower = rep(-10,6), upper = rep(10,6))
+                         lower = c(rep(-6.9,2),-29.9,rep(-6.9,3)),
+                         upper = c(rep(2.9,2),29.9,rep(2.9,3)))
 
 #number of MCMC iterations - increase for more accurate results
 #note - runtime will be long for EDM example
@@ -221,11 +224,11 @@ datout_long<-makedynamics_general(n=2e4, n0=0.1,
                                   doplot=FALSE)
 
 etdfilter_det<-extend_particleFilter(pfout=pfdet, pars=parseparam_NEW(colMeans(smp_detfun0_untr)),
-                                     Next = 1e3, detfun=detfun_new, procfun=procfun_new, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+                                     Next = 2e4, detfun=detfun_new, procfun=procfun_new, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
 etdfilter_edm<-extend_particleFilter(pfout=pfedm, pars=parseparam0(colMeans(smp_EDM_untr)),
-                                     Next = 1e3, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
+                                     Next = 2e4, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
 etdfilter_true<-extend_particleFilter(pfout=pftrue, pars=pars_sim,
-                                      Next = 1e3, detfun=detfun_new, procfun=procfun_new, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+                                      Next = 2e4, detfun=detfun_new, procfun=procfun_new, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
 #mean(1/etdfilter_det$demdat$text,na.rm=T)
 #mean(1/etdfilter_edm$demdat$text,na.rm=T)
 #mean(1/etdfilter_true$demdat$text,na.rm=T)

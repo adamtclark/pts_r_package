@@ -32,7 +32,7 @@ pars<-list(obs=c(log(1e-2), log(0.1)),
            pcol=c(logit(0.2), log(1e-2)),
            det=c(log(3),log(1)))
 
-pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars,priorsd = c(0.5, 0.5, 2, 0.5, 0.5, 0.5)))
+pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars, priorsd = c(0.5, 0.5, 2, 0.5, 0.5, 0.5)))
 
 datout<-makedynamics(n = 100, obs = pars_sim$obs, proc = pars_sim$proc, r = pars_sim$det[1],
                      K = pars_sim$det[2], pcol = pars_sim$pcol)

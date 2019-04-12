@@ -32,7 +32,7 @@ pars<-list(obs=c(log(1e-2), log(0.1)),
            pcol=c(logit(0.2), log(1e-2)),
            det=c(log(3),log(1)))
 
-pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars))
+pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars, priorsd = c(0.5, 0.5, 2, 0.5, 0.5, 0.5)))
 
 lsq<-sample(c(10, 20, 30, 50, 75, 100),1)
 
@@ -50,7 +50,7 @@ param<-unlist(pars)[1:6]
 density_fun_USE<-function(param) density_fun0(param = param, pars = pars)
 sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars)
 prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = rep(-10,6), upper = rep(10,6))
+                     lower = c(rep(-6.9,2),-29.9,rep(-6.9,3)), upper = c(rep(2.9,2),29.9,rep(2.9,3)))
 
 #number of MCMC iterations - increase for more accurate results
 #note - runtime will be long for EDM example
@@ -85,11 +85,11 @@ datout_long<-makedynamics(n = 2e4, obs = pars_sim$obs, proc = pars_sim$proc,
                           r = pars_sim$det[1], K = pars_sim$det[2], pcol = pars_sim$pcol)
 
 etdfilter_det<-extend_particleFilter(pfout=pfdet, pars=parseparam0(colMeans(smp_detfun0_untr)),
-                                     Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+                                     Next = 2e4, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
 etdfilter_edm<-extend_particleFilter(pfout=pfedm, pars=parseparam0(colMeans(smp_EDM_untr)),
-                                     Next = 1e3, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
+                                     Next = 2e4, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
 etdfilter_true<-extend_particleFilter(pfout=pftrue, pars=pars_sim,
-                                     Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
+                                     Next = 2e4, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
 #mean(1/etdfilter_det$demdat$text,na.rm=T)
 #mean(1/etdfilter_edm$demdat$text,na.rm=T)
 #mean(1/etdfilter_true$demdat$text,na.rm=T)
