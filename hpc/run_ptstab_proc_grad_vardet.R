@@ -48,7 +48,7 @@ procfun_new<-function(sp, xt) {
 
   #add in mortality following random binomial distribution
   #with pmor = ilogit(sp[2]+sp[3]*xt)
-  xt[xt>0] = rbinom(length(xt>0), 1, 1-ilogit(sp[2]+sp[3]*xt[xt>0]))*xt[xt>0]
+  xt[xt>0] = rbinom(sum(xt>0, na.rm=T), 1, 1-ilogit(sp[2]+sp[3]*xt[xt>0]))*xt[xt>0]
 
   return(xt)
 }
