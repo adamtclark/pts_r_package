@@ -318,21 +318,20 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "c
 
   par(new=TRUE)
   hist(log(morrates[,1]), breaks = 20, probability = FALSE, xlim=log(ptlrng), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(morrates)))
-
-
 dev.off()
 
 
 
-  #ERROR PLOTS
-
-
-  par(mfrow=c(1,3), mar=c(4,4,2,2))
+#ERROR PLOTS
+pdf("plotout/plot_pstab_proc_grad_full_SIMPLEXERROR.pdf", width=8, height=6, colormodel = "cmyk", useDingbats = FALSE)
+  par(mfrow=c(2,3), mar=c(4,4,2,2))
   for(i in 1:6) {
-    x<-simplexdat[,3]; y<-sqrt(((t(simdatsum[3,i,,2])-trueparsum[,i])^2))
-    plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab=paste("rmse", pltnames[i]))
+    x<-c(simplexdat[,3]); y<-c(sqrt(((t(simdatsum[3,i,,2])-trueparsum[,i])^2)))
+    plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rmse, EDM", ylab=paste("rmse", pltnames[i]))
     abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
-    lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+    ps<-is.finite(log(x)) & is.finite(log(y))
+    y<-y[ps]; x<-x[ps]
+    lm1<-loess.sd(y = log(y), x = log(x), nsigma = 1)
     matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
     par(new=TRUE)
     hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
@@ -340,33 +339,64 @@ dev.off()
 
 
   #Plot simplex error
-  par(mfrow=c(1,3), mar=c(4,4,2,2))
-  x<-simplexdat[,3]; y<-sqrt(rowSums((t(simdatsum[3,,,2])-trueparsum[,])^2))
-  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab="rmse, parameters")
+  par(mfrow=c(3,3), mar=c(4,4,2,2))
+  x<-simplexdat[,3]; y<-sqrt(rowMeans((t(simdatsum[3,,,2])-trueparsum[,])^2,na.rm = TRUE))
+  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rmse, EDM", ylab="rmse, parameters")
   abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+  ps<-is.finite(log(x)) & is.finite(log(y))
+  y<-y[ps]; x<-x[ps]
   lm1<-loess.sd(log(y)~log(x), nsigma = 1)
   matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
   par(new=TRUE)
   hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
 
-  x<-simplexdat[,3]; y<-sqrt((colrates[,1]-colrates[,4])^2)
+  x<-simplexdat[,3]; y<-sqrt((colrates[,1]-colrates[,2])^2)
   sbs<-which(is.finite(x) & is.finite(y) & y>0) ; x<-x[sbs]; y<-y[sbs]
-  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab="rmse, col.")
+  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rmse_EDM", ylab="rmse, col. short")
   abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+  ps<-is.finite(log(x)) & is.finite(log(y))
+  y<-y[ps]; x<-x[ps]
   lm1<-loess.sd(log(y)~log(x), nsigma = 1)
   matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
   par(new=TRUE)
   hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
 
-  x<-simplexdat[,3]; y<-sqrt((morrates[,1]-morrates[,4])^2)
+  x<-simplexdat[,3]; y<-sqrt((morrates[,1]-morrates[,2])^2)
   sbs<-which(is.finite(x) & is.finite(y) & y>0) ; x<-x[sbs]; y<-y[sbs]
-  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rho", ylab="rmse, mor.")
+  plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rmse_EDM", ylab="rmse, mor. short")
   abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+  ps<-is.finite(log(x)) & is.finite(log(y))
+  y<-y[ps]; x<-x[ps]
   lm1<-loess.sd(log(y)~log(x), nsigma = 1)
   matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
   par(new=TRUE)
   hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
 
+  plttype = c("true filter", "det. filter", "EDM filter")
+  for(i in 1:3) {
+    x<-simplexdat[,3]; y<-sqrt((colrates_q[,i,3]-colrates[,1])^2)
+    sbs<-which(is.finite(x) & is.finite(y) & y>0) ; x<-x[sbs]; y<-y[sbs]
+    plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rmse, EDM", ylab=paste("rmse, col.", plttype[i]))
+    abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+    ps<-is.finite(log(x)) & is.finite(log(y))
+    y<-y[ps]; x<-x[ps]
+    lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+    matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
+    par(new=TRUE)
+    hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
+  }
+  for(i in 1:3) {
+    x<-simplexdat[,3]; y<-sqrt((morrates_q[,i,3]-morrates[,1])^2)
+    sbs<-which(is.finite(x) & is.finite(y) & y>0) ; x<-x[sbs]; y<-y[sbs]
+    plot(x, y, log="xy", col=adjustcolor(1, alpha.f = 0.5), xlab="rmse, EDM", ylab=paste("rmse, col.", plttype[i]))
+    abline(h=10^seq(-12,5), v=c(0.2, 0.5, 1, 2, 5, 10), col="grey")
+    ps<-is.finite(log(x)) & is.finite(log(y))
+    y<-y[ps]; x<-x[ps]
+    lm1<-loess.sd(log(y)~log(x), nsigma = 1)
+    matlines(exp(sort(lm1$x)), exp(cbind(lm1$upper, lm1$lower)[order(lm1$x),]), lty=2, col=2)
+    par(new=TRUE)
+    hist(log10(simplexdat[,3]), axes=F, ylim=c(0, nrow(simplexdat)), main="", xlab="", ylab="")
+  }
 dev.off()
 
 
