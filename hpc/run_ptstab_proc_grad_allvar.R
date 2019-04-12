@@ -34,7 +34,6 @@ pars<-list(obs=c(log(1e-2), log(0.1)),
 
 pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars,priorsd = c(0.5, 0.5, 2, 0.5, 0.5, 0.5)))
 
-
 datout<-makedynamics(n = 100, obs = pars_sim$obs, proc = pars_sim$proc, r = pars_sim$det[1],
                      K = pars_sim$det[2], pcol = pars_sim$pcol)
 y<-datout$obs
@@ -49,7 +48,7 @@ param<-unlist(pars)[1:6]
 density_fun_USE<-function(param) density_fun0(param = param, pars = pars)
 sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars)
 prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = rep(-10,6), upper = rep(10,6))
+                     lower = c(rep(-6.9,2),-29.9,rep(-6.9,3)), upper = c(rep(2.9,2),29.9,rep(2.9,3)))
 
 #number of MCMC iterations - increase for more accurate results
 #note - runtime will be long for EDM example
