@@ -45,18 +45,18 @@ EDMfun0<-function(edmdat, xt, yblock, tm=NULL) {
 
 #' default process noise function
 #'
-#' Simulates effects of process noise following the Taylor Power Law, i.e. with standard devation sd(xt) = sqrt(exp(exp(a)+exp(z)*log(xt))).
+#' Simulates effects of process noise following a Gaussian perturbation.
 #' Note that process noise only influences positive abundances (i.e. process noise cannot contribute to colonization)
-#' @param sp a numeric vector of length two (a, z), specifying intercept and slope for Taylor Power scaling relationship
+#' @param sp a numeric vector of length one, specifying the log-transformed standard deviation of the process noise function
 #' @param xt a number or numeric vector of abundances at time t, before process noise has occurred
-#' @keywords process noise, Taylor power law
+#' @keywords process noise
 #' @return a number or numeric vector of length xt, with predicted abundances after process noise has occurred
 #' @import stats
 #' @export
 
 procfun0<-function(sp, xt) {
   sm<-length(xt)
-  xt = pmax(0, xt + rnorm(sm, 0, sqrt(exp(sp[1]+exp(sp[2])*log(xt)))))
+  xt = pmax(0, xt + rnorm(sm, 0, exp(sp[1])))
   return(xt)
 }
 
@@ -65,9 +65,9 @@ procfun0<-function(sp, xt) {
 #'
 #' Two options: If inverse=FALSE, calculates the log probability density of observation yt based on true state xt and observation error.
 #' Otherwise, simulates N random observations of yt.
-#' Observation error follows a linear function of abundance, such that sd(xt) = exp(a) + exp(b)*xt.
+#' Observation error follows a Gaussian distribution truncated at zero, using a Tobit distribution.
 #' Note that probability density is calculated based on a Tobit distribution, with lower boundary zero.
-#' @param so a numeric vector of length two (a, b), specifying intercept and slope for linear observation error function
+#' @param so a numeric vector of length one, specifying log-transformed standard deviation of the observation error
 #' @param yt a number, representing a potential observed value of xt
 #' @param xt a number or numeric vector of "true" (or simulated) abundances at time t, from which the likelihood of yt will be calculated - defaults to NULL for inverse=TRUE
 #' @param inverse a logical specifying whether inverse (i.e. random number generator) function should be implemented - defaults to FALSE
@@ -79,9 +79,9 @@ procfun0<-function(sp, xt) {
 
 obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL) {
   if(inverse) {
-    pmax(0, rnorm(n = N, mean = yt, sd = exp(so[1])+exp(so[2])*yt))
+    pmax(0, rnorm(n = N, mean = yt, sd = exp(so[1])))
   } else {
-    std_tmp<-(exp(so[1])+exp(so[2])*xt)
+    std_tmp<-exp(so[1])
     #Tobit distribution:
     if(yt==0) {
       pnorm(0, mean=xt/std_tmp, log.p = TRUE)
@@ -95,7 +95,7 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL) {
 #' default colonization function
 #'
 #' Simulates colonization events - events occur as a binomial random process with probability ilogit(p), and populations are seeded with abundance exp(A).
-#' @param co a numeric vector of length two (p, co), specifying the logit-transformed colonization probability when abundance is zero, and the log-transformed abundance observed immediately after a colonization event
+#' @param co a numeric vector of length two (p, A), specifying the logit-transformed colonization probability when abundance is zero, and the log-transformed abundance observed immediately after a colonization event
 #' @param xt a number or numeric vector of abundances at time t, before colonization has occurred
 #' @keywords colonization
 #' @return a numeric, including number or numeric vector of length xt, with predicted abundances after colonization has occurred
@@ -261,9 +261,9 @@ particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, ob
     mumor<-sum((mor[,1]/mor[,2])*mor[,2],na.rm=T)/sum(mor[,2],na.rm=T)
     mucol<-sum((col[,1]/col[,2])*col[,2],na.rm=T)/sum(col[,2],na.rm=T)
 
-    return(list(LL = sum(log(P[is.finite(P) & P>0])), P = P, rN = rx, x=x, ind=ind, dem=list(col=col, mor=mor, mucol=mucol, mumor=mumor)))
+    return(list(LL = mean(log(P[is.finite(P) & P>0])), P = P, rN = rx, x=x, ind=ind, dem=list(col=col, mor=mor, mucol=mucol, mumor=mumor)))
   } else {
-    return(list(LL = sum(log(P[is.finite(P) & P>0])), P = P, rN = NA, x=NA, ind=NA, dem=NA))
+    return(list(LL = mean(log(P[is.finite(P) & P>0])), P = P, rN = NA, x=NA, ind=NA, dem=NA))
   }
 }
 

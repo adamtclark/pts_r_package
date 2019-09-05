@@ -15,22 +15,26 @@ source("R/particlefilter.R")
 set.seed(41019)
 
 ## Simulate data
-pars<-list(obs=c(log(1e-2), log(0.1)),
-            proc=c(-2, log(1.2)),
+pars0<-list(obs=log(0.1),
+            proc=log(0.1),
             pcol=c(logit(0.2), log(1e-2)),
             det=c(log(3),log(1)))
 
-datout<-makedynamics(n = 100, obs = pars$obs, proc = pars$proc, r = pars$det[1],
-                     K = pars$det[2], pcol = pars$pcol)
-y<-datout$obs
+#generate random parameter values
+pars_true<-parseparam0(sampler_fun0(n=1, pars = pars0))
 
+datout<-makedynamics_general(n = 100, n0 = exp(rnorm(1,0,0.1)), pdet=pars_true$det,
+                             proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
+                             detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
+y<-datout$obs
 
 ## Run filter
 N = 1e3
 #based on detful0
-filterout_det<-particleFilterLL(y, pars=pars, N, detfun = detfun0, dotraceback = TRUE)
+filterout_det<-particleFilterLL(y, pars=pars_true, N, detfun = detfun0,
+                                dotraceback = TRUE)
 #based on EDM
-filterout_edm<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2),
+filterout_edm<-particleFilterLL(y, pars=pars_true, N, detfun = EDMfun0, edmdat = list(E=2),
                                 dotraceback = TRUE)
 
 #plot filter output
@@ -53,25 +57,26 @@ abline(a=0, b=1, lty=2)
 legend("topleft", c("detfun0", "EDM"), pch=1, col=c(4,2), bty="n")
 
 #estimate demographic rates from extended timeseries
-etdfilter_det<-extend_particleFilter(pfout=filterout_det, pars=pars,
+etdfilter_det<-extend_particleFilter(pfout=filterout_det, pars=pars_true,
                                      Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
-etdfilter_edm<-extend_particleFilter(pfout=filterout_edm, pars=pars,
+etdfilter_edm<-extend_particleFilter(pfout=filterout_edm, pars=pars_true,
                                      Next = 1e3, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
 #compare to results from a long simulation
-datout_long<-makedynamics(n = 2e4, obs = pars$obs, proc = pars$proc,
-                          r = pars$det[1], K = pars$det[2], pcol = pars$pcol)
+datout_long<-makedynamics_general(n = 2e4, n0 = exp(rnorm(1,0,0.1)), pdet=pars_true$det,
+                          proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
+                          detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
 demdat_true<-getcm(datout_long$true)
 
 #plot rates
 par(mar=c(4,4,2,2), mfrow=c(2,1))
-hist(etdfilter_det$demdat$text, xlim=c(10, 25),
+hist(etdfilter_det$demdat$text, xlim=c(40,160),
      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to extinction", main="")
 par(new=TRUE)
-hist(etdfilter_edm$demdat$text, xlim=c(10, 25),
+hist(etdfilter_edm$demdat$text,xlim=c(40,160),
      col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
 abline(v=1/demdat_true$pm, lwd=2, lty=2)
 
-hist(etdfilter_det$demdat$tcol, xlim=c(5, 12),
+hist(etdfilter_det$demdat$tcol, xlim=c(5, 20),
      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to colonization", main="")
 par(new=TRUE)
 hist(etdfilter_edm$demdat$tcol, xlim=c(5, 12),
@@ -85,31 +90,28 @@ legend("topright", c("deterministic est.", "EDM est.", "true value"),
 
 ## Run optimizer
 #\dontrun{
-param<-unlist(pars)[1:6]
+param<-unlist(pars0)[1:3]
 
 #create priors
-density_fun_USE<-function(param) density_fun0(param = param, pars = pars)
-sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars)
+density_fun_USE<-function(param) density_fun0(param = param, pars = pars0)
+sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars0)
 prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = rep(-10,6), upper = rep(10,6))
+                     lower = rep(-10,3), upper = rep(10,3))
 
 likelihood0(param, y = y)+density_fun_USE(param)
 likelihood0(param, y=y, detfun = EDMfun0, edmdat = list(E=2))+density_fun_USE(param)
 
 #plot priors
 par(mar=c(4,4,2,2), mfrow=c(3,1))
-tmp<-inv_fun0(sampler_fun0(1e4,pars = pars))
-hist(tmp[,1], breaks = 30); abline(v=exp(pars$obs[1]), col=2, lwd=2, lty=2)
-hist(tmp[,2], breaks = 30); abline(v=exp(pars$obs[2]), col=2, lwd=2, lty=2)
-hist(tmp[,3], breaks = 30); abline(v=(pars$proc[1]), col=2, lwd=2, lty=2)
-hist(tmp[,4], breaks = 30); abline(v=exp(pars$proc[2]), col=2, lwd=2, lty=2)
-hist(tmp[,5], breaks = 30); abline(v=ilogit(pars$pcol[1]), col=2, lwd=2, lty=2)
-hist(tmp[,6], breaks = 30); abline(v=exp(pars$pcol[2]), col=2, lwd=2, lty=2)
+tmp<-inv_fun0(sampler_fun0(1e4,pars = pars0))
+hist(tmp[,1], breaks = 30); abline(v=exp(pars0$obs[1]), col=2, lwd=2, lty=2)
+hist(tmp[,2], breaks = 30); abline(v=exp(pars0$proc[1]), col=2, lwd=2, lty=2)
+hist(tmp[,3], breaks = 30); abline(v=ilogit(pars0$pcol[1]), col=2, lwd=2, lty=2)
 
 #number of MCMC iterations - increase for more accurate results
-#note - runtime will be long for EDM example (e.g. 10 min)
-niter<-501
-nburn<-102
+#note - runtime will be long for EDM example
+niter<-1000
+nburn<-500
 
 #with detfun0
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
@@ -129,15 +131,20 @@ out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
 smp_detfun0<-inv_fun0(getSample(out_detfun0))
 smp_EDM<-inv_fun0(getSample(out_EDM))
 
+#check for correlations among estimates
 plot(data.frame(smp_detfun0))
 plot(data.frame(smp_EDM))
 
 #plot posteriors
-truepars_transformed<-inv_fun0(t(as.matrix(unlist(pars))))
+truepars_transformed<-inv_fun0(t(as.matrix(unlist(pars_true))))
+priorpars_transformed<-inv_fun0(t(as.matrix(unlist(pars0))))
 
-par(mar=c(4,4,2,2), mfrow=c(3,2))
-for(i in 1:6) {
-  hist(smp_detfun0[,i],breaks = 30); abline(v=truepars_transformed[i], col=c(2), lty=2)
+par(mar=c(4,4,2,2), mfrow=c(1,3))
+for(i in 1:3) {
+  hist(smp_detfun0[,i],breaks = 30)
+  abline(v=truepars_transformed[i], col=c(2), lty=2)
+  abline(v=truepars_transformed[i], col=c(2), lty=2)
+  abline(v=priorpars_transformed[i], col=c(4), lty=2)
 }
 
 for(i in 1:6) {

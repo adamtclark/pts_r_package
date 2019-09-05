@@ -1,26 +1,44 @@
 #' Parse parameters
 #'
-#' Takes in a vector of 6 or 8 parameters, and puts them into a list of the format expected by the particleFilterLL function.
-#' @param param List of 6 or 8 paramters, in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2).
-#' Note that if param is of length 6, then detparam must be supplied. See obsfun0, procfun0, and detfun0 for more details.
-#' @param detparam Optional vector of length two, including paramters for the deterministic function.
+#' Takes in a vector of 3 or 6 parameters, and puts them into a list of the format expected by the particleFilterLL function.
+#' @param param List of 3 or 6 paramters, in the order (obs1, proc1, pcol1, pcol2, det1, det2).
+#' Note that if param is of length 3, then detparam must be supplied. See obsfun0, procfun0, and detfun0 for more details.
+#' @param detparam Optional vector of length two, including paramters for the mean coloniztion abundance and the deterministic function.
 #' @keywords stability, time-series, particle filter
 #' @return a formatted list of parameters
 #' @export
 
-parseparam0<-function(param, detparam=c(log(3),log(1))) {
-  if(length(param)==6) {
-    pars<-list(obs=c(param[1], param[2]),
-               proc=c(param[3], param[4]),
-               pcol=c(param[5], param[6]),
-               det=detparam)
-  } else if(length(param)==8) {
-    pars<-list(obs=c(param[1], param[2]),
-               proc=c(param[3], param[4]),
-               pcol=c(param[5], param[6]),
-               det=c(param[7], param[8]))
-  } else {
-    return("error: param must be either length 6 or 8")
+parseparam0<-function(param, detparam=c(log(0.01), log(3),log(1))) {
+  if(is.null(dim(param))) { # only one set of parameters to estimate
+    if(length(param)==3) {
+      pars<-list(obs=c(param[1]),
+                 proc=c(param[2]),
+                 pcol=c(param[3], detparam[1]),
+                 det=detparam[c(2:3)])
+    } else if(length(param)==6) {
+      pars<-list(obs=c(param[1]),
+                 proc=c(param[2]),
+                 pcol=c(param[3:4]),
+                 det=c(param[5:6]))
+    } else {
+      return("error: param must be either length 3 or 6")
+    }
+  } else { # one set of parameters per row in param
+    #multivariate
+
+    if(ncol(param)==3) {
+      pars<-list(obs=param[,1,drop=FALSE],
+                 proc=param[,2,drop=FALSE],
+                 pcol=cbind(param[,3,drop=FALSE], detparam[1]),
+                 det=t(matrix(nrow=2, ncol=nrow(param), data=detparm)))
+    } else if(ncol(param)==6) {
+      pars<-list(obs=c(param[,1,drop=FALSE]),
+                 proc=c(param[,2,drop=FALSE]),
+                 pcol=c(param[,3:4,drop=FALSE]),
+                 det=c(param[,5:6,drop=FALSE]))
+    } else {
+      return("error: param must include either 3 or 6 parameters")
+    }
   }
 
   return(pars)
@@ -83,28 +101,26 @@ lognormal_imode = function(mu, sd){
 #' Default density function for prior
 #'
 #' Default density function, following the syntax for priors in the BayesianTools package. Uses
-#' lognormal priors for the intercept and slope of the observation error function, a normal prior for the
-#' intercept of the process noise function, a lognormal for the slope of the process noise function,
-#' a logit-normal prior for colonization probability, and a lognormal prior for the colonization abundance.
+#' lognormal priors for the observation error and process noise functions, and a logit-normal prior
+#' for colonization probability. Optionally, values for mean colonization abundance, r, and K,
+#' can be included (also in log space).
 #' Note that prior likelihood is calculated based on values of param, which are centered around the listed values in variable pars.
-#' @param param a vector of length 6 or 8 with mean model parameters (or desired centers for prior distributions)
-#' @param pars a list of parameter values, structured following the parseparam0 function, specifying the centers for the priors
-#' @param priorsd a vector of length 6 or 8 with desired standard deviations for the prior distributions
+#' @param param a vector of length 3 or 6 with mean model parameters
+#' @param pars a list of parameter values, structured following the parseparam0 function, specifying the means for the priors
+#' @param priorsd a vector of length 3 or 6 with desired standard deviations for the prior distributions
 #' @keywords stability, time-series, MCMC optimization
 #' @return returns log likelihood of parameters given priors.
 #' @export
 
-density_fun0 = function(param, pars=pars, priorsd=c(0.9, 0.9, 4, 0.8, 1.4, 0.9)){
-  dsum = dnorm(param[1], mean = lognormal_imode(pars$obs[1], priorsd[1]), sd =  priorsd[1], log = TRUE)
-  dsum = dsum+dnorm(param[2], mean = lognormal_imode(pars$obs[2], priorsd[2]), sd =  priorsd[2], log = TRUE)
-  dsum = dsum+dnorm(param[3], mean = pars$proc[1], sd = priorsd[3], log = TRUE)
-  dsum = dsum+dnorm(param[4], mean = lognormal_imode(pars$proc[2], priorsd[4]), sd = priorsd[4], log = TRUE)
-  dsum = dsum+dnorm(param[5], mean = logitnormal_imode(pars$pcol[1], priorsd[5]), sd = priorsd[5], log = TRUE)
-  dsum = dsum+dnorm(param[6], mean = lognormal_imode(pars$pcol[2], priorsd[6]), sd = priorsd[6], log = TRUE)
+density_fun0 = function(param, pars=pars, priorsd=c(1, 1, 1)){
+  dsum = dnorm(param[1], mean = pars$obs[1], sd =  priorsd[1], log = TRUE)
+  dsum = dsum+dnorm(param[2], mean = pars$proc[1], sd = priorsd[2], log = TRUE)
+  dsum = dsum+dnorm(param[3], mean = pars$pcol[1], sd = priorsd[3], log = TRUE)
 
-  if(length(param)==8) {
-    dsum = dsum+dnorm(param[7], mean = lognormal_imode(pars$det[1], priorsd[7]), sd = priorsd[7], log = TRUE)
-    dsum = dsum+dnorm(param[8], mean = lognormal_imode(pars$det[2], priorsd[8]), sd = priorsd[8], log = TRUE)
+  if(length(param)==6) {
+    dsum = dsum+dnorm(param[4], mean = pars$pcol[2], sd = priorsd[4], log = TRUE)
+    dsum = dsum+dnorm(param[5], mean = pars$det[1], sd = priorsd[5], log = TRUE)
+    dsum = dsum+dnorm(param[6], mean = pars$det[2], sd = priorsd[6], log = TRUE)
   }
 
   return(dsum)
@@ -116,41 +132,37 @@ density_fun0 = function(param, pars=pars, priorsd=c(0.9, 0.9, 4, 0.8, 1.4, 0.9))
 #' Text...
 #' @param n number of random draws to take from the priors
 #' @param pars a list of parameter values, structured following the parseparam0 function, specifying the centers for the priors
-#' @param priorsd a vector of length 6 or 8 with desired standard deviations for the prior distributions
-#' @param minv Vector of minimum values to return - defaults to c(rep(-9.9,2),-29.9,rep(-9.9,3))
-#' @param maxv Vector of maximum values to return - defaults to c(rep(9.9,2),29.9,rep(9.9,3))
+#' @param priorsd a vector of length 3 or 6 with desired standard deviations for the prior distributions
+#' @param minv Vector of minimum values to return - defaults to rep(-6.9,3)
+#' @param maxv Vector of maximum values to return - defaults to rep(2.9,3)
 #' @keywords stability, time-series, MCMC optimization
 #' @return returns random draws from the priors
 #' @import stats
 #' @export
 
-sampler_fun0 = function(n=1, pars=pars, priorsd=c(0.9, 0.9, 4, 0.8, 1.4, 0.9),
-                        minv=c(rep(-6.9,2),-29.9,rep(-6.9,3)),
-                        maxv=c(rep(2.9,2),29.9,rep(2.9,3))){
-  d1 = rnorm(n, mean = lognormal_imode(pars$obs[1], priorsd[1]), sd = priorsd[1])
-  d2 = rnorm(n, mean = lognormal_imode(pars$obs[2], priorsd[2]), sd = priorsd[2])
-  d3 = rnorm(n, mean = pars$proc[1], sd = priorsd[3])
-  d4 = rnorm(n, mean = lognormal_imode(pars$proc[2], priorsd[4]), sd=priorsd[4])
-  d5 = rnorm(n, mean = logitnormal_imode(pars$pcol[1], priorsd[5]), sd = priorsd[5])
-  d6 = rnorm(n, mean = lognormal_imode(pars$pcol[2], priorsd[6]), sd=priorsd[6])
+sampler_fun0 = function(n=1, pars=pars, priorsd=c(1, 1, 1),
+                        minv=c(rep(-6.9,3)),
+                        maxv=c(rep(2.9,3))){
+  d1 = rnorm(n, mean = pars$obs[1], sd = priorsd[1])
+  d2 = rnorm(n, mean = pars$proc[1], sd = priorsd[2])
+  d3 = rnorm(n, mean = pars$pcol[1], sd=priorsd[3])
 
   d1[d1<minv[1]]<-minv[1]; d1[d1>maxv[1]]<-maxv[1]
   d2[d2<minv[2]]<-minv[2]; d2[d2>maxv[2]]<-maxv[2]
   d3[d3<minv[3]]<-minv[3]; d3[d3>maxv[3]]<-maxv[3]
-  d4[d4<minv[4]]<-minv[4]; d4[d4>maxv[4]]<-maxv[4]
-  d5[d5<minv[5]]<-minv[5]; d5[d5>maxv[5]]<-maxv[5]
-  d6[d6<minv[6]]<-minv[6]; d6[d6>maxv[6]]<-maxv[6]
 
-  if(length(priorsd)==8) {
-    d7 = rnorm(n, mean = lognormal_imode(pars$det[1], priorsd[7]), sd=priorsd[7])
-    d8 = rnorm(n, mean = lognormal_imode(pars$det[2], priorsd[8]), sd=priorsd[8])
+  if(length(priorsd)==6) {
+    d4 = rnorm(n, mean = pars$pcol[2], sd=priorsd[4])
+    d5 = rnorm(n, mean = pars$det[1], sd=priorsd[5])
+    d6 = rnorm(n, mean = pars$det[2], sd=priorsd[6])
 
-    d7[d7<minv[7]]<-minv[7]; d7[d7>maxv[7]]<-maxv[7]
-    d8[d8<minv[8]]<-minv[8]; d8[d8>maxv[8]]<-maxv[8]
+    d4[d4<minv[4]]<-minv[4]; d4[d7>maxv[4]]<-maxv[4]
+    d5[d5<minv[5]]<-minv[5]; d5[d7>maxv[5]]<-maxv[5]
+    d6[d6<minv[6]]<-minv[6]; d6[d8>maxv[6]]<-maxv[6]
 
-    return(cbind(d1,d2,d3,d4,d5,d6,d7,d8))
-  } else {
     return(cbind(d1,d2,d3,d4,d5,d6))
+  } else {
+    return(cbind(d1,d2,d3))
   }
 }
 
@@ -164,9 +176,9 @@ sampler_fun0 = function(n=1, pars=pars, priorsd=c(0.9, 0.9, 4, 0.8, 1.4, 0.9),
 #' @export
 
 inv_fun0<-function(x) {
-  if(ncol(x)==6) {
-    cbind(exp(x[,1]), exp(x[,2]), x[,3], exp(x[,4]), ilogit(x[,5]), exp(x[,6]))
+  if(ncol(x)==3) {
+    cbind(exp(x[,1]), exp(x[,2]), ilogit(x[,3]))
   } else {
-    cbind(exp(x[,1]), exp(x[,2]), x[,3], exp(x[,4]), ilogit(x[,5]), exp(x[,6]), exp(x[,7]), exp(x[,8]))
+    cbind(exp(x[,1]), exp(x[,2]), ilogit(x[,3]), exp(x[,4]), exp(x[,5]), exp(x[,6]))
   }
 }

@@ -1,3 +1,8 @@
+#Potentially, large increase in N plus variable parameter inputs
+#will allow direct implementation of ABC?
+
+
+
 #!/usr/bin/env Rscript
 
 if(FALSE) {
@@ -56,10 +61,14 @@ niter<-10002
 nburn<-2001
 
 #with detfun0
+#likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
+
 bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior)
+#out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
+#                       settings = list(iterations=niter, burnin=nburn))
 out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
-                       settings = list(iterations=niter, burnin=nburn))
+                       settings = list(initialParticles=1000, iterations=10), sampler="SMC")
 
 #with EDM
 likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0,
@@ -72,6 +81,8 @@ out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
 smp_detfun0_untr<-(getSample(out_detfun0))
 smp_EDM_untr<-(getSample(out_EDM))
 #smp_detfun0_untr<-smp_EDM_untr<-t(unlist(pars_sim)[1:6])
+#par(mfrow=c(3,2)); for(i in 1:6) {hist(smp_detfun0_untr[,i]); abline(v=unlist(pars_sim)[i]); abline(v=unlist(pars)[i], col=2)}
+
 
 pfdet<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_detfun0_untr)), detfun = detfun0, dotraceback = TRUE)
 pfedm<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_EDM_untr)), detfun = EDMfun0, edmdat = list(E=2), dotraceback = TRUE)
@@ -82,16 +93,19 @@ pftrue<-particleFilterLL(y=datout$obs, pars=pars, detfun = detfun0, dotraceback 
 datout_long<-makedynamics(n = 2e4, obs = pars_sim$obs, proc = pars_sim$proc,
                           r = pars_sim$det[1], K = pars_sim$det[2], pcol = pars_sim$pcol)
 
+#Hmm... think of sampling from full distribution of parameter values...
+
 etdfilter_det<-extend_particleFilter(pfout=pfdet, pars=parseparam0(colMeans(smp_detfun0_untr)),
                                      Next = 2e4, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
 etdfilter_edm<-extend_particleFilter(pfout=pfedm, pars=parseparam0(colMeans(smp_EDM_untr)),
                                      Next = 2e4, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
 etdfilter_true<-extend_particleFilter(pfout=pftrue, pars=pars_sim,
                                      Next = 2e4, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
-#mean(1/etdfilter_det$demdat$text,na.rm=T)
-#mean(1/etdfilter_edm$demdat$text,na.rm=T)
-#mean(1/etdfilter_true$demdat$text,na.rm=T)
-#getcm(datout_long$true)$pm
+#mean(etdfilter_det$demdat$text,na.rm=T)
+#mean(etdfilter_edm$demdat$text,na.rm=T)
+#mean(etdfilter_true$demdat$text,na.rm=T)
+#1/getcm(datout_long$true)$pm
+#1/getcm(datout$true)$pm
 
 demdat_true<-getcm(datout_long$true)
 demdat_short<-getcm(datout$true)

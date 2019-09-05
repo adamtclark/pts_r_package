@@ -1,3 +1,6 @@
+#NOTE - need to somehow mark cases were mortality or colonization were never observed
+
+
 error
 rm(list=ls())
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
@@ -52,8 +55,8 @@ if(FALSE) {
     simdatsum[,,ifl,1]<-apply(smp_detfun0, 2, function(x) quantile(x, qtllst, na.rm=T))
     simdatsum[,,ifl,2]<-apply(smp_EDM, 2, function(x) quantile(x, qtllst, na.rm=T))
 
-    try(rhatdat[ifl,,1]<-gelmanDiagnostics(out_detfun0)$psrf[,2]<=1.1)
-    try(rhatdat[ifl,,2]<-gelmanDiagnostics(out_EDM)$psrf[,2]<=1.1)
+    try(rhatdat[ifl,,1]<-gelmanDiagnostics(out_detfun0)$psrf[,1])#<=1.1)
+    try(rhatdat[ifl,,2]<-gelmanDiagnostics(out_EDM)$psrf[,1])#<=1.1)
 
     trueparsum[ifl,]<-truepars_transformed[1:6]
 
@@ -87,13 +90,23 @@ if(FALSE) {
 
 #mask values that did not converge
 for(i in 1:6) {
-  simdatsum[,i,!rhatdat[,i,1],1]<-NA
-  simdatsum[,i,!rhatdat[,i,2],2]<-NA
+  simdatsum[,i,rhatdat[,i,1]>1.1,1]<-NA
+  simdatsum[,i,rhatdat[,i,2]>1.1,2]<-NA
 }
-morrates_q[!rhatdat[,i,1],2,]<-NA
-colrates_q[!rhatdat[,i,1],2,]<-NA
-morrates_q[!rhatdat[,i,2],3,]<-NA
-colrates_q[!rhatdat[,i,2],3,]<-NA
+#morrates_q[!rhatdat[,i,1],2,]<-NA
+#colrates_q[!rhatdat[,i,1],2,]<-NA
+#morrates_q[!rhatdat[,i,2],3,]<-NA
+#colrates_q[!rhatdat[,i,2],3,]<-NA
+
+morrates_q[which(apply(rhatdat[,3:4,1]<=1.1,1,prod)==0),2,]<-NA
+colrates_q[which(apply(rhatdat[,5:6,1]<=1.1,1,prod)==0),2,]<-NA
+morrates_q[which(apply(rhatdat[,3:4,2]<=1.1,1,prod)==0),3,]<-NA
+colrates_q[which(apply(rhatdat[,5:6,2]<=1.1,1,prod)==0),3,]<-NA
+
+#simdatsum[,,trueparsum[,4]>3,]<-NA
+#colrates_q[trueparsum[,4]>3,,]<-NA
+#colrates_q[trueparsum[,4]>3,,]<-NA
+
 
 #plot parameters
 pltnames<-c("obs b0", "obs b1", "proc b0", "proc b1", "colp", "col0")
@@ -101,6 +114,10 @@ collst<-adjustcolor(c("black", "darkgreen", "cornflowerblue", "coral3"), alpha.f
 dxl<-c(-0.01, 0.01)
 
 pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "cmyk", useDingbats = FALSE)
+  ##############################
+  #plot pars
+  ##############################
+
   m<-rbind(c(1,2,3),
            c(4,5,6))
   layout(m)
@@ -120,10 +137,11 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "c
     }
 
     rngp<-range(c(trueparsum[pssbs,i],simdatsum[2:4,i,pssbs,]),na.rm=T)
+    #rngp<-range(c(trueparsum[pssbs,i],simdatsum[3,i,pssbs,]),na.rm=T)
     matplot(trueparsum[pssbs,i], simdatsum[3,i,pssbs,],
             col=collst[c(3:4)], type="p", pch=1, cex=0.5,
             ylim=rngp,xlim=rngp,
-            xlab="true", ylab="estimated", main=pltnames[i], log=uselog, xaxs="i", yaxs="i")
+            xlab="true", ylab="estimated", main=pltnames[i], log=uselog)#, xaxs="i", yaxs="i")
     abline(a=0, b=1, lty=3)
     segments(trueparsum[pssbs,i], simdatsum[2,i,pssbs,1], trueparsum[pssbs,i], simdatsum[4,i,pssbs,1], col=collst[3], lend=2)
     segments(trueparsum[pssbs,i], simdatsum[2,i,pssbs,2], trueparsum[pssbs,i], simdatsum[4,i,pssbs,2], col=collst[4], lend=2)
@@ -142,8 +160,8 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "c
     }
     sd1<-sd1[sbsp]; sd2<-sd2[sbsp]
 
-    lom1<-loess.sd(y1~x, weights = 1/sd1, nsigma = 1)
-    lom2<-loess.sd(y2~x, weights = 1/sd1, nsigma = 1)
+    lom1<-loess.sd(y1~x, weights = 1/sd1, enp.target=2, nsigma = qnorm(0.975))
+    lom2<-loess.sd(y2~x, weights = 1/sd2, enp.target=2, nsigma = qnorm(0.975))
 
     px1<-c((sort(lom1$x)), rev((sort(lom1$x))))
     py1<-c((lom1$upper[order(lom1$x)]), rev((lom1$lower[order(lom1$x)])))
@@ -163,16 +181,11 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "c
             col = collst[4])
 
     #Add R2
-    if(uselog=="xy") {
-      r2est<-c(1-mean((log(simdatsum[3,i,pssbs,1])-log(trueparsum[pssbs,i]))^2,na.rm=T)/mean((mean(log(trueparsum[pssbs,i]),na.rm=T)-log(trueparsum[pssbs,i]))^2,na.rm=T),
-               1-mean((log(simdatsum[3,i,pssbs,2])-log(trueparsum[pssbs,i]))^2,na.rm=T)/mean((mean(log(trueparsum[pssbs,i]),na.rm=T)-log(trueparsum[pssbs,i]))^2,na.rm=T))
-      legend("topleft", legend = round(r2est,2), fill = collst[3:4], bty="n", title = expression(paste("R"^2)))
-    } else {
-      r2est<-c(1-mean(((simdatsum[3,i,pssbs,1])-trueparsum[pssbs,i])^2,na.rm=T)/mean((mean(trueparsum[pssbs,i],na.rm=T)-trueparsum[pssbs,i])^2,na.rm=T),
-               1-mean(((simdatsum[3,i,pssbs,2])-trueparsum[pssbs,i])^2,na.rm=T)/mean((mean(trueparsum[pssbs,i],na.rm=T)-trueparsum[pssbs,i])^2,na.rm=T))
-      legend("topleft", legend = round(r2est,2), fill = collst[3:4], bty="n", title = expression(paste("R"^2)))
-    }
-
+    rssobs<-c(sum((lom1$x-lom1$y)^2*(1/sd1))/sum(1/sd1),
+              sum((lom2$x-lom2$y)^2*(1/sd2))/sum(1/sd2))
+    rsstot<-mean((lom1$x-mean(lom1$x))^2)
+    r2est<-(1-rssobs/rsstot)
+    legend("topleft", legend = round(r2est,2), fill = collst[3:4], bty="n", title = expression(paste("R"^2)))
 
     par(new=TRUE)
 
@@ -183,70 +196,86 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "c
     }
   }
 
+  ##############################
   #plot rates
-
+  ##############################
   m<-rbind(c(1,2),
            c(3,4))
   layout(m)
+  cv_cutoff<-0.2
+
 
   #col
-  ptlrng<-range(c(colrates[is.finite(colrates)], colrates_q[,,3][colrates_q[,,3]]),na.rm=T)
+  sbs<-which(is.finite(colrates[,2]) & is.finite(colrates[,1]) & is.finite(colrates_q[,1,3]) & ((colrates_q[,1,3]-colrates_q[,1,2])/colrates_q[,1,3])<cv_cutoff)
+
+  ptlrng<-range(c(colrates[sbs,][is.finite(colrates[sbs,])], colrates_q[,,3][sbs,][is.finite(colrates_q[,,3][sbs,])]),na.rm=T)
   plot(ptlrng, ptlrng,
        type="n", xlab="true tcol", ylab="est tcol", log="xy")
-  points(colrates[,1], colrates[,2], col=collst[1], cex=0.5)
-  points(colrates[,1], colrates_q[,1,3], col=collst[2], cex=0.5)
+  points(colrates[sbs,1], colrates[sbs,2], col=collst[1], cex=0.5)
+  points(colrates[sbs,1], colrates_q[sbs,1,3], col=collst[2], cex=0.5)
   abline(a=0, b=1, lty=3)
 
-  sbs<-which(is.finite(colrates[,2]) & is.finite(colrates[,1]))
+  segments(colrates[sbs,1], colrates_q[sbs,1,2], colrates[sbs,1], colrates_q[sbs,1,4], col=collst[2], lend=2)
+
   x<-colrates[sbs,1]
   y1<-colrates[sbs,2]
 
-  lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
+  lom1<-loess.sd(log(y1)~log(x), nsigma = qnorm(0.975), epn.target=2)
   xsq<-exp(sort(lom1$x))
   pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
   polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[1])
 
-  sbs<-which(is.finite(colrates_q[,1,3]) & is.finite(colrates[,1]))
   x<-colrates[sbs,1]
   y1<-colrates_q[sbs,1,3]
-  lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
-  xsq<-exp(sort(lom1$x))
-  pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
+  sd2<-(colrates_q[,1,3]-colrates_q[,1,2])[sbs]
+
+  lom2<-loess.sd(log(y1)~log(x), weights=1/sd2, nsigma = qnorm(0.975), epn.target=2)
+  xsq<-exp(sort(lom2$x))
+  pd1y<-exp(c(lom2$upper[order(lom2$x)], rev(lom2$lower[order(lom2$x)])))
   polygon(c(xsq, rev(xsq)), pd1y, col = collst[2])
 
   ps<-is.finite(log(colrates[,1])) & is.finite(log(colrates[,2])) & is.finite(log(colrates_q[,1,3]))
-  rsstot<-sum((mean(log(colrates[ps,1]),na.rm=T)-log(colrates[ps,1]))^2,na.rm=T)
-  r2est<-c(1-sum((log(colrates[ps,2])-log(colrates[ps,1]))^2,na.rm=T)/rsstot,
-           1-sum((log(colrates_q[ps,1,3])-log(colrates[ps,1]))^2,na.rm=T)/rsstot)
+
+  rssobs<-c(mean((lom1$x-lom1$y)^2),
+            sum((lom2$x-lom2$y)^2*(1/sd2))/sum(1/sd2))
+  rsstot<-mean((lom1$x-mean(lom1$x))^2)
+  r2est<-(1-rssobs/rsstot)
   legend("topleft", legend = round(r2est,2), fill = collst[1:2], bty="n", title = expression(paste("R"^2)))
 
   par(new=TRUE)
   hist(log(colrates[,1]), breaks = 20, probability = FALSE, xlim=log(ptlrng), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(colrates)))
 
 
+  sbs<-which(is.finite(colrates_q[,2,3]) & is.finite(colrates_q[,3,3]) & is.finite(colrates[,1]) &
+               ((colrates_q[,2,3]-colrates_q[,2,2])/colrates_q[,2,3])<cv_cutoff & ((colrates_q[,3,3]-colrates_q[,3,2])/colrates_q[,2,3])<cv_cutoff)
   plot(ptlrng, ptlrng,
        type="n", xlab="true tcol", ylab="est tcol", log="xy")
-  points(colrates[,1], colrates_q[,2,3], col=collst[3], cex=0.5)
-  points(colrates[,1], colrates_q[,3,3], col=collst[4], cex=0.5)
+  points(colrates[sbs,1], colrates_q[sbs,2,3], col=collst[3], cex=0.5)
+  points(colrates[sbs,1], colrates_q[sbs,3,3], col=collst[4], cex=0.5)
   abline(a=0, b=1, lty=3)
 
+  segments(colrates[sbs,1], colrates_q[sbs,2,2], colrates[sbs,1], colrates_q[sbs,2,4], col=collst[3], lend=2)
+  segments(colrates[sbs,1], colrates_q[sbs,3,2], colrates[sbs,1], colrates_q[sbs,3,4], col=collst[4], lend=2)
+
+  n<-1
+  rs<-numeric(2)
   for(i in 2:3) {
-    sbs<-which(is.finite(colrates_q[,i,3]) & is.finite(colrates[,1]))
     x<-colrates[sbs,1]
     y1<-colrates_q[sbs,i,3]
+    sd1<-colrates_q[sbs,i,3]-colrates_q[sbs,i,2]
 
-    lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
+    lom1<-loess.sd(log(y1[sd1>0])~log(x[sd1>0]), nsigma = qnorm(0.975), weights=1/sd1[sd1>0], enp.target=2)
 
     xsq<-exp(sort(lom1$x))
     pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
 
     polygon(c(xsq, rev(xsq)), pd1y, col = collst[i+1])
+    rs[n]<-sum((lom1$x-lom1$y)^2*(1/sd1[sd1>0]))/sum(1/sd1[sd1>0])
+    n<-n+1
   }
+  rsstot<-mean((lom1$x-mean(lom1$x))^2)
 
-  ps<-is.finite(log(colrates[,1])) & is.finite(log(colrates_q[,2,3])) & is.finite(log(colrates_q[,3,3]))
-  rsstot<-sum((mean(log(colrates[ps,1]),na.rm=T)-log(colrates[ps,1]))^2,na.rm=T)
-  r2est<-c(1-sum((log(colrates_q[ps,2,3])-log(colrates[ps,1]))^2,na.rm=T)/rsstot,
-           1-sum((log(colrates_q[ps,3,3])-log(colrates[ps,1]))^2,na.rm=T)/rsstot)
+  r2est<-(1-rs/rsstot)
   legend("topleft", legend = round(r2est,2), fill = collst[3:4], bty="n", title = expression(paste("R"^2)))
 
   par(new=TRUE)
@@ -254,66 +283,87 @@ pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "c
 
 
   #mor
-  ptlrng<-range(c(morrates[is.finite(morrates)], morrates_q[,,3][morrates_q[,,3]]),na.rm=T)
-  ptlrng[2]<-quantile(c(morrates[is.finite(morrates)], morrates_q[,,3][morrates_q[,,3]]), 0.999, na.rm=T)
+  sbs<-which(is.finite(morrates[,2]) & is.finite(morrates[,1]) & is.finite(morrates_q[,1,3]) & ((morrates_q[,1,3]-morrates_q[,1,2])/morrates_q[,1,3])<cv_cutoff &
+               morrates[,1]<3500)
+
+  ptlrng<-range(c(morrates[sbs,][is.finite(morrates[sbs,])], morrates_q[,,3][sbs,][morrates_q[,,3][sbs,]]),na.rm=T)
+  #ptlrng[2]<-quantile(c(morrates[sbs,][is.finite(morrates[sbs,])], morrates_q[,,3][sbs,][morrates_q[,,3][sbs,]]), 0.999, na.rm=T)
   plot(ptlrng, ptlrng,
        type="n", xlab="true tmor", ylab="est tmor", log="xy")
-  points(morrates[,1], morrates[,2], col=collst[1], cex=0.5)
-  points(morrates[,1], morrates_q[,1,3], col=collst[2], cex=0.5)
+  points(morrates[sbs,1], morrates[sbs,2], col=collst[1], cex=0.5)
+  points(morrates[sbs,1], morrates_q[sbs,1,3], col=collst[2], cex=0.5)
   abline(a=0, b=1, lty=3)
 
-  sbs<-which(is.finite(morrates[,2]) & is.finite(morrates[,1]))
+  segments(morrates[sbs,1], morrates_q[sbs,1,2], morrates[sbs,1], morrates_q[sbs,1,4], col=collst[2], lend=2)
+
   x<-morrates[sbs,1]
   y1<-morrates[sbs,2]
+  y1<-y1[order(x)]
+  x<-sort(x)
 
-  lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
-  xsq<-exp(sort(lom1$x))
-  pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
+  lom1<-loess.sd(log(y1)~log(x), nsigma = qnorm(0.975), edm.target=2)
+  ps2<-(lom1$upper-lom1$lower)>0
+  xsq<-exp(sort(lom1$x[ps2]))
+  pd1y<-exp(c(lom1$upper[ps2][order(lom1$x[ps2])], rev(lom1$lower[ps2][order(lom1$x[ps2])])))
+  pd1y[pd1y>100]<-100
   polygon(c(xsq, rev(xsq)), pd1y, col = c(adjustcolor(1, alpha.f = 0.3), collst)[1])
 
-  sbs<-which(is.finite(morrates_q[,1,3]) & is.finite(morrates[,1]))
+  sd2<-morrates_q[sbs,1,3]-morrates_q[sbs,1,2]
   x<-morrates[sbs,1]
   y1<-morrates_q[sbs,1,3]
-  lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
-  xsq<-exp(sort(lom1$x))
-  pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
+  y1<-y1[order(x)]
+  x<-sort(x)
+
+  lom2<-loess.sd(log(y1)~log(x), nsigma = qnorm(0.975), edm.target=2, wts=1/sd2)
+  ps2<-(lom2$upper-lom2$lower)>0
+  xsq<-exp(sort(lom2$x[ps2]))
+  pd1y<-exp(c(lom2$upper[ps2][order(lom2$x[ps2])], rev(lom2$lower[ps2][order(lom2$x[ps2])])))
   polygon(c(xsq, rev(xsq)), pd1y, col = collst[2])
   abline(v=100, h=100, lty=2)
 
-  ps<-which(is.finite(log(morrates[,1])) & is.finite(log(morrates[,2])) & is.finite(log(morrates_q[,1,3])))
-  rsstot<-sum((mean(log(morrates[ps,1]),na.rm=T)-log(morrates[ps,1]))^2,na.rm=T)
-  r2est<-c(1-sum((log(morrates[ps,2])-log(morrates[ps,1]))^2,na.rm=T)/rsstot,
-           1-sum((log(morrates_q[ps,1,3])-log(morrates[ps,1]))^2,na.rm=T)/rsstot)
+  rssobs<-c(mean((lom1$x-lom1$y)^2),
+            sum((lom2$x-lom2$y)^2*(1/sd2))/sum(1/sd2))
+  rsstot<-mean((lom1$x-mean(lom1$x))^2)
+  r2est<-(1-rssobs/rsstot)
   legend("topleft", legend = round(r2est,2), fill = collst[1:2], bty="n", title = expression(paste("R"^2)))
 
   par(new=TRUE)
   hist(log(morrates[,1]), breaks = 20, probability = FALSE, xlim=log(ptlrng), xlab="", main="", axes=F, ylab="", ylim=c(0, nrow(morrates)))
 
 
+  sbs<-which(is.finite(morrates_q[,2,3]) & is.finite(morrates_q[,3,3]) & is.finite(morrates[,1]) &
+               ((morrates_q[,2,3]-morrates_q[,2,2])/morrates_q[,2,3])<cv_cutoff & ((morrates_q[,3,3]-morrates_q[,3,2])/morrates_q[,2,3])<cv_cutoff &
+               morrates[,1]<2500)
+
   plot(ptlrng, ptlrng,
        type="n", xlab="true tmor", ylab="est tmor", log="xy")
-  points(morrates[,1], morrates_q[,2,3], col=collst[3], cex=0.5)
-  points(morrates[,1], morrates_q[,3,3], col=collst[4], cex=0.5)
+  points(morrates[sbs,1], morrates_q[sbs,2,3], col=collst[3], cex=0.5)
+  points(morrates[sbs,1], morrates_q[sbs,3,3], col=collst[4], cex=0.5)
   abline(a=0, b=1, lty=3)
 
+  segments(morrates[sbs,1], morrates_q[sbs,2,2], morrates[sbs,1], morrates_q[sbs,2,4], col=collst[3], lend=2)
+  segments(morrates[sbs,1], morrates_q[sbs,3,2], morrates[sbs,1], morrates_q[sbs,3,4], col=collst[4], lend=2)
+
+  n<-1
+  rs<-numeric(2)
   for(i in 2:3) {
-    sbs<-which(is.finite(morrates_q[,i,3]) & is.finite(morrates[,1]))
     x<-morrates[sbs,1]
     y1<-morrates_q[sbs,i,3]
+    sd1<-morrates_q[sbs,i,3]-morrates_q[sbs,i,2]
 
-    lom1<-loess.sd(log(y1)~log(x), nsigma = 1)
+    lom1<-loess.sd(log(y1[sd1>0])~log(x[sd1>0]), nsigma = qnorm(0.975), weights=1/sd1[sd1>0], enp.target=2)
 
     xsq<-exp(sort(lom1$x))
     pd1y<-exp(c(lom1$upper[order(lom1$x)], rev(lom1$lower[order(lom1$x)])))
 
     polygon(c(xsq, rev(xsq)), pd1y, col = collst[i+1])
-  }
-  abline(v=1000, h=1000, lty=2)
 
-  ps<-which(is.finite(log(morrates[,1])) & is.finite(log(morrates_q[,2,3])) & is.finite(log(morrates_q[,3,3])))
-  rsstot<-sum((mean(log(morrates[ps,1]),na.rm=T)-log(morrates[ps,1]))^2,na.rm=T)
-  r2est<-c(1-sum((log(morrates_q[ps,2,3])-log(morrates[ps,1]))^2,na.rm=T)/rsstot,
-           1-sum((log(morrates_q[ps,3,3])-log(morrates[ps,1]))^2,na.rm=T)/rsstot)
+    rs[n]<-sum((lom1$x-lom1$y)^2*(1/sd1[sd1>0]))/sum(1/sd1[sd1>0])
+    n<-n+1
+  }
+  rsstot<-mean((lom1$x-mean(lom1$x))^2)
+
+  r2est<-(1-rs/rsstot)
   legend("topleft", legend = round(r2est,2), fill = collst[3:4], bty="n", title = expression(paste("R"^2)))
 
   par(new=TRUE)
