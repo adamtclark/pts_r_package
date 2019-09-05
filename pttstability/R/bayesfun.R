@@ -9,36 +9,18 @@
 #' @export
 
 parseparam0<-function(param, detparam=c(log(0.01), log(3),log(1))) {
-  if(is.null(dim(param))) { # only one set of parameters to estimate
-    if(length(param)==3) {
-      pars<-list(obs=c(param[1]),
-                 proc=c(param[2]),
-                 pcol=c(param[3], detparam[1]),
-                 det=detparam[c(2:3)])
-    } else if(length(param)==6) {
-      pars<-list(obs=c(param[1]),
-                 proc=c(param[2]),
-                 pcol=c(param[3:4]),
-                 det=c(param[5:6]))
-    } else {
-      return("error: param must be either length 3 or 6")
-    }
-  } else { # one set of parameters per row in param
-    #multivariate
-
-    if(ncol(param)==3) {
-      pars<-list(obs=param[,1,drop=FALSE],
-                 proc=param[,2,drop=FALSE],
-                 pcol=cbind(param[,3,drop=FALSE], detparam[1]),
-                 det=t(matrix(nrow=2, ncol=nrow(param), data=detparm)))
-    } else if(ncol(param)==6) {
-      pars<-list(obs=c(param[,1,drop=FALSE]),
-                 proc=c(param[,2,drop=FALSE]),
-                 pcol=c(param[,3:4,drop=FALSE]),
-                 det=c(param[,5:6,drop=FALSE]))
-    } else {
-      return("error: param must include either 3 or 6 parameters")
-    }
+  if(length(param)==3) {
+    pars<-list(obs=c(param[1]),
+               proc=c(param[2]),
+               pcol=c(param[3], detparam[1]),
+               det=detparam[c(2:3)])
+  } else if(length(param)==6) {
+    pars<-list(obs=c(param[1]),
+               proc=c(param[2]),
+               pcol=c(param[3:4]),
+               det=c(param[5:6]))
+  } else {
+    return("error: param must be either length 3 or 6")
   }
 
   return(pars)

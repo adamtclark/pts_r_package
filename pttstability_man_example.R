@@ -56,6 +56,12 @@ plot(filterout_det$rN, y, xlim=range(c(filterout_det$rN, filterout_edm$rN)),
 abline(a=0, b=1, lty=2)
 legend("topleft", c("detfun0", "EDM"), pch=1, col=c(4,2), bty="n")
 
+#note improvement in fit, for both filters
+cor(datout$true, datout$obs)^2
+cor(datout$true, filterout_det$rN)^2
+cor(datout$true, filterout_edm$rN)^2
+
+
 #estimate demographic rates from extended timeseries
 etdfilter_det<-extend_particleFilter(pfout=filterout_det, pars=pars_true,
                                      Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
