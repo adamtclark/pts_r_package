@@ -4,7 +4,8 @@ rm(list=ls())
 
 ## Load functions:
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/pttstability/")
-require(BayesianTools)
+#require(BayesianTools)
+require(mvtnorm)
 require(rEDM)
 source("R/bayesfun.R")
 source("R/fake_data.R")
@@ -12,7 +13,7 @@ source("R/logit_funs.R")
 source("R/particlefilter.R")
 
 #Set seed
-set.seed(41019)
+#set.seed(41019)
 
 ## Simulate data
 pars0<-list(obs=log(0.1),
@@ -27,6 +28,7 @@ datout<-makedynamics_general(n = 100, n0 = exp(rnorm(1,0,0.1)), pdet=pars_true$d
                              proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
                              detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
 y<-datout$obs
+plot(y)
 
 ## Run filter
 N = 1e3
@@ -75,17 +77,17 @@ demdat_true<-getcm(datout_long$true)
 
 #plot rates
 par(mar=c(4,4,2,2), mfrow=c(2,1))
-hist(etdfilter_det$demdat$text, xlim=c(40,160),
+hist(etdfilter_det$demdat$text, xlim=c(40,300),
      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to extinction", main="")
 par(new=TRUE)
-hist(etdfilter_edm$demdat$text,xlim=c(40,160),
+hist(etdfilter_edm$demdat$text,xlim=c(40,300),
      col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
 abline(v=1/demdat_true$pm, lwd=2, lty=2)
 
-hist(etdfilter_det$demdat$tcol, xlim=c(5, 20),
+hist(etdfilter_det$demdat$tcol, xlim=c(5, 25),
      col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to colonization", main="")
 par(new=TRUE)
-hist(etdfilter_edm$demdat$tcol, xlim=c(5, 12),
+hist(etdfilter_edm$demdat$tcol, xlim=c(5, 25),
      col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
 abline(v=1/demdat_true$pc, lwd=2, lty=2)
 
