@@ -8,12 +8,12 @@
 #' @return a formatted list of parameters
 #' @export
 
-parseparam0<-function(param, detparam=c(log(0.01), log(3),log(1))) {
+parseparam0<-function(param, detparam=c(log(3),log(1))) {
   if(length(param)==3) {
     pars<-list(obs=c(param[1]),
                proc=c(param[2]),
-               pcol=c(param[3], detparam[1]),
-               det=detparam[c(2:3)])
+               pcol=c(param[3], param[2]), #seed colonization abundance from process noise
+               det=detparam[c(1:2)])
   } else if(length(param)==6) {
     pars<-list(obs=c(param[1]),
                proc=c(param[2]),
@@ -127,7 +127,7 @@ sampler_fun0 = function(n=1, pars=pars, priorsd=c(1, 1, 1),
                         maxv=c(rep(2.9,3))){
 
   if(!is.null(dim(priorsd)) && all.equal(nrow(priorsd), ncol(priorsd), length(pars))) {
-    prl<-rmvnorm(n, pars, priorsd)
+    prl<-rmvnorm(n, pars, priorsd, method = "svd")
     d1 = prl[,1]
     d2 = prl[,2]
     d3 = prl[,3]
@@ -376,7 +376,7 @@ run_ABC_optim<-function(y=NULL,
 
   for(i in ifrom:ito) {
     #run filter for each parameter set
-    out<-apply(prl, 1, function(x) likelihood0(x, y=y, parseparam = parseparam0, N=1e3))
+    out<-apply(prl, 1, function(x) likelihood(x, y=y, parseparam = parseparam, N=1e3))
 
     #save outputs
     LLout[i,]<-out
@@ -522,11 +522,12 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 
   for(i in 1:np) {
     xv<-optout$parsmean[,i]+qnorm(1-(1-alpha)/2)*cbind(-sqrt(optout$parscv[,i,i]), 0, sqrt(optout$parscv[,i,i]))
+    xv[!is.finite(xv)]<-NA
 
     matplot(1:nrow(optout$parsmean), ifun[[i]](xv),
             type="l", col=1, lty=c(2,1,2),
             xlab="iterations", ylab=names(param0[i]),
-            ylim=ifun[[i]](range(c(xv, param_true[i], param0[i]))), lwd=c(1,2,1))
+            ylim=ifun[[i]](range(c(xv, param_true[i], param0[i]), na.rm=T)), lwd=c(1,2,1))
     if(!is.null(param_true)) {
       abline(h=ifun[[i]](param_true[i]), lty=3, col=2)
     }
@@ -544,7 +545,8 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' @param optout Output from the run_ABC_optim function.
 #' @param param0 An optional vector of prior values for the paramters, to be plotted in blue.
 #' @param param_true An optional vector of true values for parameters, to be plotted in red.
-#' @param fretain Retain fraction 'fretain' parameter estiamtes with the highest likelihoods from the optimization process for subsequent calculations
+#' @param fretain Retain fraction 'fretain' parameter estiamtes with the highest likelihoods from the optimization process for subsequent calculations. Defaults to value used for optimizer call.
+#' @param bootstrap_subs Should the 'fretain' best samples be bootstrapped by sampling with replacement? Can help reduce impact of outliers. Defaults to value used for optimizer call.
 #' @param enp.target Smoothing parameter, passed to loess function for estimating density function. Defaults to 5. Note - numbers closer to zero generally yield smoother, but less detailed, estimates.
 #' @param sm_steps Number of steps to estimate from the smoother for calculating means and standard deviations. Defaults to 1000.
 #' @param pltnames Names to be included in plots. Defaults to names(param0).
@@ -556,9 +558,12 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' note that smoothed function is plotted higher above the points than it actually appears, for better visualization.
 #' @export
 
-abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), doplot=TRUE) {
+abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, bootstrap_subs=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), doplot=TRUE) {
   if(is.null(fretain)) {
     fretain<-optout$runstats$fretain
+  }
+  if(is.null(bootstrap_subs)) {
+    bootstrap_subs<-optout$runstats$bootstrap_subs
   }
   nparm<-length(optout$runstats$p0)
   muest<-numeric(nparm)
@@ -571,6 +576,10 @@ abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, enp.
   for(i in 1:nparm) {
     tmp<-optout$parout[,,i]
     ps<-which(optout$LLout>quantile(optout$LLout,1-fretain))
+
+    if(bootstrap_subs) {
+      ps<-sample(ps, length(ps), rep=TRUE)
+    }
 
     if(doplot) {
       plot(tmp[ps], c(optout$LLout)[ps],
