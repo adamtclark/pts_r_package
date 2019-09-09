@@ -3,7 +3,7 @@ rm(list=ls())
 
 ## Load functions:
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/pttstability/")
-#require(BayesianTools)
+require(BayesianTools)
 require(mvtnorm)
 require(rEDM)
 source("R/bayesfun.R")
@@ -94,79 +94,87 @@ pars0<-list(obs=pars_true$obs-1,
             pcol=c(pars_true$pcol[1]-1, pars_true$pcol[2]),
             det=pars_true$det)
 ptrue<-unlist(pars_true)[1:3]
-p0<-unlist(pars0)[1:3]
+p0<-unname(unlist(pars0)[1:3])
 
-#run optimizer for deterministic model
-optout_det<-run_ABC_optim(y, sd0 = c(2,2,2), p0,likelihood = likelihood0, fretain = 0.5)
-#extend run for another 20 iterations
-optout_det_ext<-run_ABC_optim(oldrun = optout_det, niter_optim = 20)
+if(FALSE) {
+  #run optimizer for deterministic model
+  optout_det<-run_ABC_optim(y, sd0 = c(2,2,2), p0,likelihood = likelihood0, fretain = 0.5)
+  #extend run for another 20 iterations
+  optout_det_ext<-run_ABC_optim(oldrun = optout_det, niter_optim = 20)
 
-#run optimizer for EDM model (will run ~10x slower than deterministic model)
-likelihoodEDM<-function(param, y, parseparam, N) {likelihood0(param, y, parseparam, N, detfun = EDMfun0, edmdat = list(E=2))}
-optout_edm<-run_ABC_optim(y,p0,likelihood = likelihoodEDM, fretain = 0.5)
+  #run optimizer for EDM model (will run ~10x slower than deterministic model)
+  likelihoodEDM<-function(param, y, parseparam, N) {likelihood0(param, y, parseparam, N, detfun = EDMfun0, edmdat = list(E=2))}
+  optout_edm<-run_ABC_optim(y,p0,likelihood = likelihoodEDM, fretain = 0.5)
+  optout_edm_ext<-run_ABC_optim(oldrun = optout_edm, niter_optim = 20)
 
-## plotting
-#plotting likelihoods, deterministic function
-par(mfrow=c(3,3), mar=c(4,4,2,2))
-plot_abc_likelihood(optout_det, logx = TRUE)
-plot_abc_rmse(optout_det, ptrue)
-#plot results for extended run
-plot_abc_likelihood(optout_det_ext, logx = TRUE)
-plot_abc_rmse(optout_det_ext, ptrue)
-#EDM
-plot_abc_likelihood(optout_edm, logx = TRUE)
-plot_abc_rmse(optout_edm, ptrue)
+  ## plotting
+  #plotting likelihoods, deterministic function
+  par(mfrow=c(2,3), mar=c(4,4,2,2))
+  plot_abc_likelihood(optout_det, logx = TRUE)
+  plot_abc_rmse(optout_det, ptrue)
+  #plot results for extended run
+  plot_abc_likelihood(optout_det_ext, logx = TRUE)
+  plot_abc_rmse(optout_det_ext, ptrue)
+  #EDM
+  plot_abc_likelihood(optout_edm, logx = TRUE)
+  plot_abc_rmse(optout_edm, ptrue)
+  #EDM extended
+  plot_abc_likelihood(optout_edm_ext, logx = TRUE)
+  plot_abc_rmse(optout_edm_ext, ptrue)
 
-#plotting parameter estimates
-par(mfrow=c(3,3), mar=c(4,4,2,2))
-#deterministic run
-plot_abc_params(optout_det, param0 = p0, param_true = ptrue)
-#extended deterministic run
-plot_abc_params(optout_det_ext, param0 = p0, param_true = ptrue)
-#EDM run
-plot_abc_params(optout_edm, param0 = p0, param_true = ptrue)
+  #plotting parameter estimates
+  par(mfrow=c(2,3), mar=c(4,4,2,2))
+  #deterministic run
+  plot_abc_params(optout_det, param0 = p0, param_true = ptrue)
+  #extended deterministic run
+  plot_abc_params(optout_det_ext, param0 = p0, param_true = ptrue)
+  #EDM run
+  plot_abc_params(optout_edm, param0 = p0, param_true = ptrue)
+  #EDM run extended
+  plot_abc_params(optout_edm_ext, param0 = p0, param_true = ptrue)
 
-#extracting estimates from likelihood surfaces
-par(mfrow=c(3,3), mar=c(4,4,2,2))
-dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3))
-dens_out_det_ext<-abc_densities(optout = optout_det_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3))
-dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(5,3,3))
+  #extracting estimates from likelihood surfaces
+  par(mfrow=c(2,3), mar=c(4,4,2,2))
+  dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3))
+  dens_out_det_ext<-abc_densities(optout = optout_det_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3))
+  dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.2, enp.target = c(5,4,3))
+  dens_out_edm_ext<-abc_densities(optout = optout_edm_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(5,4,3))
 
-#check error
-lowertail<-function(x) {pmin(x, 1-x)}
-round(lowertail(pnorm((dens_out_det$muest-param_true)/dens_out_det$sdest)),2)
-round(lowertail(pnorm((dens_out_det_ext$muest-param_true)/dens_out_det_ext$sdest)),2)
-round(lowertail(pnorm((dens_out_edm$muest-param_true)/dens_out_edm$sdest)),2)
-
-
-
-
-
-#TODO - get EDM to converge - maybe check likelihoods for different parameter combinations?
-
-
-
-
-
+  #check error
+  lowertail<-function(x) {pmin(x, 1-x)}
+  round(lowertail(pnorm((dens_out_det$muest-ptrue)/dens_out_det$sdest)),2)
+  round(lowertail(pnorm((dens_out_det_ext$muest-ptrue)/dens_out_det_ext$sdest)),2)
+  round(lowertail(pnorm((dens_out_edm$muest-ptrue)/dens_out_edm$sdest)),2)
+  round(lowertail(pnorm((dens_out_edm_ext$muest-ptrue)/dens_out_edm_ext$sdest)),2)
+}
 
 
-param<-unlist(pars0)[1:3]
+
+
+
+
 
 #create priors
 density_fun_USE<-function(param) density_fun0(param = param, pars = pars0)
-sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars0)
+sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars0, priorsd = c(2,2,2), minv = rep(-10, 3), maxv = rep(10,3))
 prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
                      lower = rep(-10,3), upper = rep(10,3))
 
-likelihood0(param, y = y)+density_fun_USE(param)
-likelihood0(param, y=y, detfun = EDMfun0, edmdat = list(E=2))+density_fun_USE(param)
+likelihood0(p0, y = y)+density_fun_USE(p0)
+likelihood0(p0, y=y, detfun = EDMfun0, edmdat = list(E=2))+density_fun_USE(p0)
 
 #plot priors
 par(mar=c(4,4,2,2), mfrow=c(3,1))
-tmp<-inv_fun0(sampler_fun0(1e4,pars = pars0))
-hist(tmp[,1], breaks = 30); abline(v=exp(pars0$obs[1]), col=2, lwd=2, lty=2)
-hist(tmp[,2], breaks = 30); abline(v=exp(pars0$proc[1]), col=2, lwd=2, lty=2)
-hist(tmp[,3], breaks = 30); abline(v=ilogit(pars0$pcol[1]), col=2, lwd=2, lty=2)
+tmp<-(sampler_fun0(1e4,pars = pars0))
+hist(tmp[,1], breaks = 30)
+abline(v=(pars0$obs[1]), col=3, lwd=2, lty=2)
+abline(v=(pars_true$obs[1]), col=1, lwd=2, lty=2)
+hist(tmp[,2], breaks = 30)
+abline(v=(pars0$proc[1]), col=3, lwd=2, lty=2)
+abline(v=(pars_true$proc[1]), col=1, lwd=2, lty=2)
+hist(tmp[,3], breaks = 30)
+abline(v=(pars0$pcol[1]), col=3, lwd=2, lty=2)
+abline(v=(pars_true$pcol[1]), col=1, lwd=2, lty=2)
 
 #number of MCMC iterations - increase for more accurate results
 #note - runtime will be long for EDM example
@@ -174,46 +182,52 @@ niter<-1000
 nburn<-500
 
 #with detfun0
-likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
+likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)*length(y)
 bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior)
 out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
                        settings = list(iterations=niter, burnin=nburn))
 
 #with EDM
 likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0,
-                                        detfun = EDMfun0, edmdat = list(E=2))
+                                        detfun = EDMfun0, edmdat = list(E=2))*length(y)
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior)
 out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
                    settings = list(iterations=niter, burnin=nburn))
 
 
 ## Summarize outputs
-smp_detfun0<-inv_fun0(getSample(out_detfun0))
-smp_EDM<-inv_fun0(getSample(out_EDM))
+#smp_detfun0<-inv_fun0(getSample(out_detfun0))
+#smp_EDM<-inv_fun0(getSample(out_EDM))
+smp_detfun0<-(getSample(out_detfun0))
+smp_EDM<-(getSample(out_EDM))
 
 #check for correlations among estimates
 plot(data.frame(smp_detfun0))
 plot(data.frame(smp_EDM))
 
 #plot posteriors
-truepars_transformed<-inv_fun0(t(as.matrix(unlist(pars_true))))
-priorpars_transformed<-inv_fun0(t(as.matrix(unlist(pars0))))
+#truepars_transformed<-inv_fun0(t(as.matrix(unlist(pars_true))))
+#priorpars_transformed<-inv_fun0(t(as.matrix(unlist(pars0))))
+truepars_transformed<-(t(as.matrix(unlist(pars_true))))
+priorpars_transformed<-(t(as.matrix(unlist(pars0))))
 
-par(mar=c(4,4,2,2), mfrow=c(1,3))
+par(mar=c(4,4,2,2), mfrow=c(2,3))
 for(i in 1:3) {
-  hist(smp_detfun0[,i],breaks = 30)
-  abline(v=truepars_transformed[i], col=c(2), lty=2)
-  abline(v=truepars_transformed[i], col=c(2), lty=2)
-  abline(v=priorpars_transformed[i], col=c(4), lty=2)
+  hist(smp_detfun0[,i],breaks = 20, probability = TRUE, main="")
+  abline(v=truepars_transformed[i], col=c(1), lty=2)
+  abline(v=priorpars_transformed[i], col=c(3), lty=2)
 }
 
-for(i in 1:6) {
-  hist(smp_EDM[,i],breaks = 30); abline(v=truepars_transformed[i], col=c(2), lty=2)
+for(i in 1:3) {
+  hist(smp_EDM[,i],breaks = 20, probability = TRUE, main="");
+  abline(v=truepars_transformed[i], col=c(1), lty=2)
+  abline(v=priorpars_transformed[i], col=c(3), lty=2)
 }
+
 
 ## Plot demographic rates
-pfout_detfun0<-particleFilterLL(y, pars=pars, N, detfun = detfun0, dotraceback = TRUE)
-pfout_EDM<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2),
+pfout_detfun0<-particleFilterLL(y, pars=pars0, N, detfun = detfun0, dotraceback = TRUE)
+pfout_EDM<-particleFilterLL(y, pars=pars0, N, detfun = EDMfun0, edmdat = list(E=2),
                             dotraceback = TRUE)
 
 par(mar=c(4,4,2,2), mfrow=c(2,1))
