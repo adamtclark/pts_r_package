@@ -429,6 +429,17 @@ extend_particleFilter = function(pfout, pars, Next = 1e3, detfun=detfun0, procfu
   return(list(xnew=xnew, xsort=xsort, demdat=list(text=text, tcol=tcol)))
 }
 
+#' Abundance density kernel estimation
+#'
+#' Estimates the probability density function associated with an abundance distribution
+#' @param x A vector of abundances
+#' @param from Lower boundary for the kernel - defaults to 0.
+#' @param bw Bandwidth for kernel - defauls to 0.1.
+#' @param breaks Number of breaks for a comparative histogram - defaults to 20.
+#' @param doplot Plot a comparative histogram and the density kernel? Defaults to TRUE.
+#' @param excludezero Should zero values be ignored? Defaults to TRUE.
+#' @return A fitted density kernel.
+#' @export
 
 abund_density<-function(x, from = 0, bw = 0.1, breaks = 20, doplot = TRUE, excludezero=TRUE, ...) {
   if(excludezero) {
@@ -444,6 +455,17 @@ abund_density<-function(x, from = 0, bw = 0.1, breaks = 20, doplot = TRUE, exclu
 
   return(df)
 }
+
+#' Density extinction estimate.
+#'
+#' Estimate extinction rates based on the results from a call of  the abund_density function.
+#' @param df Density kernel resulting from a call of the 'abund_density' function.
+#' @param sp Parameters to be handed to the 'procfun' function.
+#' @param tlength Length of timeseries to simulate.
+#' @param niter Number of iterations from which to draw the estimate.
+#' @param procfun Process noise function. Defaults to procfun0.
+#' @return Mean extinction rate, standard deviation of rate, and list of niter estimates.
+#' @export
 
 est_mor<-function(df, sp, tlength = 100, niter = 1e3, procfun = procfun0) {
   mest<-numeric(niter)

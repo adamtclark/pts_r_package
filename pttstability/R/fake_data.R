@@ -60,8 +60,8 @@ getcm<-function(dat) {
 #'  summary(mod<-lm(log(var)~log(mu), tdat, weights = 1/tdat$unk)); abline(mod, col=2)
 
 makedynamics_general<-function(n=1000, n0=0.1,
-                       pdet=c(log(0.1), log(3), log(1)), proc=c(-2),
-                       obs=c(-2), pcol=c(logit(0.2)),
+                       pdet=c(log(3), log(1)), proc=c(log(1)),
+                       obs=c(log(1)), pcol=c(logit(0.2), log(1)),
                        detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0,
                        doplot=FALSE) {
 

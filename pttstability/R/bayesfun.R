@@ -626,6 +626,8 @@ abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, boot
 #' @return The lower-tail probability estimate
 #' @export
 
-lowertail<-function(x) {pmin(x, 1-x)}
+lowertail<-function(x) {
+  pmin(x, 1-x)
+}
 
 
