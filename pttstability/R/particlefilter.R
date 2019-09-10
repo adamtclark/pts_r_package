@@ -3,11 +3,12 @@
 #' Simulates deterministic component of Ricker model, of the form xt+1 = xt exp(exp(sdet[1])*(1-xt/exp(sdet[2])))
 #' @param sdet a numeric vector of length two, specifying growth rate and carrying capacity
 #' @param xt a number or numeric vector of abundances at time t
+#' @param time the timestep - defaults to NULL (i.e. not used)
 #' @keywords deterministic function, discrete-time model, time-series, fake data
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
 #' @export
 
-detfun0<-function(sdet, xt) {
+detfun0<-function(sdet, xt, time=NULL) {
   xt = xt*exp(exp(sdet[1])*(1-xt/exp(sdet[2])))
   return(xt)
 }
@@ -54,12 +55,13 @@ EDMfun0<-function(edmdat, xt, yblock, tm=NULL) {
 #' @param sp a numeric vector of length one, specifying the log-transformed standard deviation of the process noise function
 #' @param xt a number or numeric vector of abundances at time t, before process noise has occurred
 #' @param inverse a logical specifying whether the inverse (i.e. probability of drawing a value of zero given xt and sp) should be calcualted
+#' @param time the timestep - defaults to NULL (i.e. not used)
 #' @keywords process noise
 #' @return a number or numeric vector of length xt, with predicted abundances after process noise has occurred
 #' @import stats
 #' @export
 
-procfun0<-function(sp, xt, inverse = FALSE) {
+procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
   if(!inverse) {
     sm<-length(xt)
     xt = pmax(0, xt + rnorm(sm, 0, exp(sp[1])))
@@ -82,12 +84,13 @@ procfun0<-function(sp, xt, inverse = FALSE) {
 #' @param xt a number or numeric vector of "true" (or simulated) abundances at time t, from which the likelihood of yt will be calculated - defaults to NULL for inverse=TRUE
 #' @param inverse a logical specifying whether inverse (i.e. random number generator) function should be implemented - defaults to FALSE
 #' @param N number of draws from the random number generator, if inverse=TRUE - defaults to NULL
+#' @param time the timestep - defaults to NULL (i.e. not used)
 #' @keywords observation error
 #' @return If inverse=FALSE, a number or numeric vector of length xt, with predicted log likelihoods of observation yt. If inverse = FALSE, returns N random draws from the observation function.
 #' @import stats
 #' @export
 
-obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL) {
+obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, time=NULL) {
   if(inverse) {
     pmax(0, rnorm(n = N, mean = yt, sd = exp(so[1])))
   } else {

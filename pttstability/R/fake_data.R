@@ -79,12 +79,12 @@ makedynamics_general<-function(n=1000, n0=0.1,
       n_tmp<-colfun(pcol, n_tmp)
     } else {
       #Deterministic dynamic
-      n_tmp<-detfun(pdet, n_tmp)
+      n_tmp<-detfun(pdet, n_tmp, time=j)
     }
 
     #Process noise (following Taylor's law)
     if(n_tmp>0) {
-      n_tmp_proc<-max(c(0, procfun(proc, n_tmp)))
+      n_tmp_proc<-max(c(0, procfun(proc, n_tmp, time=j)))
     }
 
     Sdat_noproc[j]<-n_tmp
@@ -93,7 +93,7 @@ makedynamics_general<-function(n=1000, n0=0.1,
 
   #Observation error (linear function of true abundance)
   for(j in 1:(n)) {
-    Sdat_obs[j]<-pmax(0, obsfun(obs, Sdat[j], inverse=TRUE, N=1))
+    Sdat_obs[j]<-pmax(0, obsfun(obs, Sdat[j], inverse=TRUE, N=1, time=j))
   }
   Sdat_obs[Sdat==0]<-0 #no false positives
 

@@ -99,10 +99,10 @@ ptrue<-unlist(pars_true)[1:3]
 p0<-unname(unlist(pars0)[1:3])
 
 #create priors
-density_fun_USE<-function(param) density_fun0(param = param, pars = pars0)
-sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars0, priorsd = c(2,2,2), minv = rep(-10, 3), maxv = rep(10,3))
+density_fun_USE<-function(param) density_fun0(param = param, pars = pars0)#/length(y)
+sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars0, priorsd = c(1,1,1), minv = rep(-4, 3), maxv = rep(2,3))
 prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = rep(-10,3), upper = rep(10,3))
+                     lower = rep(-4,3), upper = rep(2,3))
 
 likelihood0(p0, y = y, N = N)+density_fun_USE(p0)
 likelihood0(p0, y=y, detfun = EDMfun0, edmdat = list(E=2), N = N)+density_fun_USE(p0)
@@ -121,24 +121,31 @@ abline(v=(pars0$pcol[1]), col=3, lwd=2, lty=2)
 abline(v=(pars_true$pcol[1]), col=1, lwd=2, lty=2)
 
 #note - runtime will be long for EDM example
+niter<-1e4
+
 #with detfun0
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N)*length(y)
 bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior)
-out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0)
+out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=10))
 
 #with EDM
 likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0,
                                         detfun = EDMfun0, edmdat = list(E=2), N = N)*length(y)
-likelihood_EDM(p0)+density_fun_USE(p0)
-
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior)
-out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM)
+out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=10))
+
+#re-run with better starting values
+#smp_EDMfun0<-getSample(out_EDM, start = 500)
+#newZ = matrix(nrow=nrow(out_EDM$Z), apply(out_EDM$Z, 2, function(x) runif(nrow(out_EDM$Z), min(x, na.rm=T), max(x, na.rm=T))))
+#settings = list( Z = newZ, startValue = smp_EDMfun0[(nrow(smp_EDMfun0)-2):nrow(smp_EDMfun0), ], iterations=1000, consoleUpdates=10)
+#out_EDM1 <- runMCMC(bayesianSetup = bayesianSetup_EDM,
+#                       settings = settings)
 save.image("out.rda")
 
 plot(out_detfun0, start=1500)
 plot(out_EDM, start=1500)
-gelmanDiagnostics(out_detfun0, plot = TRUE, start=1500)
-gelmanDiagnostics(out_EDM, plot = TRUE, start=1500)
+gelmanDiagnostics(out_detfun0, plot = FALSE, start=1500)
+gelmanDiagnostics(out_EDM, plot = FALSE, start=1500)
 
 ## Summarize outputs
 smp_detfun0<-getSample(out_detfun0, start = 1500)
@@ -154,13 +161,15 @@ priorpars<-t(as.matrix(unlist(pars0)))
 
 par(mar=c(4,4,2,2), mfrow=c(2,3))
 for(i in 1:3) {
-  hist(smp_detfun0[,i],breaks = 20, probability = TRUE, main="")
+  xrng<-range(c(smp_detfun0[,i], truepars[i], priorpars[i]))
+  hist(smp_detfun0[,i],breaks = 20, probability = TRUE, main="", xlim=xrng);
   abline(v=truepars[i], col=c(1), lty=2)
   abline(v=priorpars[i], col=c(3), lty=2)
 }
 
 for(i in 1:3) {
-  hist(smp_EDM[,i],breaks = 20, probability = TRUE, main="");
+  xrng<-range(c(smp_EDM[,i], truepars[i], priorpars[i]))
+  hist(smp_EDM[,i],breaks = 20, probability = TRUE, main="", xlim=xrng);
   abline(v=truepars[i], col=c(1), lty=2)
   abline(v=priorpars[i], col=c(3), lty=2)
 }
