@@ -1,10 +1,11 @@
 #!/bin/bash
 #------------------------------------------
-#$ -N pts_test
+#$ -N pts_example
 #$ -o iman.out$JOB_ID
 #$ -j y
 #$ -S /bin/bash
-#$ -l h_rt=6:00:00
+#$ -l h_rt=6:00:00 
+#$ -l h_vmem=6G
 
 date
 module load R
