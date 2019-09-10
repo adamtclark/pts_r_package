@@ -11,5 +11,5 @@
 date
 module load R
 cd /home/clarka/pts_r_package/pttstability/
-./pttstability_man_example.R
+../pttstability_man_example.R
 date
