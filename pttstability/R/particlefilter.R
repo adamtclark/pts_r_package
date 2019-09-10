@@ -113,8 +113,7 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL) {
 
 colfun0<-function(co, xt) {
   sm<-length(xt)
-  #xt <- xt+rbinom(sm, 1, ilogit(co[1]))*exp(co[2])
-  xt <- xt+rbinom(sm, 1, ilogit(co[1]))*abs(rnorm(1,0,exp(co[2])))
+  xt <- xt+rbinom(sm, 1, ilogit(co[1]))*abs(rnorm(sm,0,exp(co[2])))
 
   return(xt)
 }
