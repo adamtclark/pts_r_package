@@ -137,10 +137,10 @@ plot_abc_params(optout_edm_ext, param0 = p0, param_true = ptrue)
 
 #extracting estimates from likelihood surfaces
 par(mfrow=c(2,3), mar=c(4,4,2,2))
-dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3))
-dens_out_det_ext<-abc_densities(optout = optout_det_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3))
-dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.2, enp.target = c(5,4,3))
-dens_out_edm_ext<-abc_densities(optout = optout_edm_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(5,4,3))
+dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3), bootstrap_subs = FALSE)
+dens_out_det_ext<-abc_densities(optout = optout_det_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3), bootstrap_subs = FALSE)
+dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.2, enp.target = c(3,3,3), bootstrap_subs = FALSE)
+dens_out_edm_ext<-abc_densities(optout = optout_edm_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(3,3,3), bootstrap_subs = FALSE)
 
 #check error
 lowertail<-function(x) {pmin(x, 1-x)}
@@ -212,7 +212,7 @@ out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations
 #out_EDM1 <- runMCMC(bayesianSetup = bayesianSetup_EDM,
 #                       settings = settings)
 
-save.image("out.rda")
+#save.image("out.rda")
 
 plot(out_detfun0, start=500)
 plot(out_EDM, start=500)
