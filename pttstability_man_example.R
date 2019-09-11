@@ -211,7 +211,8 @@ out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations
 #settings = list( Z = newZ, startValue = smp_EDMfun0[(nrow(smp_EDMfun0)-2):nrow(smp_EDMfun0), ], iterations=1000, consoleUpdates=10)
 #out_EDM1 <- runMCMC(bayesianSetup = bayesianSetup_EDM,
 #                       settings = settings)
-#save.image("out.rda")
+
+save.image("out.rda")
 
 plot(out_detfun0, start=500)
 plot(out_EDM, start=500)
