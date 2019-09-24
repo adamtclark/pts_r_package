@@ -550,6 +550,7 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' @param enp.target Smoothing parameter, passed to loess function for estimating density function. Defaults to 5. Note - numbers closer to zero generally yield smoother, but less detailed, estimates.
 #' @param sm_steps Number of steps to estimate from the smoother for calculating means and standard deviations. Defaults to 1000.
 #' @param pltnames Names to be included in plots. Defaults to names(param0).
+#' @param nobs Scaling factor for the likelihoods - defaults to 1.
 #' @param doplot Should the distributions be plotted? Defaults to TRUE.
 #' @keywords ABC optimization
 #' @return A list including mean parameter values (muest) and standard deviations for parameter values (sdest) calculated from the density function. These
@@ -558,7 +559,12 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' note that smoothed function is plotted higher above the points than it actually appears, for better visualization.
 #' @export
 
-abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, bootstrap_subs=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), doplot=TRUE) {
+abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, bootstrap_subs=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), nobs=1, doplot=TRUE) {
+  if(nobs!=1) {
+    optout$LLmean<-optout$LLmean*nobs
+    optout$LLout<-optout$LLout*nobs
+  }
+
   if(is.null(fretain)) {
     fretain<-optout$runstats$fretain
   }
