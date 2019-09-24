@@ -546,30 +546,27 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' @param param0 An optional vector of prior values for the paramters, to be plotted in blue.
 #' @param param_true An optional vector of true values for parameters, to be plotted in red.
 #' @param fretain Retain fraction 'fretain' parameter estiamtes with the highest likelihoods from the optimization process for subsequent calculations. Defaults to value used for optimizer call.
-#' @param bootstrap_subs Should the 'fretain' best samples be bootstrapped by sampling with replacement? Can help reduce impact of outliers. Defaults to value used for optimizer call.
+#' @param nbootstrap Number of bootstrapped iterations to use for estimating density kernel. Defaults to 1 (i.e. use full sample).
 #' @param enp.target Smoothing parameter, passed to loess function for estimating density function. Defaults to 5. Note - numbers closer to zero generally yield smoother, but less detailed, estimates.
 #' @param sm_steps Number of steps to estimate from the smoother for calculating means and standard deviations. Defaults to 1000.
 #' @param pltnames Names to be included in plots. Defaults to names(param0).
-#' @param nobs Scaling factor for the likelihoods - defaults to 1.
+#' @param nobs Scaling factor for the likelihoods used to calculate the mean and standard deviation - defaults to 1.
 #' @param doplot Should the distributions be plotted? Defaults to TRUE.
 #' @keywords ABC optimization
 #' @return A list including mean parameter values (muest) and standard deviations for parameter values (sdest) calculated from the density function. These
 #' are probably the best estimates to report and use for subsequent analysis, as the covariance outputs from the optimizer are generally too small as a result
 #' of the range of space that is sampled by 'sampler_fun'. Optionally also plots the density point estimates and kernel smoother -
 #' note that smoothed function is plotted higher above the points than it actually appears, for better visualization.
+#' Also returns full results from smoothing, including the mean smoothed estimates (mupred), and array with all smoothed estimates generated across bootstrapping
+#' iterations (predarray), and an array of the values for which smoothed estimates were generated (sqarray).
 #' @export
 
-abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, bootstrap_subs=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), nobs=1, doplot=TRUE) {
-  if(nobs!=1) {
-    optout$LLmean<-optout$LLmean*nobs
-    optout$LLout<-optout$LLout*nobs
-  }
-
+abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, nbootstrap=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), nobs=1, doplot=TRUE) {
   if(is.null(fretain)) {
     fretain<-optout$runstats$fretain
   }
-  if(is.null(bootstrap_subs)) {
-    bootstrap_subs<-optout$runstats$bootstrap_subs
+  if(is.null(nbootstrap)) {
+    nbootstrap<-1
   }
   nparm<-length(optout$runstats$p0)
   muest<-numeric(nparm)
@@ -579,13 +576,13 @@ abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, boot
     enp.target<-rep(enp.target, nparm)
   }
 
+  mupred<-array(dim=c(nparm, sm_steps, 2))
+  predarray<-array(dim=c(nparm, sm_steps, nbootstrap))
+  sqarray<-array(dim=c(nparm, sm_steps))
+
   for(i in 1:nparm) {
     tmp<-optout$parout[,,i]
     ps<-which(optout$LLout>quantile(optout$LLout,1-fretain))
-
-    if(bootstrap_subs) {
-      ps<-sample(ps, length(ps), rep=TRUE)
-    }
 
     if(doplot) {
       plot(tmp[ps], c(optout$LLout)[ps],
@@ -600,27 +597,44 @@ abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, boot
       }
     }
 
-    xtmp<-tmp[ps]
-    ytmp<-optout$LLout[ps]
-    wts<-exp(ytmp-max(ytmp))/sum(exp(ytmp-max(ytmp)))
-    mod<-loess(ytmp~xtmp, weights = wts, enp.target = enp.target[i])
-    sq<-seq(min(xtmp), max(xtmp), length=sm_steps)
-    pred<-predict(mod, newdata=data.frame(xtmp=sq))
+    sqarray[i,]<-seq(min(tmp[ps]), max(tmp[ps]), length=sm_steps)
 
-    if(doplot) {
-      par(new=TRUE)
-      plot(sq, pred, col=3, lwd=2,
-           xlim=range(c(tmp[ps], param0[i], param_true[i])),
-           axes=F, xlab="", ylab="", type="l")
+    for(j in 1:nbootstrap) {
+      if(nbootstrap==1) {
+        ps2<-1:length(ps)
+      } else {
+        ps2<-sample(length(ps), replace = TRUE)
+      }
+
+      xtmp<-tmp[ps[ps2]]
+      ytmp<-optout$LLout[ps[ps2]]
+
+      spl<-smooth.spline(xtmp, ytmp, df = enp.target[i])
+      predarray[i,,j]<-predict(spl, sqarray[i,])$y
     }
 
-    wts<-exp(pred-max(pred))/sum(exp(pred-max(pred)))
+    if(nbootstrap>1) {
+      mupred[i,,]<-t(apply(predarray[i,,],1,function(x) cbind(mean(x,na.rm=T), sd(x,na.rm=T))))
+    } else {
+      mupred[i,,1]<-predarray[i,,1]
+      mupred[i,,2]<-0
+    }
 
-    muest[i]<-sum(sq*wts)
-    sdest[i]<-sqrt(sum(((sq-muest[i])^2)*wts*(1-sum(wts^2)/(sum(wts)^2))))
+    if(doplot) {
+      matlines(sqarray[i,], cbind(mupred[i,,1], mupred[i,,1]+mupred[i,,2], mupred[i,,1]-mupred[i,,2]),
+              col=3, lwd=c(2,1,1), lty=c(1,2,2),
+              xlim=range(c(tmp[ps], param0[i], param_true[i])),
+              axes=F, xlab="", ylab="", type="l")
+    }
+
+
+    wts<-exp(mupred[i,,1]*nobs-max(mupred[i,,1]*nobs))/sum(exp(mupred[i,,1]*nobs-max(mupred[i,,1]*nobs)))
+
+    muest[i]<-sum(seq(min(tmp[ps]), max(tmp[ps]), length=sm_steps)*wts)
+    sdest[i]<-sqrt(sum(((seq(min(tmp[ps]), max(tmp[ps]), length=sm_steps)-muest[i])^2)*wts*(1-sum(wts^2)/(sum(wts)^2))))
   }
 
-  return(list(muest=muest, sdest=sdest))
+  return(list(muest=muest, sdest=sdest, mupred=mupred, predarray=predarray, sqarray=sqarray))
 }
 
 
