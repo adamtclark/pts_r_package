@@ -116,11 +116,11 @@ if(FALSE) {
   optout_det_ext<-run_ABC_optim(oldrun = optout_det, niter_optim = 20)
 
   #run optimizer for EDM model (will run ~10x slower than deterministic model)
-  optout_edm<-run_ABC_optim(y,p0,likelihood = likelihoodEDM, fretain = 0.5)
+  optout_edm<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihoodEDM, fretain = 0.5)
   #extend run for another 20 iterations
-optout_edm_ext<-run_ABC_optim(oldrun = optout_edm, niter_optim = 20)
+  optout_edm_ext<-run_ABC_optim(oldrun = optout_edm, niter_optim = 20)
 } else {
-  load("data/abcout.rda") #functions run slowly - load pre-run results
+  load("data/abcout_rv2.rda") #functions run slowly - load pre-run results
 }
 
 ## plotting
@@ -153,15 +153,16 @@ plot_abc_params(optout_edm_ext, param0 = p0, param_true = ptrue)
 
 #extracting estimates from likelihood surfaces
 par(mfrow=c(2,3), mar=c(4,4,2,2))
-dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3), bootstrap_subs = FALSE)
-dens_out_det_ext<-abc_densities(optout = optout_det_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(4,3,3), bootstrap_subs = FALSE)
-dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.2, enp.target = c(3,3,3), bootstrap_subs = FALSE)
-dens_out_edm_ext<-abc_densities(optout = optout_edm_ext, param0 = p0, param_true = ptrue, fretain = 0.5, enp.target = c(3,3,3), bootstrap_subs = FALSE)
+dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y))
+dens_out_det_ext<-abc_densities(optout = optout_det_ext, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y))
+dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y))
+dens_out_edm_ext<-abc_densities(optout = optout_edm_ext, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y))
 #true values are in red, priors are in blue
 
 #show estimates
 dens_out_det_ext
 dens_out_edm_ext
+ptrue
 
 ## MCMC optimizer
 #create priors
@@ -188,7 +189,7 @@ if(FALSE) {
   out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=10))
   out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=10))
 } else {
-  load("data/mcmcout.rda")
+  load("data/mcmcout_rv2.rda")
 }
 
 plot(out_detfun0, start=500)
