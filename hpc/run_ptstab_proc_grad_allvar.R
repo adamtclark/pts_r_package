@@ -1,8 +1,3 @@
-#Potentially, large increase in N plus variable parameter inputs
-#will allow direct implementation of ABC?
-
-
-
 #!/usr/bin/env Rscript
 
 if(FALSE) {
@@ -21,7 +16,8 @@ if(length(commArgin)==0) {
 }
 print(commArg_ps)
 
-require(BayesianTools)
+#require(BayesianTools)
+require(mvtnorm)
 require(rEDM)
 
 source("../pttstability/R/bayesfun.R")
@@ -32,88 +28,91 @@ source("../pttstability/R/particlefilter.R")
 
 ## Simulate data
 #sample from priors
-pars<-list(obs=c(log(1e-2), log(0.1)),
-           proc=c(-2, log(1.5)),
-           pcol=c(logit(0.2), log(1e-2)),
-           det=c(log(3),log(1)))
+pars0<-list(obs=log(0.2),
+                proc=log(0.1),
+                pcol=c(logit(0.2), log(0.1)),
+                det=c(log(3),log(1)))
 
-pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars, priorsd = c(0.5, 0.5, 2, 0.5, 0.5, 0.5)))
+y<-0
+while(sum(y>0)<=(length(y)/5)) { # want at least 20% nonzero values
+  pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars0, priorsd = c(2, 2, 2)))
 
-datout<-makedynamics(n = 100, obs = pars_sim$obs, proc = pars_sim$proc, r = pars_sim$det[1],
-                     K = pars_sim$det[2], pcol = pars_sim$pcol)
-y<-datout$obs
+  datout<-makedynamics_general(n = 100, n0 = exp(rnorm(1,0,0.1)), pdet=pars_sim$det,
+                               proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
+                               detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
+  y<-datout$obs
+}
 
 ## Run filter
-N = 1e3
+likelihoodEDM<-function(param, y, parseparam, N) {likelihood0(param, y, parseparam, N, detfun = EDMfun0, edmdat = list(E=2))}
+p0<-unname(unlist(pars0)[1:3])
+ptrue<-unname(unlist(pars_sim)[1:3])
 
-## Run optimizer
-param<-unlist(pars)[1:6]
+#run optimizer
+optout_det<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihood0, fretain = 0.5, niter_optim = 100, silent = TRUE)
+optout_edm<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihoodEDM, fretain = 0.5, niter_optim = 100, silent = TRUE)
 
-#create priors
-density_fun_USE<-function(param) density_fun0(param = param, pars = pars)
-sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars)
-prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = c(rep(-6.9,2),-29.9,rep(-6.9,3)), upper = c(rep(2.9,2),29.9,rep(2.9,3)))
+#process outputs
+dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y), doplot = FALSE)
+dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y), doplot = FALSE)
 
-#number of MCMC iterations - increase for more accurate results
-#note - runtime will be long for EDM example
-niter<-10002
-nburn<-2001
+## calculate demographic rates
+parsest_det<-cbind(dens_out_det$muest, dens_out_det$sdest)
+parsest_edm<-cbind(dens_out_edm$muest, dens_out_edm$sdest)
 
-#with detfun0
-#likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
-likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
-
-bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior)
-#out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
-#                       settings = list(iterations=niter, burnin=nburn))
-out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
-                       settings = list(initialParticles=1000, iterations=10), sampler="SMC")
-
-#with EDM
-likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0,
-                                        detfun = EDMfun0, edmdat = list(E=2))
-bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior)
-out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
-                   settings = list(iterations=niter, burnin=nburn))
-
-#run PF's
-smp_detfun0_untr<-(getSample(out_detfun0))
-smp_EDM_untr<-(getSample(out_EDM))
-#smp_detfun0_untr<-smp_EDM_untr<-t(unlist(pars_sim)[1:6])
-#par(mfrow=c(3,2)); for(i in 1:6) {hist(smp_detfun0_untr[,i]); abline(v=unlist(pars_sim)[i]); abline(v=unlist(pars)[i], col=2)}
+#based on detful0
+filterout_det<-particleFilterLL(y, pars=parseparam0(dens_out_det$muest), detfun = detfun0,
+                                dotraceback = TRUE)
+#based on EDM
+filterout_edm<-particleFilterLL(y, pars=parseparam0(dens_out_edm$muest), detfun = EDMfun0, edmdat = list(E=2),
+                                dotraceback = TRUE)
+#based on true values
+filterout_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = detfun0,
+                                dotraceback = TRUE)
 
 
-pfdet<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_detfun0_untr)), detfun = detfun0, dotraceback = TRUE)
-pfedm<-particleFilterLL(y=datout$obs, pars=parseparam0(colMeans(smp_EDM_untr)), detfun = EDMfun0, edmdat = list(E=2), dotraceback = TRUE)
-pftrue<-particleFilterLL(y=datout$obs, pars=pars, detfun = detfun0, dotraceback = TRUE)
+## save outputs
+#from simulated time series
+cm_true<-getcm(datout$true)
+cm_obs<-getcm(datout$obs)
 
+#from extended time series
+datout_long<-makedynamics_general(n = 2e4, n0 = exp(rnorm(1,0,0.1)), pdet=pars_sim$det,
+                                  proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
+                                  detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
+cm_long<-getcm(datout_long$true)
 
-#calculate demographic rates
-datout_long<-makedynamics(n = 2e4, obs = pars_sim$obs, proc = pars_sim$proc,
-                          r = pars_sim$det[1], K = pars_sim$det[2], pcol = pars_sim$pcol)
+#demographics
+demdat<-list(cm_true=cm_true, cm_obs=cm_obs, cm_long=cm_long,
+             demdat_det=filterout_det$dem[c("mucol", "mumor")], demdat_edm=filterout_edm$dem[c("mucol", "mumor")], demdat_true=filterout_true$dem[c("mucol", "mumor")])
 
-#Hmm... think of sampling from full distribution of parameter values...
+#paramters
+pars_sim_realized<-log(c(sd(datout$obs-datout$true), sd(datout$noproc-datout$true)))
+pars_sim_realized_long<-log(c(sd(datout_long$obs-datout_long$true), sd(datout_long$noproc-datout_long$true)))
 
-etdfilter_det<-extend_particleFilter(pfout=pfdet, pars=parseparam0(colMeans(smp_detfun0_untr)),
-                                     Next = 2e4, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
-etdfilter_edm<-extend_particleFilter(pfout=pfedm, pars=parseparam0(colMeans(smp_EDM_untr)),
-                                     Next = 2e4, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
-etdfilter_true<-extend_particleFilter(pfout=pftrue, pars=pars_sim,
-                                     Next = 2e4, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
-#mean(etdfilter_det$demdat$text,na.rm=T)
-#mean(etdfilter_edm$demdat$text,na.rm=T)
-#mean(etdfilter_true$demdat$text,na.rm=T)
-#1/getcm(datout_long$true)$pm
-#1/getcm(datout$true)$pm
+parslst<-list(pars0=pars0, pars_sim=pars_sim, p0=p0, ptrue=ptrue,
+              pars_sim_realized=pars_sim_realized, pars_sim_realized_long=pars_sim_realized_long,
+              parsest_det=parsest_det, parsest_edm=parsest_edm)
 
-demdat_true<-getcm(datout_long$true)
-demdat_short<-getcm(datout$true)
+#fits
+cordat<-list(obs=cor(datout$true, datout$obs),
+             det=cor(datout$true, filterout_det$rN),
+             edm=cor(datout$true, filterout_edm$rN),
+             true=cor(datout$true, filterout_true$rN))
 
-demdat<-list(demdat_true=demdat_true, demdat_short=demdat_short, demdat_det=etdfilter_det$demdat, demdat_edm=etdfilter_edm$demdat, demdat_filt_true=etdfilter_true$demdat)
+#filter output
+filterdat<-list(filterout_det=filterout_det, filterout_edm=filterout_edm, filterout_true=filterout_true)
 
-#save outputs
-save(list = c("out_detfun0", "out_EDM", "pars_sim", "datout", "demdat"), file = paste("datout/mcmcout_", commArgin, "_full.rda", sep=""))
+#optimizer outputs
+optdat<-list(optout_det=optout_det, optout_edm=optout_edm)
+
+#simulation outputs
+simdat<-list(datout=datout, datout_long=datout_long)
+
+#density function outputs
+densout<-list(dens_out_det=dens_out_det, dens_out_edm=dens_out_edm)
+
+save(list = c("simdat", "parslst", "optdat", "densout", "filterdat", "demdat"), file = paste("datout/abcout_", commArgin, "_full.rda", sep=""), version=2)
 
 
 
