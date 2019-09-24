@@ -547,7 +547,7 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' @param param_true An optional vector of true values for parameters, to be plotted in red.
 #' @param fretain Retain fraction 'fretain' parameter estiamtes with the highest likelihoods from the optimization process for subsequent calculations. Defaults to value used for optimizer call.
 #' @param nbootstrap Number of bootstrapped iterations to use for estimating density kernel. Defaults to 1 (i.e. use full sample).
-#' @param enp.target Smoothing parameter, passed to loess function for estimating density function. Defaults to 5. Note - numbers closer to zero generally yield smoother, but less detailed, estimates.
+#' @param df_smooth Smoothing parameter, passed to smooth.spline function for estimating density function. Defaults to 5. Note - numbers closer to zero generally yield smoother, but less detailed, estimates.
 #' @param sm_steps Number of steps to estimate from the smoother for calculating means and standard deviations. Defaults to 1000.
 #' @param pltnames Names to be included in plots. Defaults to names(param0).
 #' @param nobs Scaling factor for the likelihoods used to calculate the mean and standard deviation - defaults to 1.
@@ -561,7 +561,7 @@ plot_abc_params<-function(optout, ifun=list(function(x) {x}), param0=NULL, param
 #' iterations (predarray), and an array of the values for which smoothed estimates were generated (sqarray).
 #' @export
 
-abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, nbootstrap=NULL, enp.target=5, sm_steps=1000, pltnames=names(param0), nobs=1, doplot=TRUE) {
+abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, nbootstrap=NULL, df_smooth=5, sm_steps=1000, pltnames=names(param0), nobs=1, doplot=TRUE) {
   if(is.null(fretain)) {
     fretain<-optout$runstats$fretain
   }
@@ -572,8 +572,8 @@ abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, nboo
   muest<-numeric(nparm)
   sdest<-numeric(nparm)
 
-  if(length(enp.target)==1) {
-    enp.target<-rep(enp.target, nparm)
+  if(length(df_smooth)==1) {
+    df_smooth<-rep(df_smooth, nparm)
   }
 
   mupred<-array(dim=c(nparm, sm_steps, 2))
@@ -609,7 +609,7 @@ abc_densities<-function(optout, param0=NULL, param_true=NULL, fretain=NULL, nboo
       xtmp<-tmp[ps[ps2]]
       ytmp<-optout$LLout[ps[ps2]]
 
-      spl<-smooth.spline(xtmp, ytmp, df = enp.target[i])
+      spl<-smooth.spline(xtmp, ytmp, df = df_smooth[i])
       predarray[i,,j]<-predict(spl, sqarray[i,])$y
     }
 
