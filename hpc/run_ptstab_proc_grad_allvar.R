@@ -28,14 +28,14 @@ source("../pttstability/R/particlefilter.R")
 
 ## Simulate data
 #sample from priors
-pars0<-list(obs=log(0.2),
+pars0<-list(obs=log(0.1),
                 proc=log(0.1),
                 pcol=c(logit(0.2), log(0.1)),
                 det=c(log(3),log(1)))
 
 y<-0
 while(sum(y>0)<=(length(y)/5)) { # want at least 20% nonzero values
-  pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars0, priorsd = c(2, 2, 2)))
+  pars_sim<-parseparam0(sampler_fun0(n=1, pars = pars0, priorsd = c(1, 1, 1)))
 
   datout<-makedynamics_general(n = 100, n0 = exp(rnorm(1,0,0.1)), pdet=pars_sim$det,
                                proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
@@ -49,8 +49,8 @@ p0<-unname(unlist(pars0)[1:3])
 ptrue<-unname(unlist(pars_sim)[1:3])
 
 #run optimizer
-optout_det<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihood0, fretain = 0.5, niter_optim = 100, silent = TRUE)
-optout_edm<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihoodEDM, fretain = 0.5, niter_optim = 100, silent = TRUE)
+optout_det<-run_ABC_optim(y = y, sd0 = c(1,1,1), p0 = p0, likelihood = likelihood0, fretain = 0.5, niter_optim = 100, silent = TRUE, burnin = 5)
+optout_edm<-run_ABC_optim(y = y, sd0 = c(1,1,1), p0 = p0, likelihood = likelihoodEDM, fretain = 0.5, niter_optim = 100, silent = TRUE, burnin = 5)
 
 #process outputs
 dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.75, df_smooth = 5, nbootstrap = 100, nobs = length(y), doplot = FALSE)
