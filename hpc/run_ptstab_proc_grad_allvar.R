@@ -53,8 +53,8 @@ optout_det<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihood0, freta
 optout_edm<-run_ABC_optim(y, sd0 = c(2,2,2), p0, likelihood = likelihoodEDM, fretain = 0.5, niter_optim = 100, silent = TRUE)
 
 #process outputs
-dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y), doplot = FALSE)
-dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.75, enp.target = 4, nbootstrap = 100, nobs = length(y), doplot = FALSE)
+dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.75, df_smooth = 5, nbootstrap = 100, nobs = length(y), doplot = FALSE)
+dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.75, df_smooth = 5, nbootstrap = 100, nobs = length(y), doplot = FALSE)
 
 ## calculate demographic rates
 parsest_det<-cbind(dens_out_det$muest, dens_out_det$sdest)
@@ -68,6 +68,9 @@ filterout_edm<-particleFilterLL(y, pars=parseparam0(dens_out_edm$muest), detfun 
                                 dotraceback = TRUE)
 #based on true values
 filterout_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = detfun0,
+                                dotraceback = TRUE)
+#based on EDM, with correct values
+filterout_edm_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = EDMfun0, edmdat = list(E=2),
                                 dotraceback = TRUE)
 
 
@@ -83,8 +86,8 @@ datout_long<-makedynamics_general(n = 2e4, n0 = exp(rnorm(1,0,0.1)), pdet=pars_s
 cm_long<-getcm(datout_long$true)
 
 #demographics
-demdat<-list(cm_true=cm_true, cm_obs=cm_obs, cm_long=cm_long,
-             demdat_det=filterout_det$dem[c("mucol", "mumor")], demdat_edm=filterout_edm$dem[c("mucol", "mumor")], demdat_true=filterout_true$dem[c("mucol", "mumor")])
+demdat<-list(cm_true=unlist(cm_true), cm_obs=unlist(cm_obs), cm_long=unlist(cm_long),
+             demdat_det=unlist(filterout_det$dem[c("mucol", "mumor")]), demdat_edm=unlist(filterout_edm$dem[c("mucol", "mumor")]), demdat_true=unlist(filterout_true$dem[c("mucol", "mumor")]), demdat_edm_true=unlist(filterout_edm_true$dem[c("mucol", "mumor")]))
 
 #paramters
 pars_sim_realized<-log(c(sd(datout$obs-datout$true), sd(datout$noproc-datout$true)))
