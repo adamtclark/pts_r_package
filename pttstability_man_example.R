@@ -216,7 +216,7 @@ for(i in 1:3) {
   xrng<-range(c(smp_detfun0[,i], ptrue[i], p0[i]))
   hist(smp_detfun0[,i],breaks = 20, probability = TRUE, main="", xlim=xrng);
   abline(v=ptrue[i], col=c(1), lty=2)
-  abline(v=ptrue[i], col=c(3), lty=2)
+  abline(v=p0[i], col=c(3), lty=2)
 }
 
 for(i in 1:3) {

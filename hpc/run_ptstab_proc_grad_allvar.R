@@ -56,7 +56,7 @@ optout_edm<-run_ABC_optim(y = y, sd0 = c(1,1,1), p0 = p0, likelihood = likelihoo
 dens_out_det<-abc_densities(optout = optout_det, param0 = p0, param_true = ptrue, fretain = 0.75, df_smooth = 5, nbootstrap = 100, nobs = length(y), doplot = FALSE)
 dens_out_edm<-abc_densities(optout = optout_edm, param0 = p0, param_true = ptrue, fretain = 0.75, df_smooth = 5, nbootstrap = 100, nobs = length(y), doplot = FALSE)
 
-## calculate demographic rates
+## extract parameters
 parsest_det<-cbind(dens_out_det$muest, dens_out_det$sdest)
 parsest_edm<-cbind(dens_out_edm$muest, dens_out_edm$sdest)
 
