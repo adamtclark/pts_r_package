@@ -64,13 +64,14 @@ ptrue<-unname(unlist(pars_sim)[1:3])
 #set number of iterations
 niter<-6e3
 N<-2e3
+neff_use<-10
 
 #set up likelihoods
-likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N, neff = TRUE)
+likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N, neff = neff_use)
 bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior)
 
 likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0,
-                                        detfun = EDMfun0, edmdat = list(E=2), N = N, neff = TRUE)
+                                        detfun = EDMfun0, edmdat = list(E=2), N = N, neff = neff_use)
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior)
 
 #run MCMC chains
