@@ -34,7 +34,7 @@ pars0<-list(obs=(-2.5),
                 det=c(log(3),log(1)))
 pars0$pcol[2]<-pars0$proc
 
-search_rng<-2.5
+search_rng<-3
 prior_sd<-1
 
 #create priors
@@ -47,7 +47,7 @@ prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
                      upper = c(pars0$obs, pars0$proc, pars0$pcol[1])+search_rng)
 
 y<-0
-while(sum(y>0)<=(length(y)/5)) { # want at least 20% nonzero values
+while(sum(y>0)<=(length(y)/20)) { # want at least 5% nonzero values
   pars_sim<-parseparam0(unname(sampler_fun_USE()))
   #parseparam0(sampler_fun0(n=1, pars = pars0, priorsd = c(1, 1, 1)))
 
@@ -129,7 +129,7 @@ cordat<-list(obs=cor(datout$true, datout$obs),
              true=cor(datout$true, filterout_true$rN))
 
 #filter output
-filterdat<-list(filterout_det=filterout_det, filterout_edm=filterout_edm, filterout_true=filterout_true)
+filterdat<-list(filterout_det=filterout_det, filterout_edm=filterout_edm, filterout_true=filterout_true, filterout_edm_true=filterout_edm_true)
 
 #optimizer outputs
 optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
