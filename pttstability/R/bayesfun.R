@@ -147,15 +147,31 @@ sampler_fun0 = function(n=1, pars=pars, priorsd=c(1, 1, 1),
     d1 = prl[,1]
     d2 = prl[,2]
     d3 = prl[,3]
+    priorsd_diag<-sqrt(diag(priorsd))
   } else {
     d1 = rnorm(n, mean = pars$obs[1], sd = priorsd[1])
     d2 = rnorm(n, mean = pars$proc[1], sd = priorsd[2])
     d3 = rnorm(n, mean = pars$pcol[1], sd=priorsd[3])
+    priorsd_diag<-priorsd
   }
 
-  d1[d1<minv[1]]<-minv[1]; d1[d1>maxv[1]]<-maxv[1]
-  d2[d2<minv[2]]<-minv[2]; d2[d2>maxv[2]]<-maxv[2]
-  d3[d3<minv[3]]<-minv[3]; d3[d3>maxv[3]]<-maxv[3]
+  nex<-which((d1<=minv[1]) | (d1>=maxv[1]))
+  while(length(nex)>0) {
+    d1[nex]<-rnorm(length(nex), mean = pars$obs[1], sd = priorsd_diag[1])
+    nex<-which((d1<=minv[1]) | (d1>=maxv[1]))
+  }
+
+  nex<-which((d2<=minv[2]) | (d2>=maxv[2]))
+  while(length(nex)>0) {
+    d2[nex]<-rnorm(length(nex), mean = pars$proc[1], sd = priorsd_diag[2])
+    nex<-which((d2<=minv[2]) | (d2>=maxv[2]))
+  }
+
+  nex<-which((d3<=minv[3]) | (d3>=maxv[3]))
+  while(length(nex)>0) {
+    d3[nex]<-rnorm(length(nex), mean = pars$pcol[1], sd = priorsd_diag[3])
+    nex<-which((d3<=minv[3]) | (d3>=maxv[3]))
+  }
 
   if(length(priorsd)==6) {
     if(!is.null(dim(priorsd)) && all.equal(nrow(priorsd), ncol(priorsd), length(pars))) {
@@ -168,9 +184,23 @@ sampler_fun0 = function(n=1, pars=pars, priorsd=c(1, 1, 1),
       d6 = rnorm(n, mean = pars$det[2], sd=priorsd[6])
     }
 
-    d4[d4<minv[4]]<-minv[4]; d4[d7>maxv[4]]<-maxv[4]
-    d5[d5<minv[5]]<-minv[5]; d5[d7>maxv[5]]<-maxv[5]
-    d6[d6<minv[6]]<-minv[6]; d6[d8>maxv[6]]<-maxv[6]
+    nex<-which((d4<=minv[4]) | (d4>=maxv[4]))
+    while(length(nex)>0) {
+      d4[nex]<-rnorm(length(nex)>0, mean = pars$pcol[4], sd = priorsd_diag[4])
+      nex<-which((d4<=minv[4]) | (d4>=maxv[4]))
+    }
+
+    nex<-which((d5<=minv[5]) | (d5>=maxv[5]))
+    while(length(nex)>0) {
+      d5[nex]<-rnorm(length(nex)>0, mean = pars$det[1], sd = priorsd_diag[5])
+      nex<-which((d5<=minv[5]) | (d5>=maxv[5]))
+    }
+
+    nex<-which((d6<=minv[6]) | (d6>=maxv[6]))
+    while(length(nex)>0) {
+      d6[nex]<-rnorm(length(nex)>0, mean = pars$det[2], sd = priorsd_diag[6])
+      nex<-which((d6<=minv[6]) | (d6>=maxv[6]))
+    }
 
     return(cbind(d1,d2,d3,d4,d5,d6))
   } else {

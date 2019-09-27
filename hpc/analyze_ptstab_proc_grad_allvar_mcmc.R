@@ -1,8 +1,10 @@
 #!/usr/bin/env Rscript
 
-#error
-#rm(list=ls())
-#setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
+if(FALSE) {
+  error
+  rm(list=ls())
+  setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
+}
 
 #load packages and functions
 require(BayesianTools)
@@ -51,7 +53,7 @@ rhatdat<-array(dim=c(length(flst),nvar,2))
 #colnames(simplexdat)<-c("rho", "mae", "rmse")
 rhodat<-matrix(nrow=length(flst), ncol=5)
 
-#if(FALSE) {
+if(FALSE) {
   for(ifl in 1:length(flst)) {
     flnm<-paste("datout/", flst[ifl], sep="")
     load(flnm)
@@ -101,7 +103,7 @@ rhodat<-matrix(nrow=length(flst), ncol=5)
     rhodat[ifl,2]<-1-sum((simdat$datout$true-filterdat$filterout_det$rN)^2)/sum((simdat$datout$true-mean(simdat$datout$true))^2)#cor(simdat$datout$true, filterdat$filterout_det$rN)
     rhodat[ifl,3]<-1-sum((simdat$datout$true-filterdat$filterout_edm$rN)^2)/sum((simdat$datout$true-mean(simdat$datout$true))^2)#cor(simdat$datout$true, filterdat$filterout_edm$rN)
     rhodat[ifl,4]<-1-sum((simdat$datout$true-filterdat$filterout_true$rN)^2)/sum((simdat$datout$true-mean(simdat$datout$true))^2)#cor(simdat$datout$true, filterdat$filterout_true$rN)
-    #rhodat[ifl,5]<-1-sum((simdat$datout$true-filterdat$filterout_edm_true$rN)^2)/sum((simdat$datout$true-mean(simdat$datout$true))^2)cor(simdat$datout$true, filterdat$filterout_edm_true$rN)
+    rhodat[ifl,5]<-1-sum((simdat$datout$true-filterdat$filterout_edm_true$rN)^2)/sum((simdat$datout$true-mean(simdat$datout$true))^2)#cor(simdat$datout$true, filterdat$filterout_edm_true$rN)
 
     if(ifl/20 == floor(ifl/20)) {
       print(round(ifl/length(flst),3))
@@ -109,9 +111,9 @@ rhodat<-matrix(nrow=length(flst), ncol=5)
   }
 
   save.image("summarydata/saved_summary_full_mcmc.rda")
-#} else {
-#  load("summarydata/saved_summary_full_mcmc.rda")
-#}
+} else {
+  load("summarydata/saved_summary_full_mcmc.rda")
+}
 
 #check r-hat
 hist(rhatdat[,,1])
@@ -160,13 +162,28 @@ pdf("plotout/plot_pstab_proc_grad_full_mcmc.pdf", width=6, height=12, colormodel
     }
     sd1<-sd1[sbsp]; sd2<-sd2[sbsp]
 
-    lom1<-loess.sd(y1~x, weights = 1/sd1, enp.target=2, nsigma = 1)
-    lom2<-loess.sd(y2~x, weights = 1/sd2, enp.target=2, nsigma = 1)
+    if(FALSE) {
+      lom1<-loess.sd(y1~x, weights = 1/sd1, enp.target=7, nsigma = 1)
+      lom2<-loess.sd(y2~x, weights = 1/sd2, enp.target=7, nsigma = 1)
 
-    px1<-c((sort(lom1$x)), rev((sort(lom1$x))))
-    py1<-c((lom1$upper[order(lom1$x)]), rev((lom1$lower[order(lom1$x)])))
-    px2<-c((sort(lom2$x)), rev((sort(lom2$x))))
-    py2<-c((lom2$upper[order(lom2$x)]), rev((lom2$lower[order(lom2$x)])))
+      px1<-c((sort(lom1$x)), rev((sort(lom1$x))))
+      py1<-c((lom1$upper[order(lom1$x)]), rev((lom1$lower[order(lom1$x)])))
+      px2<-c((sort(lom2$x)), rev((sort(lom2$x))))
+      py2<-c((lom2$upper[order(lom2$x)]), rev((lom2$lower[order(lom2$x)])))
+    } else {
+      lom1<-lm(y1~x)
+      lom2<-lm(y2~x)
+
+      xsq<-seq(min(x), max(x), length=1000)
+      pdtmp1<-predict(lom1, newdata=data.frame(x=xsq), interval="confidence")
+      pdtmp2<-predict(lom2, newdata=data.frame(x=xsq), interval="confidence")
+
+      px1<-c((xsq), rev(xsq))
+      py1<-c(pdtmp1[,2], rev(pdtmp1[,3]))
+      px2<-c((xsq), rev(xsq))
+      py2<-c(pdtmp2[,2], rev(pdtmp2[,3]))
+    }
+
 
     if(uselog=="xy") {
       px1<-exp(px1)
@@ -184,9 +201,9 @@ pdf("plotout/plot_pstab_proc_grad_full_mcmc.pdf", width=6, height=12, colormodel
     abline(h=p0_transformed[i], col=1, lty=3)
 
     #Add R2
-    rssobs<-c(sum((lom1$x-lom1$y)^2*(1/sd1))/sum(1/sd1),
-              sum((lom2$x-lom2$y)^2*(1/sd2))/sum(1/sd2))
-    rsstot<-mean((lom1$x-mean(lom1$x))^2)
+    rssobs<-c(mean((x-y1)^2),
+              mean((x-y2)^2))
+    rsstot<-mean((x-mean(x))^2)
     r2est<-(1-rssobs/rsstot)
     legend("topleft", legend = round(r2est,2), fill = collst[3:4], bty="n", title = expression(paste("E"[2])))
 
@@ -240,7 +257,7 @@ pdf("plotout/plot_pstab_proc_grad_full_mcmc.pdf", width=6, height=12, colormodel
       plot(ptlrng, ptlrng,
            type="n", xlab="true tmor", ylab="est tmor", log="xy")
       abline(a=0, b=1, lty=3)
-      abline(v=1/length(simdat$datout$obs), lty=3)
+      abline(v=1/length(simdat$datout$obs), h=1/length(simdat$datout$obs), lty=3)
     }
     points(morrates[sbs,3], morrates[sbs,i], col=collst[i], cex=0.5)
 
@@ -252,10 +269,15 @@ pdf("plotout/plot_pstab_proc_grad_full_mcmc.pdf", width=6, height=12, colormodel
   }
 
   par(mfrow=c(1,1))
+  rhodat[is.finite(rhodat) & (rhodat>1 | rhodat<(-1))]<-NA
   matplot(trueparsum[,1], rhodat^2, xlab="obs", ylab="rho", col=collst[1:5], type="p", pch=1)
-  x<-trueparsum[,1]
+  x1<-trueparsum[,1]
   for(i in 1:ncol(rhodat)) {
-    y<-rhodat[,i]^2
+    sbs<-which(is.finite(rhodat[,i]))
+
+    y<-(rhodat[,i]^2)[sbs]
+    x<-x1[sbs]
+
     lss<-loess.sd((y)~log(x), nsigma = 1)
     pd1y<-lss$y#(c(lss$y, rev(lss$y)))
     #polygon(exp(c(lss$x, rev(lss$x))), pd1y, col = adjustcolor(collst[i]))

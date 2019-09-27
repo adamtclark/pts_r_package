@@ -34,8 +34,8 @@ pars0<-list(obs=(-2.5),
                 det=c(log(3),log(1)))
 pars0$pcol[2]<-pars0$proc
 
-search_rng<-3
-prior_sd<-1
+search_rng<-2
+prior_sd<-2
 
 #create priors
 density_fun_USE<-function(param) density_fun0(param = param, pars = pars0, priorsd = rep(prior_sd, 3))
@@ -75,8 +75,8 @@ likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior)
 
 #run MCMC chains
-out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=10))
-out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=10))
+out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=100))
+out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=100))
 
 ## extract parameters
 smp_detfun0<-getSample(out_detfun0, start = 500)
