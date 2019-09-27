@@ -1,9 +1,13 @@
-error
-rm(list=ls())
-setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
+#!/usr/bin/env Rscript
+
+#error
+#rm(list=ls())
+#setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 
 #load packages and functions
-require(BayesianTools); require(rEDM); require(RColorBrewer); require(mvtnorm)
+require(BayesianTools)
+require(rEDM)
+#require(mvtnorm)
 require(msir)
 source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
@@ -47,7 +51,7 @@ rhatdat<-array(dim=c(length(flst),nvar,2))
 #colnames(simplexdat)<-c("rho", "mae", "rmse")
 rhodat<-matrix(nrow=length(flst), ncol=5)
 
-if(FALSE) {
+#if(FALSE) {
   for(ifl in 1:length(flst)) {
     flnm<-paste("datout/", flst[ifl], sep="")
     load(flnm)
@@ -105,9 +109,9 @@ if(FALSE) {
   }
 
   save.image("summarydata/saved_summary_full_mcmc.rda")
-} else {
-  load("summarydata/saved_summary_full_mcmc.rda")
-}
+#} else {
+#  load("summarydata/saved_summary_full_mcmc.rda")
+#}
 
 #check r-hat
 hist(rhatdat[,,1])
@@ -119,7 +123,7 @@ pltnames<-c("obs", "proc", "col")
 collst<-adjustcolor(c("black", "darkgreen", "cornflowerblue", "coral3"), alpha.f = 0.5)
 dxl<-c(-0.01, 0.01)
 
-#pdf("plotout/plot_pstab_proc_grad_full.pdf", width=12, height=6, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/plot_pstab_proc_grad_full_mcmc.pdf", width=6, height=12, colormodel = "cmyk", useDingbats = FALSE)
   ##############################
   #plot pars
   ##############################
@@ -258,6 +262,6 @@ dxl<-c(-0.01, 0.01)
     lines(exp(lss$x), pd1y, col=collst[i], lwd=2)
   }
   legend("bottomleft", c("obs", "det", "edm", "det_true", "edm_true"), lty=1, lwd=2, col=collst, bty="n")
-#dev.off()
+dev.off()
 
 
