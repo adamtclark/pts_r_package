@@ -7,7 +7,7 @@
 #load packages and functions
 require(BayesianTools)
 require(rEDM)
-#require(mvtnorm)
+require(mvtnorm)
 require(msir)
 source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
