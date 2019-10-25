@@ -27,25 +27,13 @@ detfun0<-function(sdet, xt, time=NULL) {
 #' @source @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 #' @export
 
-EDMfun0<-function(edmdat, xt, yblock, tm=NULL) {
-  if(is.null(tm)) {
-    yps<-1:nrow(yblock)
+EDMfun0<-function(smp_cf, yp, x, time) {
+  nD<-ncol(smp_cf)
+  if(nD>2) {
+    sum(smp_cf[time,-1]*c(yp[(time-(nD-2)):(time-1)], 1))+smp_cf[time,1]*x
   } else {
-    yps<-(-c(tm-(edmdat$E:0)))
+    smp_cf[time,-1]+smp_cf[time,1]*x
   }
-
-  pred<-block_lnlp(block = rbind(unname(yblock[yps,]), unname(xt)),
-                   lib=edmdat$lib-c(0, edmdat$E+1), pred = edmdat$lib[2]-(edmdat$E+1)+c(1, nrow(xt)), norm = edmdat$norm,
-                   method = edmdat$method, target_column=1, columns=(2:ncol(xt)),
-                   tp = edmdat$tp, num_neighbors = edmdat$num_neighbors, exclusion_radius=edmdat$exclusion_radius,
-                   epsilon=edmdat$epsilon, theta=edmdat$theta,
-                   stats_only=FALSE)
-
-  if(!is.null(edmdat$lowerlim)) {
-    pred$model_output[[1]]$pred[is.finite(pred$model_output[[1]]$pred) & pred$model_output[[1]]$pred<edmdat$lowerlim]<-0
-  }
-
-  return(pred$model_output[[1]]$pred)
 }
 
 #' default process noise function
@@ -143,146 +131,73 @@ colfun0<-function(co, xt) {
 #' @return LL, P, rN, x, ind, xsort, dem(col, mor, mucol, mumor)
 #' @export
 
-particleFilterLL = function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE) {
-  #Adapted from Knape and Valpine (2012), Ecology 93:256-263.
+particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE) {
+  LL<-rep(NA, length(y))
 
-  #extract parameters
-  so = pars$obs             # observation error
-  sp = pars$proc            # process noise
-  sdet = c(pars$det)        # deterministic function
-  co<-pars$pcol             # colonization
-
-  #matrices for storing simulations
-  n = length(y)                         # Length of the time series
-  x = matrix(rep(0, N * n), c(N, n))    # A matrix containing the particles at the log scale
-  rx = rep(0, n)                        # Estimated values
-  ind = matrix(rep(0, N * n), c(N, n))  # Index for the previous position of each particle
-  P = rep(0, n)                         # Conditional likelihood at each time step
-  col = matrix(ncol=2, nrow=n, data=0)  # Mean colonization rates
-  mor = matrix(ncol=2, nrow=n, data=0)  # Mean mortality rates
-
-  #set up initial timestep
-  if(is.null(edmdat)) {
-    x[, 1] = obsfun(so = so, yt = y[1], inverse = TRUE, N = N)
-    logW = obsfun(so = so, yt = y[1], xt = x[,1])
-    logWMax = max(logW)                  # maximum weight
-    scaledWeights = exp(logW - logWMax)  # scaled weights
-    P[1] = mean(scaledWeights) * exp(logWMax)
-
-    tstart<-2
-  } else { #If using lagged embeddings, calculate first N positions
-    #set defaults
-    if(is.null(edmdat$E))
-      edmdat$E<-2
-    if(is.null(edmdat$lib))
-      edmdat$lib<-c(1, length(y))
-    if(is.null(edmdat$pred))
-      edmdat$pred<-c(1, length(y))
-    if(is.null(edmdat$norm))
-      edmdat$norm<-2
-    if(is.null(edmdat$method))
-      edmdat$method="simplex"
-    if(is.null(edmdat$tp))
-      edmdat$tp<-0
-    if(is.null(edmdat$num_neighbors))
-      edmdat$num_neighbors<-ifelse(edmdat$method=="simplex", "e+1", 0)
-
-    for(i in 1:edmdat$E) {
-      x[, i] = obsfun(so = so, yt = y[i], inverse = TRUE, N = N)
-      logW = obsfun(so = so, yt = y[i], xt = x[,i])
-      logWMax = max(logW)                  # maximum weight
-      scaledWeights = exp(logW - logWMax)  # scaled weights
-      P[i] = mean(scaledWeights) * exp(logWMax)
-      if(i>1) {
-        ind[, i - 1] = 1:N
-      }
-    }
-
-    tstart<-edmdat$E+1
-
-    #make y block
-    yblock<-as.matrix(make_block(y, max_lag=edmdat$E+1, lib = edmdat$lib)[,-1])
-
-    if(!is.null(edmdat$extra_columns)) { #additional predictors, if applicable
-      yblock<-cbind(yblock, edmdat$extra_columns)
-    }
-  }
-
-  #run for all timesteps
-  for (t in tstart:n) {
-    if (!is.finite(logWMax)) {
-      return(list(LL = -Inf, rN = NA, x=NA, ind=NA, dem=NA))
-    }
-
-    # Resample particles
-    ind[, t - 1] = sample(N, size = N, prob = scaledWeights, replace = TRUE)
-
-    # Project particles forward
-    #colonization
-    cps<-x[ind[, t - 1], t - 1]>0 #which are >0?
-    x[!cps, t] = colfun(co=co, xt=x[ind[, t - 1], t - 1][!cps]) #colonize empty sites
-
-    #deterministic
-    if(sum(cps)>0) {
-      if(is.null(edmdat$E)) {
-        x[cps, t] = detfun(sdet = sdet, xt = x[ind[, t - 1], t - 1][cps]) #deterministic change in filled, non-colonized sites
-      } else {
-        smcps<-sum(cps,na.rm=T)
-        xtedm<-cbind(NA, matrix(ncol=edmdat$E, data=x[c(ind[cps,(t-1):(t-edmdat$E)])+rep(((t-1):(t-edmdat$E)-1)*smcps, each=smcps)]))
-
-        if(!is.null(edmdat$extra_columns)) { #additional predictors for s-mapping
-          xtedm<-cbind(xtedm, unname(edmdat$extra_columns[rep(t-1, nrow(xtedm)),]))
-        }
-
-        x[cps, t] = detfun(edmdat, xt=xtedm, yblock, t)
-      }
-    }
-
-    #process noise
-    cps[!cps]<-x[!cps, t]>0 #which are >0 now?
-    x[cps, t] = procfun(sp = sp, xt = x[cps, t])
-
-    # Compute new weights, likelihood contribution and effective sample size
-    logW = obsfun(so = so, yt = y[t], xt = x[,t])
-
-    logWMax = max(logW)
-    scaledWeights = exp(logW - logWMax)
-    P[t] = mean(scaledWeights) * exp(logWMax)
-  }
-
-  # Traceback to generate simulated path
   if(dotraceback) {
-    ind[, n] = sample(N, size = N, prob = scaledWeights, replace = TRUE)
-    itrace = ind[, n]
-    rx[n] = mean(x[itrace, n])
-    xtp1<-x[itrace, n]
-
-    xsort<-matrix(nrow=n, ncol=N)
-    xsort[n,]<-xtp1
-
-    for (t in (n - 1):1) {
-      itrace = ind[itrace, t]
-      rx[t] = mean(x[itrace, t])
-
-      #get demographics
-      xtp0<-x[itrace, t]
-      xsort[t,]<-xtp0
-
-      mor[t,1]<-sum(xtp0>0 & xtp1==0)
-      col[t,1]<-sum(xtp0==0 & xtp1>0)
-
-      mor[t,2]<-sum(xtp0>0)
-      col[t,2]<-sum(xtp0==0)
-
-      xtp1<-xtp0
-    }
-    mumor<-mean(mor[,1]/mor[,2],na.rm=T)
-    mucol<-mean(col[,1]/col[,2],na.rm=T)
-
-    return(list(LL = mean(log(P[is.finite(P) & P>0])), P = P, rN = rx, x=x, ind=ind, xsort=xsort, dem=list(col=col, mor=mor, mucol=mucol, mumor=mumor)))
+    Nest<-rep(NA, length(y))
+    Nsd<-rep(NA, length(y))
   } else {
-    return(list(LL = mean(log(P[is.finite(P) & P>0])), P = P, rN = NA, x=NA, ind=NA, xsort=NA, dem=NA))
+    Nest<-NULL
+    Nsd<-NULL
   }
+
+  #pr<-rnorm(N, 0, exp(pars$proc[1]))
+
+  tstart<-max(c(2, edmdat$E))
+  for(i in 1:(tstart)) {
+    #prd<-detfun(pars$det, rnorm(N, y[i], exp(pars$obs)))
+    #prd<-rnorm(N, y[i], exp(pars$obs))
+    prd<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i, inverse = TRUE, N = N)
+    if(dotraceback) {
+      Nest[i]<-mean(prd)
+      Nsd[i]<-sd(prd)
+    }
+  }
+
+  if(!is.null(edmdat)) {
+    smp<-s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
+    smp_cf<-smp$smap_coefficients[[1]]
+  }
+
+  for(i in tstart:length(y)) {
+    #prd is deterministic estimate for t=i
+
+    #add process noise
+    #proc<-pr+prd
+    proc<-procfun(sp = pars$proc, xt = prd, time = i)
+
+    #get likelihood of proc given y[i]
+    #dobs<-dnorm(y[i], proc, exp(pars$obs[1]),log=TRUE)
+    dobs<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
+    mxd<-max(dobs, na.rm=T)
+    wdobs<-exp(dobs-mxd)/sum(exp(dobs-mxd))
+    #dobs<-exp(dobs)/sum(exp(dobs))
+
+    #estimates of true state for y[i]
+    post_smp<-sample(proc, N, rep=T, prob = wdobs)
+
+    #estimates of deterministic state at t=i+1
+    #prd<-sum(smp_cf[i,2:3]*c(y[i-1], 1))+smp_cf[i,1]*post_smp
+    if(is.null(edmdat)) {
+      prd<-detfun(sdet = pars$det, xt = post_smp, time = i)
+    } else {
+      prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i)
+    }
+
+    #save likelihood
+    LL[i]<-log(mean(exp(dobs-mxd)))+mxd
+    #LL[i]<-log(mean(exp(dobs)))
+
+    #save state
+    if(dotraceback) {
+      Nest[i]<-mean(post_smp)
+      Nsd[i]<-sd(post_smp)
+    }
+  }
+  LLtot <- sum(LL[is.finite(LL)], na.rm=T)
+
+  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd))
 }
 
 
