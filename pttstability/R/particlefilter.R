@@ -27,13 +27,15 @@ detfun0<-function(sdet, xt, time=NULL) {
 #' @source @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 #' @export
 
-EDMfun0<-function(smp_cf, yp, x, time) {
+EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
   nD<-ncol(smp_cf)
   if(nD>2) {
-    sum(smp_cf[time,-1]*c(yp[(time-(nD-2)):(time-1)], 1))+smp_cf[time,1]*x
+    out<-sum(smp_cf[time,-1]*c(yp[(time-(nD-2)):(time-1)], 1))+smp_cf[time,1]*x
   } else {
-    smp_cf[time,-1]+smp_cf[time,1]*x
+    out<-smp_cf[time,-1]+smp_cf[time,1]*x
   }
+  out[out<minest]<-minest
+  out
 }
 
 #' default process noise function
@@ -50,12 +52,18 @@ EDMfun0<-function(smp_cf, yp, x, time) {
 #' @export
 
 procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
+  if(length(sp)==1) {
+    std_tmp<-exp(sp[1])
+  } else {
+    std_tmp<-exp(sp[1])*xt^exp(sp[2])
+  }
+
   if(!inverse) {
     sm<-length(xt)
-    xt = pmax(0, xt + rnorm(sm, 0, exp(sp[1])))
+    xt = pmax(0, xt + rnorm(sm, 0, std_tmp))
     return(xt)
   } else {
-    pd <- pnorm(0, xt, exp(sp[1]))
+    pd <- pnorm(0, xt, std_tmp)
     return(pd)
   }
 }
@@ -78,17 +86,20 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' @import stats
 #' @export
 
-obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, time=NULL) {
+obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
   if(inverse) {
-    pmax(0, rnorm(n = N, mean = yt, sd = exp(so[1])))
+    std_tmp<-exp(so[1])*yt
+    std_tmp[std_tmp<minsd]<-minsd
+    pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
   } else {
-    std_tmp<-exp(so[1])
+    std_tmp<-exp(so[1])*xt
+    std_tmp[std_tmp<minsd]<-minsd
+
+    ps<-(xt==0)
+    LL<-numeric(length(xt))
     #Tobit distribution:
-    if(yt==0) {
-      pnorm(0, mean=xt/std_tmp, log.p = TRUE)
-    } else {
-      dnorm((yt-xt)/std_tmp,log=TRUE)-log(std_tmp)
-    }
+    LL[ps]<-pnorm(0, mean=yt/std_tmp[ps], log.p = TRUE)
+    LL[!ps]<-dnorm((yt-xt[!ps])/std_tmp[!ps],log=TRUE)-log(std_tmp)
   }
 }
 
