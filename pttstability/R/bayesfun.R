@@ -8,11 +8,11 @@
 #' @return a formatted list of parameters
 #' @export
 
-parseparam0<-function(param, detparam=c(log(3),log(1))) {
-  if(length(param)==3) {
+parseparam0<-function(param, colparam=c(logit(0.2), log(0.1)), detparam=c(log(2),log(1))) {
+  if(length(param)==2) {
     pars<-list(obs=c(param[1]),
                proc=c(param[2]),
-               pcol=c(param[3], param[2]), #seed colonization abundance from process noise
+               pcol=colparam[c(1:2)], #seed colonization abundance from process noise
                det=detparam[c(1:2)])
   } else if(length(param)==6) {
     pars<-list(obs=c(param[1]),
@@ -51,6 +51,7 @@ likelihood0 <- function(param, y=y, parseparam=parseparam0, N=1e3, detfun=detfun
 
   LL<-(lowerbound)
   while(LL<=lowerbound) {
+         #particleFilterLL(y=y, pars=pars_est, N=N, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE)
     tmp<-particleFilterLL(y, pars, N=N, detfun = detfun, edmdat = edmdat)
     LL<-tmp$LL
   }
@@ -110,15 +111,17 @@ lognormal_imode = function(mu, sd){
 #' @return returns log likelihood of parameters given priors.
 #' @export
 
-density_fun0 = function(param, pars=pars, priorsd=c(1, 1, 1)){
-  dsum = dnorm(param[1], mean = pars$obs[1], sd =  priorsd[1], log = TRUE)
-  dsum = dsum+dnorm(param[2], mean = pars$proc[1], sd = priorsd[2], log = TRUE)
-  dsum = dsum+dnorm(param[3], mean = pars$pcol[1], sd = priorsd[3], log = TRUE)
+density_fun0 = function(param, minv, maxv){
+  dsum<-0
+  dwidth<-maxv-minv
 
-  if(length(param)==6) {
-    dsum = dsum+dnorm(param[4], mean = pars$pcol[2], sd = priorsd[4], log = TRUE)
-    dsum = dsum+dnorm(param[5], mean = pars$det[1], sd = priorsd[5], log = TRUE)
-    dsum = dsum+dnorm(param[6], mean = pars$det[2], sd = priorsd[6], log = TRUE)
+  dsum<-0
+  for(i in 1:length(param)) {
+    if(param[i]<=maxv[i] & param[i]>=minv[i]) {
+      dsum<-dsum+log(1/dwidth[i])
+    } else {
+      dsum<-(-Inf)
+    }
   }
 
   return(dsum)
@@ -138,74 +141,12 @@ density_fun0 = function(param, pars=pars, priorsd=c(1, 1, 1)){
 #' @import stats
 #' @export
 
-sampler_fun0 = function(n=1, pars=pars, priorsd=c(1, 1, 1),
-                        minv=c(rep(-6.9,3)),
-                        maxv=c(rep(2.9,3))){
-
-  if(!is.null(dim(priorsd)) && all.equal(nrow(priorsd), ncol(priorsd), length(pars))) {
-    prl<-rmvnorm(n, pars, priorsd, method = "svd")
-    d1 = prl[,1]
-    d2 = prl[,2]
-    d3 = prl[,3]
-    priorsd_diag<-sqrt(diag(priorsd))
-  } else {
-    d1 = rnorm(n, mean = pars$obs[1], sd = priorsd[1])
-    d2 = rnorm(n, mean = pars$proc[1], sd = priorsd[2])
-    d3 = rnorm(n, mean = pars$pcol[1], sd=priorsd[3])
-    priorsd_diag<-priorsd
+sampler_fun0 = function(n=1, minv, maxv){
+  sampout<-matrix(nrow=n, ncol=length(minv))
+  for(i in 1:length(minv)) {
+    sampout[,i]<-runif(n, min = minv[i], max = maxv[i])
   }
-
-  nex<-which((d1<=minv[1]) | (d1>=maxv[1]))
-  while(length(nex)>0) {
-    d1[nex]<-rnorm(length(nex), mean = pars$obs[1], sd = priorsd_diag[1])
-    nex<-which((d1<=minv[1]) | (d1>=maxv[1]))
-  }
-
-  nex<-which((d2<=minv[2]) | (d2>=maxv[2]))
-  while(length(nex)>0) {
-    d2[nex]<-rnorm(length(nex), mean = pars$proc[1], sd = priorsd_diag[2])
-    nex<-which((d2<=minv[2]) | (d2>=maxv[2]))
-  }
-
-  nex<-which((d3<=minv[3]) | (d3>=maxv[3]))
-  while(length(nex)>0) {
-    d3[nex]<-rnorm(length(nex), mean = pars$pcol[1], sd = priorsd_diag[3])
-    nex<-which((d3<=minv[3]) | (d3>=maxv[3]))
-  }
-
-  if(length(priorsd)==6) {
-    if(!is.null(dim(priorsd)) && all.equal(nrow(priorsd), ncol(priorsd), length(pars))) {
-      d4 = prl[,4]
-      d5 = prl[,6]
-      d6 = prl[,6]
-    } else {
-      d4 = rnorm(n, mean = pars$pcol[2], sd=priorsd[4])
-      d5 = rnorm(n, mean = pars$det[1], sd=priorsd[5])
-      d6 = rnorm(n, mean = pars$det[2], sd=priorsd[6])
-    }
-
-    nex<-which((d4<=minv[4]) | (d4>=maxv[4]))
-    while(length(nex)>0) {
-      d4[nex]<-rnorm(length(nex)>0, mean = pars$pcol[4], sd = priorsd_diag[4])
-      nex<-which((d4<=minv[4]) | (d4>=maxv[4]))
-    }
-
-    nex<-which((d5<=minv[5]) | (d5>=maxv[5]))
-    while(length(nex)>0) {
-      d5[nex]<-rnorm(length(nex)>0, mean = pars$det[1], sd = priorsd_diag[5])
-      nex<-which((d5<=minv[5]) | (d5>=maxv[5]))
-    }
-
-    nex<-which((d6<=minv[6]) | (d6>=maxv[6]))
-    while(length(nex)>0) {
-      d6[nex]<-rnorm(length(nex)>0, mean = pars$det[2], sd = priorsd_diag[6])
-      nex<-which((d6<=minv[6]) | (d6>=maxv[6]))
-    }
-
-    return(cbind(d1,d2,d3,d4,d5,d6))
-  } else {
-    return(cbind(d1,d2,d3))
-  }
+  sampout
 }
 
 

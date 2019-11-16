@@ -13,7 +13,6 @@ detfun0<-function(sdet, xt, time=NULL) {
   return(xt)
 }
 
-
 #' REDM deterministic function
 #'
 #' Estimates future states of xt based on based benavior
@@ -99,7 +98,8 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
     LL<-numeric(length(xt))
     #Tobit distribution:
     LL[ps]<-pnorm(0, mean=yt/std_tmp[ps], log.p = TRUE)
-    LL[!ps]<-dnorm((yt-xt[!ps])/std_tmp[!ps],log=TRUE)-log(std_tmp)
+    LL[!ps]<-dnorm((yt-xt[!ps])/std_tmp[!ps],log=TRUE)-log(std_tmp[!ps])
+    LL
   }
 }
 
@@ -145,20 +145,24 @@ colfun0<-function(co, xt) {
 particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE) {
   LL<-rep(NA, length(y))
 
+  #set up matrices for storage
   if(dotraceback) {
     Nest<-rep(NA, length(y))
     Nsd<-rep(NA, length(y))
+
+    Nest_noproc<-rep(NA, length(y))
+    Nsd_noproc<-rep(NA, length(y))
   } else {
     Nest<-NULL
     Nsd<-NULL
+
+    Nest_noproc<-NULL
+    Nsd_noproc<-NULL
   }
 
-  #pr<-rnorm(N, 0, exp(pars$proc[1]))
-
+  #initialize particles
   tstart<-max(c(2, edmdat$E))
   for(i in 1:(tstart)) {
-    #prd<-detfun(pars$det, rnorm(N, y[i], exp(pars$obs)))
-    #prd<-rnorm(N, y[i], exp(pars$obs))
     prd<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i, inverse = TRUE, N = N)
     if(dotraceback) {
       Nest[i]<-mean(prd)
@@ -175,40 +179,42 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
     #prd is deterministic estimate for t=i
 
     #add process noise
-    #proc<-pr+prd
     proc<-procfun(sp = pars$proc, xt = prd, time = i)
 
     #get likelihood of proc given y[i]
-    #dobs<-dnorm(y[i], proc, exp(pars$obs[1]),log=TRUE)
     dobs<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
     mxd<-max(dobs, na.rm=T)
     wdobs<-exp(dobs-mxd)/sum(exp(dobs-mxd))
-    #dobs<-exp(dobs)/sum(exp(dobs))
 
     #estimates of true state for y[i]
     post_smp<-sample(proc, N, rep=T, prob = wdobs)
 
     #estimates of deterministic state at t=i+1
-    #prd<-sum(smp_cf[i,2:3]*c(y[i-1], 1))+smp_cf[i,1]*post_smp
     if(is.null(edmdat)) {
       prd<-detfun(sdet = pars$det, xt = post_smp, time = i)
     } else {
       prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i)
     }
 
+    #add colonization
+
     #save likelihood
     LL[i]<-log(mean(exp(dobs-mxd)))+mxd
-    #LL[i]<-log(mean(exp(dobs)))
 
     #save state
     if(dotraceback) {
       Nest[i]<-mean(post_smp)
       Nsd[i]<-sd(post_smp)
+
+      if(i<length(y)) {
+        Nest_noproc[i+1]<-mean(prd)
+        Nsd_noproc[i+1]<-sd(prd)
+      }
     }
   }
   LLtot <- sum(LL[is.finite(LL)], na.rm=T)
 
-  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd))
+  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd, Nest_noproc=Nest_noproc, Nsd_noproc=Nsd_noproc))
 }
 
 
