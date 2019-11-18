@@ -34,6 +34,7 @@ EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
     out<-smp_cf[time,-1]+smp_cf[time,1]*x
   }
   out[out<minest]<-minest
+  out<-out*(x>0)
   out
 }
 
@@ -59,7 +60,7 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 
   if(!inverse) {
     sm<-length(xt)
-    xt = pmax(0, xt + rnorm(sm, 0, std_tmp))
+    xt = pmax(0, xt + rnorm(sm, 0, std_tmp))*(xt>0)
     return(xt)
   } else {
     pd <- pnorm(0, xt, std_tmp)
@@ -114,8 +115,12 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
 #' @export
 
 colfun0<-function(co, xt) {
-  sm<-length(xt)
-  xt <- xt+rbinom(sm, 1, ilogit(co[1]))*abs(rnorm(sm,0,exp(co[2])))
+  ps<-which(xt==0)
+
+  if(length(ps)>0) {
+    sm<-length(xt[ps])
+    xt[ps] <- xt[ps]+rbinom(sm, 1, ilogit(co[1]))*abs(rnorm(sm,0,exp(co[2])))
+  }
 
   return(xt)
 }
@@ -163,7 +168,7 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
   #initialize particles
   tstart<-max(c(2, edmdat$E))
   for(i in 1:(tstart)) {
-    prd<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i, inverse = TRUE, N = N)
+    prd<-obsfun(so = pars$obs, yt = y[i], time = i, inverse = TRUE, N = N)
     if(dotraceback) {
       Nest[i]<-mean(prd)
       Nsd[i]<-sd(prd)
@@ -196,11 +201,6 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
       prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i)
     }
 
-    #add colonization
-
-    #save likelihood
-    LL[i]<-log(mean(exp(dobs-mxd)))+mxd
-
     #save state
     if(dotraceback) {
       Nest[i]<-mean(post_smp)
@@ -211,6 +211,12 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
         Nsd_noproc[i+1]<-sd(prd)
       }
     }
+
+    #add colonization
+    prd<-colfun(co=pars$pcol, xt=prd)
+
+    #save likelihood
+    LL[i]<-log(mean(exp(dobs-mxd)))+mxd
   }
   LLtot <- sum(LL[is.finite(LL)], na.rm=T)
 
