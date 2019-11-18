@@ -34,11 +34,11 @@ pars0<-pars_true<-list(obs=log(0.2),
                        det=c(log(2),log(1)))
 
 #create priors
-p0<-list(c(-5, 0), c(-5, 0))
+p0<-list(c(-4, 0), c(-4, 0))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(-5, 0), c(-5, 0), c(-5, 2))
+p0_edm<-list(c(-4, 0), c(-4, 0), c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
@@ -84,8 +84,8 @@ likelihood_EDM<-function(x) {
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior_edm)
 
 #run MCMC chains
-out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=100))
-out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=100))
+out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=10))
+out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=10))
 
 ## extract parameters
 smp_detfun0<-getSample(out_detfun0, start = 1000)
