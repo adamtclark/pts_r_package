@@ -1,9 +1,5 @@
 rm(list=ls())
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
-
-load("datout/mcmcout_120_full.rda")
-
-sp<-1000
 require(BayesianTools)
 require(mvtnorm)
 require(rEDM)
@@ -11,6 +7,9 @@ source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
 source("../pttstability/R/logit_funs.R")
 source("../pttstability/R/particlefilter.R")
+
+#settings
+sp<-1000
 N<-2e3
 
 p0<-list(c(-5, 0), c(-5, 0))
@@ -21,66 +20,139 @@ p0_edm<-list(c(-5, 0), c(-5, 0), c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
-datout<-simdat$datout
-y<-simdat$datout$obs
-out_detfun0<-optdat$optout_det
-out_EDM<-optdat$optout_edm
-pars_true<-parslst$ptrue
+flst<-dir("datout")
 
-plot(out_detfun0, start=sp)
-plot(out_EDM, start=sp)
-gelmanDiagnostics(out_detfun0, plot = FALSE, start=sp)
-gelmanDiagnostics(out_EDM, plot = FALSE, start=sp)
+summarydat<-data.frame(obs=rep(NA, length(flst)),
+                   proc=NA,
+                   det_obs_mu=NA,
+                   det_proc_mu=NA,
+                   edm_obs_mu=NA,
+                   edm_proc_mu=NA,
+                   cor0=NA,
+                   cor_det=NA,
+                   cor_edm=NA,
+                   rmse0=NA,
+                   rmse_det=NA,
+                   rmse_edm=NA,
+                   det_obs_qt=matrix(nrow=length(flst), ncol=5),
+                   det_proc_qt=matrix(nrow=length(flst), ncol=5),
+                   edm_obs_qt=matrix(nrow=length(flst), ncol=5),
+                   edm_proc_qt=matrix(nrow=length(flst), ncol=5))
 
-## Summarize outputs
-smp_detfun0<-getSample(out_detfun0, start = sp)
-smp_EDM<-getSample(out_EDM, start=sp)
 
-#check for correlations among estimates
-correlationPlot(out_detfun0, start = sp)
-correlationPlot(out_EDM, start = sp)
+for(ifl in 1:length(flst)) {
+  load(paste("datout/", flst[ifl], sep=""))
 
-#plot priors and posteriors
-marginalPlot(out_detfun0, prior = TRUE, start = sp)
-marginalPlot(out_EDM, prior = TRUE, start = sp)
+  datout<-simdat$datout
+  y<-simdat$datout$obs
+  out_detfun0<-optdat$optout_det
+  out_EDM<-optdat$optout_edm
+  pars_true<-parslst$ptrue
 
-#plot posteriors vs. true values
-ptrue<-unlist(pars_true[1:2])
+  summarydat$obs[ifl]<-exp(pars_true[1])
+  summarydat$proc[ifl]<-exp(pars_true[2])
 
-par(mar=c(4,4,2,2), mfrow=c(2,2))
-for(i in 1:2) {
-  xrng<-exp(range(c(smp_detfun0[,i], ptrue[i], p0[[i]])))
-  hist(exp(smp_detfun0[,i]),breaks = 20, probability = TRUE, main="", xlim=xrng);
-  abline(v=exp(ptrue[i]), col=c(2), lty=2)
-  abline(v=exp(p0[[i]]), col=c(3), lty=2)
+  summarydat$det_obs_mu[ifl]<-exp(parslst$parsest_det[1,1])
+  summarydat$det_proc_mu[ifl]<-exp(parslst$parsest_det[2,1])
+  summarydat$edm_obs_mu[ifl]<-exp(parslst$parsest_edm[1,1])
+  summarydat$edm_proc_mu[ifl]<-exp(parslst$parsest_edm[2,1])
+
+
+  if(FALSE) {
+    plot(out_detfun0, start=sp)
+    plot(out_EDM, start=sp)
+    gelmanDiagnostics(out_detfun0, plot = FALSE, start=sp)
+    gelmanDiagnostics(out_EDM, plot = FALSE, start=sp)
+  }
+
+  ## Summarize outputs
+  smp_detfun0<-getSample(out_detfun0, start = sp)
+  smp_EDM<-getSample(out_EDM, start=sp)
+
+  #check for correlations among estimates
+  if(FALSE) {
+    correlationPlot(out_detfun0, start = sp)
+    correlationPlot(out_EDM, start = sp)
+  }
+
+  #plot priors and posteriors
+  if(FALSE) {
+    marginalPlot(out_detfun0, prior = TRUE, start = sp)
+    marginalPlot(out_EDM, prior = TRUE, start = sp)
+  }
+
+  #plot posteriors vs. true values
+  ptrue<-unlist(pars_true[1:2])
+
+  if(FALSE) {
+    par(mar=c(4,4,2,2), mfrow=c(2,2))
+    for(i in 1:2) {
+      xrng<-exp(range(c(smp_detfun0[,i], ptrue[i], p0[[i]])))
+      hist(exp(smp_detfun0[,i]),breaks = 20, probability = TRUE, main="", xlim=xrng);
+      abline(v=exp(ptrue[i]), col=c(2), lty=2)
+      abline(v=exp(p0[[i]]), col=c(3), lty=2)
+    }
+    for(i in 1:2) {
+      xrng<-exp(range(c(smp_EDM[,i], ptrue[i], p0[[i]])))
+      hist(exp(smp_EDM[,i]),breaks = 20, probability = TRUE, main="", xlim=xrng);
+      abline(v=exp(ptrue[i]), col=c(2), lty=2)
+      abline(v=exp(p0[[i]]), col=c(3), lty=2)
+    }
+  }
+
+  #run at optimum parameters
+  if(FALSE) {
+    pfout1_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_detfun0)), N=N, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE)
+    pfout2_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_EDM[,1:2])), N=N, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2, theta=exp(mean(smp_EDM[,3]))), dotraceback=TRUE)
+  }
+
+  pfout1_opt<-filterdat$filterout_det
+  pfout2_opt<-filterdat$filterout_edm
+
+  summarydat$cor_det[ifl]<-cor(pfout1_opt$Nest, datout$true, use="pairwise")^2
+  summarydat$cor_edm[ifl]<-cor(pfout2_opt$Nest, datout$true, use="pairwise")^2
+  summarydat$cor0[ifl]<-cor(y, datout$true, use="pairwise")^2
+
+  summarydat$rmse_det[ifl]<-sqrt(mean((pfout1_opt$Nest-datout$true)^2))
+  summarydat$rmse_edm[ifl]<-sqrt(mean((pfout2_opt$Nest-datout$true)^2))
+  summarydat$rmse0[ifl]<-sqrt(mean((y-datout$true)^2))
+
+  tmp<-exp(apply(smp_detfun0, 2, function(x) quantile(x, pnorm(-2:2))))
+  summarydat[ifl,grep("det_obs_qt", colnames(summarydat))]<-unname(tmp[,1])
+  summarydat[ifl,grep("det_proc_qt", colnames(summarydat))]<-unname(tmp[,2])
+
+  tmp<-exp(apply(smp_EDM, 2, function(x) quantile(x, pnorm(-2:2))))
+  summarydat[ifl,grep("edm_obs_qt", colnames(summarydat))]<-unname(tmp[,1])
+  summarydat[ifl,grep("edm_proc_qt", colnames(summarydat))]<-unname(tmp[,2])
+
+
+  if(FALSE) {
+    par(mfrow=c(1,1))
+    plot(datout$true, datout$obs, col="red")
+    points(datout$true, pfout2_opt$Nest, col="blue")
+    points(datout$true, pfout1_opt$Nest, col="black")
+    abline(a=0, b=1, lty=2)
+  }
 }
-for(i in 1:2) {
-  xrng<-exp(range(c(smp_EDM[,i], ptrue[i], p0[[i]])))
-  hist(exp(smp_EDM[,i]),breaks = 20, probability = TRUE, main="", xlim=xrng);
-  abline(v=exp(ptrue[i]), col=c(2), lty=2)
-  abline(v=exp(p0[[i]]), col=c(3), lty=2)
+
+
+plot(summarydat$proc, summarydat$det_obs_mu, log="xy"); abline(a=0, b=1, lty=2)
+plot(summarydat$proc, summarydat$edm_obs_mu, log="xy"); abline(a=0, b=1, lty=2)
+
+plot(summarydat$proc, summarydat$det_proc_mu, log="xy"); abline(a=0, b=1, lty=2)
+plot(summarydat$proc, summarydat$edm_proc_mu, log="xy"); abline(a=0, b=1, lty=2)
+
+pf<-function(x, y, ...) {
+  points(x, y)
+  abline(a=0, b=1, lty=2)
 }
+coplot(det_proc_mu~proc|obs, data=summarydat, panel=pf)
+coplot(edm_proc_mu~proc|obs, data=summarydat, panel=pf)
 
-#run at optimum parameters
-pfout1_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_detfun0)), N=N, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE)
-pfout2_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_EDM[,1:2])), N=N, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2, theta=exp(mean(smp_EDM[,3]))), dotraceback=TRUE)
+coplot(det_obs_mu~obs|proc, data=summarydat, panel=pf)
+coplot(edm_obs_mu~obs|proc, data=summarydat, panel=pf)
 
-cor(pfout1_opt$Nest, datout$true, use="pairwise")^2
-cor(pfout2_opt$Nest, datout$true, use="pairwise")^2
-cor(y, datout$true, use="pairwise")^2
-mean((pfout1_opt$Nest-datout$true)^2)
-mean((pfout2_opt$Nest-datout$true)^2)
-mean((y-datout$true)^2)
-
-
-exp(ptrue)
-exp(apply(smp_detfun0, 2, function(x) quantile(x, pnorm(-2:2))))
-exp(apply(smp_EDM, 2, function(x) quantile(x, pnorm(-2:2))))
-
-par(mfrow=c(1,1))
-plot(datout$true, datout$obs, col="red")
-points(datout$true, pfout2_opt$Nest, col="blue")
-points(datout$true, pfout1_opt$Nest, col="black")
-abline(a=0, b=1, lty=2)
-
+coplot(cor0~proc|obs, data=summarydat)
+coplot(cor_det~proc|obs, data=summarydat)
+coplot(cor_edm~proc|obs, data=summarydat)
 
