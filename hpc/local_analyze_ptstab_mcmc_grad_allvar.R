@@ -21,6 +21,7 @@ minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 flst<-dir("datout")
+flst<-flst[grep("mcmc", flst)]
 
 if(FALSE) {
   summarydat<-data.frame(obs=rep(NA, length(flst)),
@@ -29,6 +30,10 @@ if(FALSE) {
                      det_proc_mu=NA,
                      edm_obs_mu=NA,
                      edm_proc_mu=NA,
+                     proc_true_mu=NA,
+                     proc0_mu=NA,
+                     proc_det_mu=NA,
+                     proc_edm_mu=NA,
                      cor0=NA,
                      cor_det=NA,
                      cor_edm=NA,
@@ -127,6 +132,11 @@ if(FALSE) {
     summarydat[ifl,grep("edm_proc_qt", colnames(summarydat))]<-unname(tmp[,2])
 
 
+    summarydat$proc0_mu[ifl]<-sd(datout$obs)
+    summarydat$proc_det_mu[ifl]<-sd(pfout1_opt$Nest)
+    summarydat$proc_edm_mu[ifl]<-sd(pfout2_opt$Nest)
+    summarydat$proc_true_mu[ifl]<-sd(datout$true)
+
     if(FALSE) {
       par(mfrow=c(1,1))
       plot(datout$true, datout$obs, col="red")
@@ -210,5 +220,29 @@ for(i in 1:length(proccutlst)) {
   lines(obssq, predict(mod0, newdat=data.frame(obs=obssq)), col="black", lwd=2)
   lines(obssq, predict(mod1, newdat=data.frame(obs=obssq)), col="blue", lwd=2)
   lines(obssq, predict(mod2, newdat=data.frame(obs=obssq)), col="red", lwd=2)
+}
+
+
+
+## plot variability of true dynamics
+par(mfrow=mrowpar, mar=c(4,4,2,2))
+for(i in 1:length(proccutlst)) {
+  ps<-summarydat$proccut==proccutlst[i]
+  obssq<-seq(0, 1, length=1000)
+
+  matplot(summarydat$obs[ps],
+          cbind(summarydat$proc0_mu[ps],summarydat$proc_det_mu[ps],summarydat$proc_edm_mu[ps]),
+          xlab="obs. error", ylab="model error",
+          type="p", main=proccutlst[i],
+          log="xy",
+          pch=0:3, col=adjustcolor(c("black", "blue", "red"),alpha.f = 0.5))
+  mod0<-loess(proc0_mu~obs, summarydat[ps,], enp.target = 2)
+  mod1<-loess(proc_det_mu~obs, summarydat[ps,], enp.target = 2)
+  mod2<-loess(proc_edm_mu~obs, summarydat[ps,], enp.target = 2)
+  lines(obssq, predict(mod0, newdat=data.frame(obs=obssq)), col="black", lwd=2)
+  lines(obssq, predict(mod1, newdat=data.frame(obs=obssq)), col="blue", lwd=2)
+  lines(obssq, predict(mod2, newdat=data.frame(obs=obssq)), col="red", lwd=2)
+  abline(h=mean(summarydat$proc_true_mu[ps])+sd(summarydat$proc_true_mu[ps]), lty=2, col="green", lwd=2)
+  abline(h=mean(summarydat$proc_true_mu[ps])-sd(summarydat$proc_true_mu[ps]), lty=2, col="green", lwd=2)
 }
 
