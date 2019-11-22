@@ -7,10 +7,12 @@ source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
 source("../pttstability/R/logit_funs.R")
 source("../pttstability/R/particlefilter.R")
+source("plotfun.R")
 
 #settings
 sp<-1000
 N<-2e3
+collst<-adjustcolor(c("purple", "blue", "red", "black"),alpha.f = 0.3)
 
 p0<-list(c(-5, 0), c(-5, 0))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
@@ -22,6 +24,7 @@ maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 flst<-dir("datout")
 flst<-flst[grep("mcmc", flst)]
+flst<-flst[grep("full", flst)]
 
 if(FALSE) {
   summarydat<-data.frame(obs=rep(NA, length(flst)),
@@ -43,7 +46,9 @@ if(FALSE) {
                      det_obs_qt=matrix(nrow=length(flst), ncol=5),
                      det_proc_qt=matrix(nrow=length(flst), ncol=5),
                      edm_obs_qt=matrix(nrow=length(flst), ncol=5),
-                     edm_proc_qt=matrix(nrow=length(flst), ncol=5))
+                     edm_proc_qt=matrix(nrow=length(flst), ncol=5),
+                     gelmandet=NA,
+                     gelmanedm=NA)
 
 
   for(ifl in 1:length(flst)) {
@@ -63,6 +68,14 @@ if(FALSE) {
     summarydat$edm_obs_mu[ifl]<-exp(parslst$parsest_edm[1,1])
     summarydat$edm_proc_mu[ifl]<-exp(parslst$parsest_edm[2,1])
 
+    tmp<-try(gelmanDiagnostics(out_detfun0, plot = FALSE, start=sp)$psrf[,1], silent = TRUE)
+    if(!is.character(tmp)) {
+      summarydat$gelmandet[ifl]<-max(tmp)
+    }
+    tmp<-try(gelmanDiagnostics(out_EDM, plot = FALSE, start=sp)$psrf[,1], silent = TRUE)
+    if(!is.character(tmp)) {
+      summarydat$gelmanedm[ifl]<-max(tmp[1:2])
+    }
 
     if(FALSE) {
       plot(out_detfun0, start=sp)
@@ -161,88 +174,15 @@ proccutlst<-sort(unique(summarydat$proccut))
 
 
 ## plot proc error
-par(mfrow=mrowpar, mar=c(4,4,2,2))
-for(i in 1:length(obscutlst)) {
-  ps<-summarydat$obsccut==obscutlst[i]
-  procsq<-seq(0, 1, length=1000)
-
-  matplot(summarydat$proc[ps],
-          cbind(summarydat$det_proc_mu[ps],summarydat$edm_proc_mu[ps]),
-          xlab="proc. noise, observed", ylab="proc. noise, predicted",
-          type="p", main=proccutlst[i],
-          log="xy",
-          pch=2:3, col=c("blue", "red"))
-  abline(a=0, b=1, lty=3)
-
-  mod0<-loess(det_proc_mu~proc, summarydat[ps,], enp.target = 2)
-  mod1<-loess(edm_proc_mu~proc, summarydat[ps,], enp.target = 2)
-  lines(procsq, predict(mod0, newdat=data.frame(proc=procsq)), col="blue", lwd=2)
-  lines(procsq, predict(mod1, newdat=data.frame(proc=procsq)), col="red", lwd=2)
-}
-
+plotfun(plotvar="proc", byvar="obs", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.02,1), doci=FALSE)
 
 ## plot obs error
-par(mfrow=mrowpar, mar=c(4,4,2,2))
-for(i in 1:length(obscutlst)) {
-  ps<-summarydat$proccut==proccutlst[i]
-  obssq<-seq(0, 1, length=1000)
-
-  matplot(summarydat$obs[ps],
-          cbind(summarydat$det_obs_mu[ps],summarydat$edm_obs_mu[ps]),
-          xlab="obs. error, observed", ylab="obs. error, predicted",
-          type="p", main=obscutlst[i],
-          log="xy",
-          pch=2:3, col=c("blue", "red"))
-  abline(a=0, b=1, lty=3)
-
-  mod0<-loess(det_obs_mu~obs, summarydat[ps,], enp.target = 2)
-  mod1<-loess(edm_obs_mu~obs, summarydat[ps,], enp.target = 2)
-  lines(obssq, predict(mod0, newdat=data.frame(obs=obssq)), col="blue", lwd=2)
-  lines(obssq, predict(mod1, newdat=data.frame(obs=obssq)), col="red", lwd=2)
-}
-
+plotfun(plotvar="obs", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.02,1), doci=FALSE)
 
 ## plot model fit
-par(mfrow=mrowpar, mar=c(4,4,2,2))
-for(i in 1:length(proccutlst)) {
-  ps<-summarydat$proccut==proccutlst[i]
-  obssq<-seq(0, 1, length=1000)
-
-  matplot(summarydat$obs[ps],
-          cbind(summarydat$rmse0[ps],summarydat$rmse_det[ps],summarydat$rmse_edm[ps]),
-          xlab="obs. error", ylab="rmse",
-          type="p", main=proccutlst[i],
-          log="xy",
-          pch=1:3, col=c("black", "blue", "red"))
-  mod0<-loess(rmse0~obs, summarydat[ps,], enp.target = 2)
-  mod1<-loess(rmse_det~obs, summarydat[ps,], enp.target = 2)
-  mod2<-loess(rmse_edm~obs, summarydat[ps,], enp.target = 2)
-  lines(obssq, predict(mod0, newdat=data.frame(obs=obssq)), col="black", lwd=2)
-  lines(obssq, predict(mod1, newdat=data.frame(obs=obssq)), col="blue", lwd=2)
-  lines(obssq, predict(mod2, newdat=data.frame(obs=obssq)), col="red", lwd=2)
-}
-
+plotfun(plotvar="fit", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.01,1))
 
 
 ## plot variability of true dynamics
-par(mfrow=mrowpar, mar=c(4,4,2,2))
-for(i in 1:length(proccutlst)) {
-  ps<-summarydat$proccut==proccutlst[i]
-  obssq<-seq(0, 1, length=1000)
-
-  matplot(summarydat$obs[ps],
-          cbind(summarydat$proc0_mu[ps],summarydat$proc_det_mu[ps],summarydat$proc_edm_mu[ps]),
-          xlab="obs. error", ylab="model error",
-          type="p", main=proccutlst[i],
-          log="xy",
-          pch=0:3, col=adjustcolor(c("black", "blue", "red"),alpha.f = 0.5))
-  mod0<-loess(proc0_mu~obs, summarydat[ps,], enp.target = 2)
-  mod1<-loess(proc_det_mu~obs, summarydat[ps,], enp.target = 2)
-  mod2<-loess(proc_edm_mu~obs, summarydat[ps,], enp.target = 2)
-  lines(obssq, predict(mod0, newdat=data.frame(obs=obssq)), col="black", lwd=2)
-  lines(obssq, predict(mod1, newdat=data.frame(obs=obssq)), col="blue", lwd=2)
-  lines(obssq, predict(mod2, newdat=data.frame(obs=obssq)), col="red", lwd=2)
-  abline(h=mean(summarydat$proc_true_mu[ps])+sd(summarydat$proc_true_mu[ps]), lty=2, col="green", lwd=2)
-  abline(h=mean(summarydat$proc_true_mu[ps])-sd(summarydat$proc_true_mu[ps]), lty=2, col="green", lwd=2)
-}
+plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.05,1))
 
