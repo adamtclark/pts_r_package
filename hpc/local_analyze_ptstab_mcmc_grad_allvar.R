@@ -48,7 +48,8 @@ if(FALSE) {
                      edm_obs_qt=matrix(nrow=length(flst), ncol=5),
                      edm_proc_qt=matrix(nrow=length(flst), ncol=5),
                      gelmandet=NA,
-                     gelmanedm=NA)
+                     gelmanedm=NA,
+                     edm_var=NA)
 
 
   for(ifl in 1:length(flst)) {
@@ -157,6 +158,13 @@ if(FALSE) {
       points(datout$true, pfout1_opt$Nest, col="black")
       abline(a=0, b=1, lty=2)
     }
+
+    stmp<-s_map(datout$obs,silent = TRUE,E=2)
+    summarydat$edm_var[ifl]<-min(stmp$rmse,na.rm=T)
+
+    if(ifl/100 == floor(ifl/100)) {
+      print(round(ifl/length(flst),2))
+    }
   }
   write.csv(summarydat, "datout/summarydat.csv", row.names = FALSE)
 } else {
@@ -164,6 +172,7 @@ if(FALSE) {
 }
 
 ## set up for plotting
+cutoff<-0.4
 cutlst<-c(0, 0.05, 0.1, 0.2, 0.3, 0.5, 1)
 mrowpar<-c(2,3)
 
@@ -172,17 +181,20 @@ summarydat$proccut<-cut(summarydat$proc, breaks = cutlst)
 obscutlst<-sort(unique(summarydat$obsccut))
 proccutlst<-sort(unique(summarydat$proccut))
 
+#show total error
+plot(sqrt(summarydat$obs^2+summarydat$proc^2), summarydat$edm_var, ylab="est tot error", xlab="obs tot error", col=collst[3], log="xy"); abline(a=0, b=1, lty=3)
+points(sqrt(summarydat$obs^2+summarydat$proc^2), summarydat$proc0_mu, col=collst[1])
+abline(v=cutoff, h=cutoff, lty=3)
 
 ## plot proc error
-plotfun(plotvar="proc", byvar="obs", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.02,1), doci=FALSE)
+plotfun(plotvar="proc", byvar="obs", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.02,1), doci=FALSE, cutoff = cutoff)
 
 ## plot obs error
-plotfun(plotvar="obs", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.02,1), doci=FALSE)
+plotfun(plotvar="obs", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.02,1), doci=FALSE, cutoff = cutoff)
 
 ## plot model fit
-plotfun(plotvar="fit", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.01,1))
-
+plotfun(plotvar="fit", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.01,1), cutoff = cutoff)
 
 ## plot variability of true dynamics
-plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.05,1))
+plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.05,1), cutoff = cutoff)
 
