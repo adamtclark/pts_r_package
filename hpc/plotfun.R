@@ -123,10 +123,14 @@ plotfun<-function(plotvar, byvar, summarydat, cutlst, mrowpar, collst, cutoff=0.
       abline(v=c(0.1, cutoff), lty=3)
     }
 
-    if(sum(summarydat$edm_var[ps]<cutoff)>0 & plotvar%in%c("obs", "proc")) {
-      pscut<-which(summarydat$edm_var[ps]<cutoff)
-      r2<-apply(pmat[pscut,], 2, function(x) cor(log(x), log(xv[ps][pscut]), use="pairwise")^2)
-      legend("topleft", legend = round(r2, 2), col=adjustcolor(cuse,alpha.f = 2), pch=1, bty="n", title = expression(paste(R^2)))
+    if(plotvar%in%c("obs", "proc")) {
+      if(sum(summarydat$edm_var[ps]<cutoff)>2) {
+        pscut<-which(summarydat$edm_var[ps]<cutoff)
+        r2<-apply(pmat[pscut,], 2, function(x) cor(log(x), log(xv[ps][pscut]), use="pairwise")^2)
+        legend("topleft", legend = round(r2, 2), col=adjustcolor(cuse,alpha.f = 2), pch=1, bty="n", title = expression(paste(R^2)))
+      } else {
+        legend("topleft", legend = rep(0, ncol(pmat)), col=adjustcolor(cuse,alpha.f = 2), pch=1, bty="n", title = expression(paste(R^2)))
+      }
     }
 
     ps1<-which(is.finite(wts1) & wts1>0)
