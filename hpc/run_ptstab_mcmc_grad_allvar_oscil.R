@@ -75,7 +75,7 @@ ptrue<-unname(unlist(pars_sim)[1:2])
 #set number of iterations
 niter<-5000
 N<-2e3
-Euse<-2
+Euse<-4
 
 #set up likelihoods
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N)
