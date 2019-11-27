@@ -27,11 +27,15 @@ detfun0<-function(sdet, xt, time=NULL) {
 #' @export
 
 EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
+  # time is time period of desired prediction
+  # x it abundance at time time-1
+  time_use<-time-1
+
   nD<-ncol(smp_cf)
   if(nD>2) {
-    out<-sum(smp_cf[time,-1]*c(yp[rev((time-(nD-2)):(time-1))], 1))+smp_cf[time,1]*x
+    out<-sum(smp_cf[time_use,-1]*c(yp[rev((time_use-(nD-2)):(time_use-1))], 1))+smp_cf[time_use,1]*x
   } else {
-    out<-smp_cf[time,-1]+smp_cf[time,1]*x
+    out<-smp_cf[time_use,-1]+smp_cf[time_use,1]*x
   }
   out[out<minest]<-minest
   out<-out*(x>0)
@@ -196,9 +200,9 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
 
     #estimates of deterministic state at t=i+1
     if(is.null(edmdat)) {
-      prd<-detfun(sdet = pars$det, xt = post_smp, time = i)
+      prd<-detfun(sdet = pars$det, xt = post_smp, time = i+1)
     } else {
-      prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i)
+      prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1)
     }
 
     #save state

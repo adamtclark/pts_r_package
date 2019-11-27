@@ -63,7 +63,7 @@ while(sum(y>0)<=(length(y)/20)) { # want at least 5% nonzero values
   pars_sim<-parseparam0(unname(sampler_fun_USE()))
   #parseparam0(sampler_fun0(n=1, pars = pars0, priorsd = c(1, 1, 1)))
 
-  datout<-makedynamics_general(n = 100, n0 = exp(rnorm(1,0,0.1)), pdet=pars_sim$det,
+  datout<-makedynamics_general(n = 100, n0 = (sin(1/2)+1+0.5)/2, pdet=pars_sim$det,
                                proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
                                detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
   y<-datout$obs
