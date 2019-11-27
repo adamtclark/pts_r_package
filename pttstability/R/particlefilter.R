@@ -29,7 +29,7 @@ detfun0<-function(sdet, xt, time=NULL) {
 EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
   nD<-ncol(smp_cf)
   if(nD>2) {
-    out<-sum(smp_cf[time,-1]*c(yp[(time-(nD-2)):(time-1)], 1))+smp_cf[time,1]*x
+    out<-sum(smp_cf[time,-1]*c(yp[rev((time-(nD-2)):(time-1))], 1))+smp_cf[time,1]*x
   } else {
     out<-smp_cf[time,-1]+smp_cf[time,1]*x
   }
