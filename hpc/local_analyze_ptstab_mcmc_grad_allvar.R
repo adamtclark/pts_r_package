@@ -25,6 +25,7 @@ maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 flst<-dir("datout")
 flst<-flst[grep("mcmc", flst)]
 flst<-flst[grep("full", flst)]
+flst<-flst[-grep("oscil", flst)]
 
 if(FALSE) {
   summarydat<-data.frame(obs=rep(NA, length(flst)),
