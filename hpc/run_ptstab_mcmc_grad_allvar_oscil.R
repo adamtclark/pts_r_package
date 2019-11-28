@@ -75,7 +75,7 @@ ptrue<-unname(unlist(pars_sim)[1:2])
 #set number of iterations
 niter<-5000
 N<-2e3
-Euse<-6
+Euse<-4
 
 #set up likelihoods
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N)
@@ -136,7 +136,7 @@ optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
 #simulation outputs
 simdat<-list(datout=datout)
 
-save(list = c("simdat", "parslst", "optdat", "filterdat"), file = paste("datout/mcmcout_", commArgin, "_full_oscil.rda", sep=""), version=2)
+save(list = c("simdat", "parslst", "optdat", "filterdat"), file = paste("datout/mcmcout_", commArgin, "_4E.rda", sep=""), version=2)
 
 
 
