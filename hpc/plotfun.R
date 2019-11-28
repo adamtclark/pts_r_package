@@ -89,7 +89,7 @@ plotfun<-function(plotvar, byvar, summarydat, cutlst, mrowpar, collst, cutoff=0.
   par(mfrow=mrowpar, mar=c(2,2,2,2), oma=c(2,2,0,0))
   for(i in 1:length(bylist)) {
     ps<-which(byall==bylist[i])
-    sq<-seq(0, 1, length=1000)
+    sq<-seq(0, cutoff, length=1000)
 
     if(plotvar%in%c("obs", "proc")) {
       pmat<-cbind(detv[ps],edmv[ps])
@@ -133,22 +133,25 @@ plotfun<-function(plotvar, byvar, summarydat, cutlst, mrowpar, collst, cutoff=0.
       }
     }
 
-    ps1<-which(is.finite(wts1) & wts1>0)
-    ps2<-which(is.finite(wts2) & wts2>0)
-    xtmp<-xv[ps][ps1]
-    ytmp<-detv[ps][ps1]
-    mod0<-loess(ytmp~xtmp, enp.target = 2, weights = 1/wts1[ps1])
-    xtmp<-xv[ps][ps2]
-    ytmp<-edmv[ps][ps2]
-    mod1<-loess(ytmp~xtmp, enp.target = 2, weights = 1/wts2[ps2])
+    ps1<-which(is.finite(wts1) & wts1>0 & summarydat$edm_var[ps]<cutoff)
+    ps2<-which(is.finite(wts2) & wts2>0 & summarydat$edm_var[ps]<cutoff)
 
-    prd1<-predict(mod0, newdat=data.frame(xtmp=sq), se=TRUE)
-    prd2<-predict(mod1, newdat=data.frame(xtmp=sq), se=TRUE)
-    ps1<-is.finite(prd1$fit)
-    ps2<-is.finite(prd2$fit)
+    if(length(ps1)>6 & length(ps2) > 6) {
+      xtmp<-log(xv[ps][ps1])
+      ytmp<-log(detv[ps][ps1])
+      mod0<-lm(ytmp~xtmp, weights = 1/wts1[ps1])
+      xtmp<-log(xv[ps][ps2])
+      ytmp<-log(edmv[ps][ps2])
+      mod1<-lm(ytmp~xtmp, weights = 1/wts2[ps2])
 
-    polygon(c(sq[ps1], rev(sq[ps1])), c(prd1$fit[ps1]-prd1$se.fit[ps1], rev(prd1$fit[ps1]+prd1$se.fit[ps1])), col=collst[2], border = NA)
-    polygon(c(sq[ps2], rev(sq[ps2])), c(prd2$fit[ps2]-prd2$se.fit[ps2], rev(prd2$fit[ps2]+prd2$se.fit[ps2])), col=collst[3], border = NA)
+      prd1<-data.frame(predict(mod0, newdat=data.frame(xtmp=log(sq)), interval="confidence"))
+      prd2<-data.frame(predict(mod1, newdat=data.frame(xtmp=log(sq)), interval="confidence"))
+      ps1<-is.finite(prd1$fit)
+      ps2<-is.finite(prd2$fit)
+
+      polygon(c(sq[ps1], rev(sq[ps1])), exp(c(prd1$lwr[ps1], rev(prd1$upr[ps1]))), col=collst[2], border = NA)
+      polygon(c(sq[ps2], rev(sq[ps2])), exp(c(prd2$lwr[ps2], rev(prd2$upr[ps2]))), col=collst[3], border = NA)
+    }
 
     if(plotvar%in%c("fit", "det")) {
       xtmp<-xv[ps]
