@@ -139,18 +139,21 @@ plotfun<-function(plotvar, byvar, summarydat, cutlst, mrowpar, collst, cutoff=0.
     if(length(ps1)>6 & length(ps2) > 6) {
       xtmp<-log(xv[ps][ps1])
       ytmp<-log(detv[ps][ps1])
-      mod0<-lm(ytmp~xtmp, weights = 1/wts1[ps1])
-      xtmp<-log(xv[ps][ps2])
-      ytmp<-log(edmv[ps][ps2])
-      mod1<-lm(ytmp~xtmp, weights = 1/wts2[ps2])
 
-      prd1<-data.frame(predict(mod0, newdat=data.frame(xtmp=log(sq)), interval="confidence"))
-      prd2<-data.frame(predict(mod1, newdat=data.frame(xtmp=log(sq)), interval="confidence"))
-      ps1<-is.finite(prd1$fit)
-      ps2<-is.finite(prd2$fit)
+      if(sum(!is.na(xtmp))>6 & sum(!is.na(ytmp))>6) {
+        mod0<-lm(ytmp~xtmp, weights = 1/wts1[ps1])
+        xtmp<-log(xv[ps][ps2])
+        ytmp<-log(edmv[ps][ps2])
+        mod1<-lm(ytmp~xtmp, weights = 1/wts2[ps2])
 
-      polygon(c(sq[ps1], rev(sq[ps1])), exp(c(prd1$lwr[ps1], rev(prd1$upr[ps1]))), col=collst[2], border = NA)
-      polygon(c(sq[ps2], rev(sq[ps2])), exp(c(prd2$lwr[ps2], rev(prd2$upr[ps2]))), col=collst[3], border = NA)
+        prd1<-data.frame(predict(mod0, newdat=data.frame(xtmp=log(sq)), interval="confidence"))
+        prd2<-data.frame(predict(mod1, newdat=data.frame(xtmp=log(sq)), interval="confidence"))
+        ps1<-is.finite(prd1$fit)
+        ps2<-is.finite(prd2$fit)
+
+        polygon(c(sq[ps1], rev(sq[ps1])), exp(c(prd1$lwr[ps1], rev(prd1$upr[ps1]))), col=collst[2], border = NA)
+        polygon(c(sq[ps2], rev(sq[ps2])), exp(c(prd2$lwr[ps2], rev(prd2$upr[ps2]))), col=collst[3], border = NA)
+      }
     }
 
     if(plotvar%in%c("fit", "det")) {

@@ -25,6 +25,7 @@ maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 flst<-dir("datout")
 flst<-flst[grep("mcmc", flst)]
 flst<-flst[grep("noobs", flst)]
+flst<-flst[-grep("oscil", flst)]
 
 if(FALSE) {
   summarydat<-data.frame(obs=rep(NA, length(flst)),
@@ -113,7 +114,7 @@ if(FALSE) {
 ## set up for plotting
 cutlst<-c(0, 0.05, 0.1, 0.2, 0.3, 0.5, 1)
 mrowpar<-c(2,3)
-cutoff<-0.4
+cutoff<-0.5
 
 summarydat$obsccut<-cut(summarydat$obs, breaks = cutlst)
 summarydat$proccut<-cut(summarydat$proc, breaks = cutlst)
