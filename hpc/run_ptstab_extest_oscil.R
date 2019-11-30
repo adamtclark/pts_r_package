@@ -102,16 +102,21 @@ morout$true_plus<-morout$true+minv
 pmod<-loess(log(true_plus)~log(puse), morout)
 morout$true_pred<-exp(predict(pmod))
 lines(sort(morout$puse), morout$true_pred[order(morout$puse)], col=2)
+ppred_sq<-c(min(morout$puse), c(0.04, 0.05, 0.075, 0.1, 0.15), max(morout$puse))
+ppred_sm<-exp(predict(pmod, newdata=data.frame(puse=ppred_sq)))
 
-par(mar=c(5.5,5.5,2,2))
+
+par(mar=c(5.5,5.5,4.5,2))
 axsq<-c(minv, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05)
 matplot(morout$true_pred, morout[,2:5]+minv, col=collst, pch=16,
         xlab="", ylab="", log="xy", cex=0.3, axes=F)
 axis(1, at=axsq, labels = c(paste("<", axsq[1]), axsq[-1]), las=2)
 axis(2, at=axsq, labels = c(paste("<", axsq[1]), axsq[-1]), las=2)
+axis(3, at=ppred_sm, labels = round(ppred_sq, 3), las=2)
 box()
 mtext("true", 1, line=4)
 mtext("predicted", 2, line=4)
+mtext("proc", 3, line=3)
 
 abline(a=0, b=1, lty=3)
 psq<-seq(min(morout$true_pred), max(morout$true_pred), length=1000)
