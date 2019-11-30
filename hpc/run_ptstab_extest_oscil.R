@@ -41,7 +41,7 @@ estmorfun<-function(x, psd) {
 N<-2e3
 Euse<-6
 tuse<-4
-
+minv<-1e-4
 
 ## Simulate data
 niter<-1000
@@ -56,7 +56,7 @@ if(FALSE) {
                            pcol=c(logit(0.2), log(0.1)),
                            det=c(log(2),log(1)))
 
-    datout_long<-makedynamics_general(n = 1e4, n0 = (sin(1/2)+1+0.5)/2, pdet=pars_sim$det,
+    datout_long<-makedynamics_general(n = 1/minv, n0 = (sin(1/2)+1+0.5)/2, pdet=pars_sim$det,
                                    proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
                                    detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
     datout<-datout_long[1:100,]
@@ -95,21 +95,31 @@ if(FALSE) {
   morout<-read.csv("datout/morsimout.csv")
 }
 
-collst<-adjustcolor(c("red", "blue", "green", "purple"), alpha.f = 0.5)
+collst<-adjustcolor(c("red", "blue", "green", "purple"), alpha.f = 0.8)
 
-plot(morout[,6], morout[,1]+1e-4, xlab="proc", ylab="mortality", log="xy")
-morout$true_plus<-morout$true+1e-4
+plot(morout[,6], morout[,1]+minv, xlab="proc", ylab="mortality", log="xy")
+morout$true_plus<-morout$true+minv
 pmod<-loess(log(true_plus)~log(puse), morout)
 morout$true_pred<-exp(predict(pmod))
 lines(sort(morout$puse), morout$true_pred[order(morout$puse)], col=2)
 
-matplot(morout$true_pred, morout[,2:5]+1e-4, col=collst, pch=16,
-        xlab="true", ylab="estimated", log="xy", cex=0.3); abline(a=0, b=1, lty=3)
+par(mar=c(5.5,5.5,2,2))
+axsq<-c(minv, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05)
+matplot(morout$true_pred, morout[,2:5]+minv, col=collst, pch=16,
+        xlab="", ylab="", log="xy", cex=0.3, axes=F)
+axis(1, at=axsq, labels = c(paste("<", axsq[1]), axsq[-1]), las=2)
+axis(2, at=axsq, labels = c(paste("<", axsq[1]), axsq[-1]), las=2)
+box()
+mtext("true", 1, line=4)
+mtext("predicted", 2, line=4)
+
+abline(a=0, b=1, lty=3)
 psq<-seq(min(morout$true_pred), max(morout$true_pred), length=1000)
-for(i in 2:5) {
-  mod<-loess(log(morout[,i]+1e-4)~log(true_pred), morout)
+
+for(i in c(2,3,5)) {
+  mod<-loess(log(morout[,i]+minv)~log(true_pred), morout, enp.target = 10)
   pred<-predict(mod, newdata=data.frame(true_pred=psq), se=TRUE)
-  polygon(c(psq, rev(psq)), exp(c(pred$fit+pred$se.fit, rev(pred$fit-pred$se.fit))), col=collst[i-1], border=NA)
+  polygon(c(psq, rev(psq)), exp(c(pred$fit+qt(0.95,pred$df)*pred$se.fit, rev(pred$fit-qt(0.95,pred$df)*pred$se.fit))), col=collst[i-1], border=NA)
 }
 abline(v=0.01, lty=2)
 

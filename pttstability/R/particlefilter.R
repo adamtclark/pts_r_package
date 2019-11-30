@@ -151,7 +151,7 @@ colfun0<-function(co, xt) {
 #' @return LL, P, rN, x, ind, xsort, dem(col, mor, mucol, mumor)
 #' @export
 
-particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE) {
+particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE, fulltraceback=FALSE) {
   LL<-rep(NA, length(y))
 
   #set up matrices for storage
@@ -184,6 +184,12 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
     smp_cf<-smp$smap_coefficients[[1]]
   }
 
+  if(fulltraceback) {
+    fulltracemat<-matrix(nrow=length(y), ncol=N)
+  } else {
+    fulltracemat<-NULL
+  }
+
   for(i in tstart:length(y)) {
     #prd is deterministic estimate for t=i
 
@@ -197,6 +203,9 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
 
     #estimates of true state for y[i]
     post_smp<-sample(proc, N, rep=T, prob = wdobs)
+    if(fulltraceback) {
+      fulltracemat[i,]<-post_smp
+    }
 
     #estimates of deterministic state at t=i+1
     if(is.null(edmdat)) {
@@ -224,7 +233,7 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
   }
   LLtot <- sum(LL[is.finite(LL)], na.rm=T)
 
-  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd, Nest_noproc=Nest_noproc, Nsd_noproc=Nsd_noproc))
+  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd, Nest_noproc=Nest_noproc, Nsd_noproc=Nsd_noproc, fulltracemat=fulltracemat))
 }
 
 
