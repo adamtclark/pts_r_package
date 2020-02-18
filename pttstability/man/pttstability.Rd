@@ -49,159 +49,134 @@ the observation error, process noise, and (optionally) deterministic functions u
 The default observation error and process noise functions in this package (obsfun0 and procfun0)
 take advantage of the Taylor Power law to separate noise components for relatively short time series,
 from which the name of this package is derived.
-Process noise is assumed to scale with the magnitude of the observed state as a power function sd_proc(x) = a*x^z,
-whereas observation error is assumed to scale linearly, i.e. sd_obs(x) = b + c*x.
+Observation error is assumed to scale with the observed state as sd_obs(x) = x*exp(obs),
+Process noise is either a constant (i.e. sd_proc(x) = exp(proc)), or, if two variables are given,
+process noise scales as a power function of the observed value as sd_proc(x) = sqrt(exp(proc1)*x^exp(proc2))
 
 Note that although we include default functions in this package, users are able (and encouraged!) to write
 their own (including for observation error, process noise, deterministic dynamics, priors, and likelihoods).
 }
 
 \examples{
+#Load packages
+require(rEDM)
+require(BayesianTools)
+
 #Set seed
-set.seed(41019)
+set.seed(200218)
 
 ## Simulate data
-pars<-list(obs=c(log(1e-2), log(0.1)),
-           proc=c(-2, log(1.2)),
-           pcol=c(logit(0.2), log(1e-2)),
-           det=c(log(3),log(1)))
+pars_true<-list(obs=log(0.2),
+                proc=log(0.1),
+                pcol=c(logit(0.2), log(0.1)),
+                det=c(log(2),log(1)))
 
-datout<-makedynamics(n = 100, obs = pars$obs, proc = pars$proc, r = pars$det[1],
-                     K = pars$det[2], pcol = pars$pcol)
+#generate random parameter values
+datout<-makedynamics_general(n = 100, n0 = 1, pdet=pars_true$det,
+                             proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
+                             detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
 y<-datout$obs
 
+#get theta paramter for s-mapping
+s<-s_map(y, E=2, silent = TRUE)
+tuse<-s$theta[which.min(s$rmse)]
 
 ## Run filter
 N = 1e3
 #based on detful0
-filterout_det<-particleFilterLL(y, pars=pars, N, detfun = detfun0, dotraceback = TRUE)
+filterout_det<-particleFilterLL(y, pars=pars_true, N, detfun = detfun0,
+                                dotraceback = TRUE, fulltraceback = TRUE)
 #based on EDM
-filterout_edm<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2),
-                                dotraceback = TRUE)
+filterout_edm<-particleFilterLL(y, pars=pars_true, N, detfun = EDMfun0,
+                                edmdat = list(E=2, theta=tuse),
+                                dotraceback = TRUE, fulltraceback = TRUE)
 
 #plot filter output
 par(mar=c(4,4,2,2), mfrow=c(3,1))
-matplot(1:length(y), t(filterout_det$x)[,1:30], col=adjustcolor(1,alpha.f = 0.5), lty=3,
+#plot 30 of the 1000 particles to show general trend
+matplot(1:length(y), filterout_det$fulltracemat[,1:30], col=adjustcolor(1,alpha.f = 0.5), lty=3,
         type="l", xlab="time", ylab="abund", main="detfun0")
-lines(1:length(y), y, col=2, lwd=1.5)
-lines(1:length(y), datout$true, col="blue", lwd=1.5, lty=2)
-lines(1:length(y), filterout_det$rN, col=3, lwd=1.5)
+lines(1:length(y), y, col=2, lwd=1.5) #observations
+lines(1:length(y), datout$true, col="blue", lwd=1.5, lty=2) #true values
+lines(1:length(y), filterout_det$Nest, col=3, lwd=1.5) #mean estimate from filter
 
-matplot(1:length(y), t(filterout_edm$x)[,1:30], col=adjustcolor(1,alpha.f = 0.5), lty=3,
+matplot(1:length(y), filterout_edm$fulltracemat[,1:30], col=adjustcolor(1,alpha.f = 0.5), lty=3,
         type="l", xlab="time", ylab="abund", main="EDM")
 lines(1:length(y), y, col=2, lwd=1.5)
 lines(1:length(y), datout$true, col="blue", lwd=1.5, lty=2)
-lines(1:length(y), filterout_edm$rN, col=3, lwd=1.5)
+lines(1:length(y), filterout_edm$Nest, col=3, lwd=1.5)
 
-plot(filterout_det$rN, y, xlim=range(c(filterout_det$rN, filterout_edm$rN)),
-     xlab="predicted", ylab="observed", col=4); points(filterout_edm$rN, y, col=2)
+plot(filterout_det$Nest, datout$true, xlim=range(c(filterout_det$Nest, filterout_edm$Nest)),
+     xlab="predicted", ylab="true value", col=4)
+points(filterout_edm$Nest, datout$true, col=2)
+points(y, datout$true, col=3)
 abline(a=0, b=1, lty=2)
-legend("topleft", c("detfun0", "EDM"), pch=1, col=c(4,2), bty="n")
+legend("topleft", c("detfun0", "EDM", "obs"), pch=1, col=c(4,2,3), bty="n")
 
-#estimate demographic rates from extended timeseries
-etdfilter_det<-extend_particleFilter(pfout=filterout_det, pars=pars,
-     Next = 1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL)
-etdfilter_edm<-extend_particleFilter(pfout=filterout_edm, pars=pars,
-     Next = 1e3, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=2))
-#compare to results from a long simulation
-datout_long<-makedynamics(n = 2e4, obs = pars$obs, proc = pars$proc,
-     r = pars$det[1], K = pars$det[2], pcol = pars$pcol)
-demdat_true<-getcm(datout_long$true)
+#note improvement in fit, for both filters
+cor(datout$true, datout$obs)^2 #observations
+cor(datout$true, filterout_det$Nest)^2 #deterministic filter
+cor(datout$true, filterout_edm$Nest)^2 #EDM filter
 
-#plot rates
-par(mar=c(4,4,2,2), mfrow=c(2,1))
-hist(etdfilter_det$demdat$text, xlim=c(10, 25),
-     col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to extinction", main="")
-par(new=TRUE)
-hist(etdfilter_edm$demdat$text, xlim=c(10, 25),
-     col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
-abline(v=1/demdat_true$pm, lwd=2, lty=2)
-
-hist(etdfilter_det$demdat$tcol, xlim=c(5, 12),
-     col=adjustcolor("blue", alpha.f = 0.5), breaks = 30, xlab="time to colonization", main="")
-par(new=TRUE)
-hist(etdfilter_edm$demdat$tcol, xlim=c(5, 12),
-     col=adjustcolor("red", alpha.f = 0.5), breaks = 30, axes=FALSE, xlab="", ylab="", main="")
-abline(v=1/demdat_true$pc, lwd=2, lty=2)
-
-legend("topright", c("deterministic est.", "EDM est.", "true value"),
-     fill = adjustcolor(c("blue", "red", NA), alpha.f = 0.5),
-     lty=c(NA, NA, 2), lwd=c(NA, NA, 2), col=c(NA, NA, 1), border = c(1,1,NA))
-
-
-## Run optimizer
+## Run optimizers
 \dontrun{
-param<-unlist(pars)[1:6]
-
 #create priors
-density_fun_USE<-function(param) density_fun0(param = param, pars = pars)
-sampler_fun_USE<-function(x) sampler_fun0(n = 1, pars = pars)
-prior <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
-                     lower = rep(-10,6), upper = rep(10,6))
+minvUSE<-c(-4, -4) #minimum interval for obs and proc
+maxvUSE<-c(0, 0) #maximum interval for obs and proc
 
-likelihood0(param, y = y)+density_fun_USE(param)
-likelihood0(param, y=y, detfun = EDMfun0, edmdat = list(E=2))+density_fun_USE(param)
+minvUSE_edm<-c(-4, -4, -5) #minimum interval for obs, proc, and theta
+maxvUSE_edm<-c(0, 0, 2) #maximum interval for obs, proc, and theta
 
-#plot priors
-tmp<-inv_fun0(sampler_fun0(1e4,pars = pars))
-hist(tmp[,1], breaks = 30); abline(v=exp(pars$obs[1]), col=2, lwd=2, lty=2)
-hist(tmp[,2], breaks = 30); abline(v=exp(pars$obs[2]), col=2, lwd=2, lty=2)
-hist(tmp[,3], breaks = 30); abline(v=(pars$proc[1]), col=2, lwd=2, lty=2)
-hist(tmp[,4], breaks = 30); abline(v=exp(pars$proc[2]), col=2, lwd=2, lty=2)
-hist(tmp[,5], breaks = 30); abline(v=ilogit(pars$pcol[1]), col=2, lwd=2, lty=2)
-hist(tmp[,6], breaks = 30); abline(v=exp(pars$pcol[2]), col=2, lwd=2, lty=2)
+#density, sampler, and prior functions for deterministic function
+density_fun_USE<-function(param) density_fun0(param = param, minv = minvUSE, maxv=maxvUSE)
+sampler_fun_USE<-function(x) sampler_fun0(n = 1, minv = minvUSE, maxv=maxvUSE)
+prior_USE <- createPrior(density = density_fun_USE, sampler = sampler_fun_USE,
+                         lower = minvUSE, upper = maxvUSE)
 
-#number of MCMC iterations - increase for more accurate results
-#note - runtime will be long for EDM example
-niter<-501
-nburn<-102
+#density, sampler, and prior functions for EDM function
+density_fun_USE_edm<-function(param) density_fun0(param = param,
+                                minv = minvUSE_edm, maxv=maxvUSE_edm)
+sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
+prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
+                         lower = minvUSE_edm, upper = maxvUSE_edm)
+## Run filter
+niter<-2000 #number of steps for the MCMC sampler
+N<-1e3 #number of particles
+Euse<-2 #number of embedding dimensions
 
-#with detfun0
-likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0)
-bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior)
+#likelihood and bayesian set-ups for deterministic functions
+likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N)
+bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior_USE)
+
+#likelihood and bayesian set-ups for EDM functions
+likelihood_EDM<-function(x) {
+  xuse<-x[1:2]
+  tuse_edm<-exp(x[3])
+  likelihood0(param = xuse, y=y, parseparam = parseparam0,
+              detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse_edm), N = N)
+}
+
+bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior_edm)
+
+#run MCMC optimization
 out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
-                       settings = list(iterations=niter, burnin=nburn))
-
-#with EDM
-likelihood_EDM<-function(x) likelihood0(param = x, y=y, parseparam = parseparam0,
-  detfun = EDMfun0, edmdat = list(E=2))
-bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior)
+                                settings = list(iterations=niter, consoleUpdates=20))
 out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
-                   settings = list(iterations=niter, burnin=nburn))
+                                settings = list(iterations=niter, consoleUpdates=20))
 
+#plot results, with a 200-step burn-in
+plot(out_detfun0, start = 200)
+plot(out_EDM, start = 200)
 
-## Summarize outputs
-smp_detfun0<-inv_fun0(getSample(out_detfun0))
-smp_EDM<-inv_fun0(getSample(out_EDM))
+## extract and plot parameter distributions
+smp_detfun0<-getSample(out_detfun0, start = 200)
+smp_EDM<-getSample(out_EDM, start=200)
 
-plot(data.frame(smp_detfun0))
-plot(data.frame(smp_EDM))
+par(mfrow=c(2,2))
+hist(smp_detfun0[,1], main="det. function", xlab="obs"); abline(v=pars_true$obs, col=2)
+hist(smp_detfun0[,2], main="det. function", xlab="proc"); abline(v=pars_true$proc, col=2)
 
-#plot posteriors
-truepars_transformed<-inv_fun0(t(as.matrix(unlist(pars))))
-
-par(mar=c(4,4,2,2), mfrow=c(3,2))
-for(i in 1:6) {
-  hist(smp_detfun0[,i],breaks = 30); abline(v=truepars_transformed[i], col=c(2), lty=2)
-}
-
-for(i in 1:6) {
-  hist(smp_EDM[,i],breaks = 30); abline(v=truepars_transformed[i], col=c(2), lty=2)
-}
-
-## Plot demographic rates
-pfout_detfun0<-particleFilterLL(y, pars=pars, N, detfun = detfun0, dotraceback = TRUE)
-pfout_EDM<-particleFilterLL(y, pars=pars, N, detfun = EDMfun0, edmdat = list(E=2),
-                            dotraceback = TRUE)
-
-par(mar=c(4,4,2,2), mfrow=c(2,1))
-matplot(1:nrow(pfout_detfun0$dem$col),
-        cbind(pfout_detfun0$dem$col[,1]/pfout_detfun0$dem$col[,2],
-              pfout_EDM$dem$col[,1]/pfout_EDM$dem$col[,2]),
-        pch=1, col=c(2,4), xlab="time", ylab="pr[col]")
-matplot(1:nrow(pfout_detfun0$dem$col),
-        cbind(pfout_detfun0$dem$mor[,1]/pfout_detfun0$dem$mor[,2],
-              pfout_EDM$dem$mor[,1]/pfout_EDM$dem$mor[,2]),
-        pch=1, col=c(2,4), xlab="time", ylab="pr[ext]")
+hist(smp_EDM[,1], main="EDM function", xlab="obs"); abline(v=pars_true$obs, col=2)
+hist(smp_EDM[,2], main="EDM function", xlab="proc"); abline(v=pars_true$proc, col=2)
 }
 }

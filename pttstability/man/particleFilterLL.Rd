@@ -9,7 +9,7 @@ Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 \usage{
 particleFilterLL(y, pars, N = 1000, detfun = detfun0,
   procfun = procfun0, obsfun = obsfun0, colfun = colfun0,
-  edmdat = NULL, dotraceback = FALSE)
+  edmdat = NULL, dotraceback = FALSE, fulltraceback = FALSE)
 }
 \arguments{
 \item{y}{A numeric vector of observed values, from which the likelihood of parameters and functions will be determined.}
@@ -31,9 +31,11 @@ then function should simulate N draws from the observation function, centered ar
 Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.}
 
 \item{dotraceback}{A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE}
+
+\item{fulltraceback}{A logical, indicating whether full matrix of particles for all time steps should be returned.}
 }
 \value{
-LL, P, rN, x, dem(col, mor)
+LL (total log likelihood), LLlst (log likelihood for each time step), Nest (mean estimated state), Nsd (standard deviation of estimated state), Nest_noproc (mean estimated state without process error), Nsd_noproc (standard deviation of estimated state without process error), fulltracemat (full traceback of particle paths)
 }
 \description{
 General function for caluclating the log-likeihood of a stochastic discrete-time model,

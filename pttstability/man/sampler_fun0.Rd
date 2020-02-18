@@ -4,15 +4,14 @@
 \alias{sampler_fun0}
 \title{Default sampler function for prior}
 \usage{
-sampler_fun0(n = 1, pars = pars, priorsd = c(0.5, 0.5, 2, 0.5, 0.5,
-  0.5))
+sampler_fun0(n = 1, minv, maxv)
 }
 \arguments{
 \item{n}{number of random draws to take from the priors}
 
-\item{pars}{a list of parameter values, structured following the parseparam0 function, specifying the centers for the priors}
+\item{minv}{Vector of minimum values to return for each parameter}
 
-\item{priorsd}{a vector of length 6 or 8 with desired standard deviations for the prior distributions}
+\item{maxv}{Vector of maximum values to return for each parameter}
 }
 \value{
 returns random draws from the priors

@@ -4,10 +4,11 @@
 \alias{obsfun0}
 \title{default observation noise function}
 \usage{
-obsfun0(so, yt, xt = NULL, inverse = FALSE, N = NULL)
+obsfun0(so, yt, xt = NULL, inverse = FALSE, N = NULL, minsd = 0.01,
+  time = NULL)
 }
 \arguments{
-\item{so}{a numeric vector of length two (a, b), specifying intercept and slope for linear observation error function}
+\item{so}{a numeric vector of length one, specifying log-transformed standard deviation of the observation error, as a fraction of the observation}
 
 \item{yt}{a number, representing a potential observed value of xt}
 
@@ -16,14 +17,19 @@ obsfun0(so, yt, xt = NULL, inverse = FALSE, N = NULL)
 \item{inverse}{a logical specifying whether inverse (i.e. random number generator) function should be implemented - defaults to FALSE}
 
 \item{N}{number of draws from the random number generator, if inverse=TRUE - defaults to NULL}
+
+\item{minsd}{minimum observation error allowed (e.g. if observation = 0), to prevent log likelihoods of -infinity - defaults to 0.01}
+
+\item{time}{the timestep - defaults to NULL (i.e. not used)}
 }
 \value{
-If inverse=FALSE, a number or numeric vector of length xt, with predicted log likelihoods of observation yt. If inverse = FALSE, returns N random draws from the observation function.
+If inverse=FALSE, a number or numeric vector of length xt, with predicted log likelihoods of observation yt.
+If inverse = FALSE, returns N random draws from the observation function.
 }
 \description{
 Two options: If inverse=FALSE, calculates the log probability density of observation yt based on true state xt and observation error.
 Otherwise, simulates N random observations of yt.
-Observation error follows a linear function of abundance, such that sd(xt) = exp(a) + exp(b)*xt.
+Observation error follows a Gaussian distribution truncated at zero, using a Tobit distribution.
 Note that probability density is calculated based on a Tobit distribution, with lower boundary zero.
 }
 \keyword{error}

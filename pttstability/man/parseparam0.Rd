@@ -4,11 +4,18 @@
 \alias{parseparam0}
 \title{Parse parameters}
 \usage{
-parseparam0(param, detparam = c(log(3), log(1)))
+parseparam0(param, colparam = c(logit(0.2), log(0.1)),
+  detparam = c(log(2), log(1)))
 }
 \arguments{
-\item{param}{List of 6 or 8 paramters, in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2).
-Note that if param is of length 6, then detparam must be supplied. See obsfun0, procfun0, and detfun0 for more details.}
+\item{param}{List of paramters, of length 2, 3, 6, or 7.
+If 2, then in the order (obs1, proc1).
+If 3, then in the order (obs1, proc1, proc2).
+If 6, then in the order (obs1, proc1, pcol1, pcol2, det1, det2)
+If 7, then in the order (obs1, proc1, proc2, pcol1, pcol2, det1, det2)
+Note that if param is of length 2 or 3, then detparam  and colparam must be supplied. See obsfun0, procfun0, and detfun0 for more details.}
+
+\item{colparam}{Optional vector of length two, including parameters for the colonization function.}
 
 \item{detparam}{Optional vector of length two, including paramters for the deterministic function.}
 }
@@ -16,7 +23,7 @@ Note that if param is of length 6, then detparam must be supplied. See obsfun0, 
 a formatted list of parameters
 }
 \description{
-Takes in a vector of 6 or 8 parameters, and puts them into a list of the format expected by the particleFilterLL function.
+Takes in a vector of 3 or 6 parameters, and puts them into a list of the format expected by the particleFilterLL function.
 }
 \keyword{filter}
 \keyword{particle}

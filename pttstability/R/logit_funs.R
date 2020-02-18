@@ -25,3 +25,33 @@ ilogit<-function(x) {
   1/(1+exp(-x))
 }
 
+#' Get inverse logit-normal mode
+#'
+#' Returns a mean for a logit normal such that the mode will be centered around mu
+#' @param mu the value around which the mode should be centered (in logit space)
+#' @param sd the standard deviation of the logit distribution (in logit space)
+#' @keywords MCMC optimization
+#' @return the proposed mean for the distribution
+#' @export
+
+logitnormal_imode = function(mu, sd){
+  mode<-mu - (sd)^2*(2*ilogit(mu)-1)
+  return(mode)
+}
+
+
+#' Get inverse log-normal mode
+#'
+#' Returns a mean for a lognormal such that the mode will be centered around mu
+#' @param mu the value around which the mode should be centered (in log space)
+#' @param sd the standard deviation of the lognormal distribution (in log space)
+#' @keywords MCMC optimization
+#' @return the proposed mean for the distribution
+#' @export
+
+lognormal_imode = function(mu, sd){
+  mode<-mu+sd^2
+  return(mode)
+}
+
+

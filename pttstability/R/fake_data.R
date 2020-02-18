@@ -48,16 +48,15 @@ getcm<-function(dat) {
 #'  #show regression of variance vs. mean for binned data
 #'  datout_ps<-datout[datout$true>0 & datout$noproc>0,]
 #'  #bins
-#'  sq<-seq(0, quantile(datout$true, 0.95), by=0.01)
+#'  sq<-seq(0, quantile(datout$true, 0.95), length=50)
 #'  ctd<-cut(datout_ps$noproc, sq)
 #'  #calculate mean and variance by bin
 #'  tdat<-data.frame(mu=(sq[-1]+sq[-length(sq)])/2,
-#'       var=tapply((datout_ps$true-datout_ps$noproc)^2, ctd, mean),
-#'      unk=tapply((datout_ps$true-datout_ps$noproc)^2, ctd, sd))
+#'       var=tapply((datout_ps$true-datout_ps$noproc)^2, ctd, mean))
 #'  #plot result
 #'  plot(log(tdat$mu), log(tdat$var), xlab="mu", ylab="var")
 #'  #show regression
-#'  summary(mod<-lm(log(var)~log(mu), tdat, weights = 1/tdat$unk)); abline(mod, col=2)
+#'  summary(mod<-lm(log(var)~log(mu), tdat)); abline(mod, col=2)
 
 makedynamics_general<-function(n=1000, n0=0.1,
                        pdet=c(log(3), log(1)), proc=c(log(1)),

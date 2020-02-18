@@ -4,25 +4,21 @@
 \alias{density_fun0}
 \title{Default density function for prior}
 \usage{
-density_fun0(param, pars = pars, priorsd = c(0.5, 0.5, 2, 0.5, 0.5,
-  0.5))
+density_fun0(param, minv, maxv)
 }
 \arguments{
-\item{param}{a vector of length 6 or 8 with mean model parameters (or desired centers for prior distributions)}
+\item{param}{a vector model parameters}
 
-\item{pars}{a list of parameter values, structured following the parseparam0 function, specifying the centers for the priors}
+\item{minv}{a vector of minimum values for the interval}
 
-\item{priorsd}{a vector of length 6 or 8 with desired standard deviations for the prior distributions}
+\item{maxv}{a vector of maximum values for the interval}
 }
 \value{
 returns log likelihood of parameters given priors.
 }
 \description{
 Default density function, following the syntax for priors in the BayesianTools package. Uses
-lognormal priors for the intercept and slope of the observation error function, a normal prior for the
-intercept of the process noise function, a lognormal for the slope of the process noise function,
-a logit-normal prior for colonization probability, and a lognormal prior for the colonization abundance.
-Note that prior likelihood is calculated based on values of param, which are centered around the listed values in variable pars.
+flat priors for all paramters, within the given interval. Density function integrates to one.
 }
 \keyword{MCMC}
 \keyword{optimization}

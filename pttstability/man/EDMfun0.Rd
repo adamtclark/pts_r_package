@@ -7,16 +7,18 @@
 @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 }
 \usage{
-EDMfun0(edmdat, xt, yblock, tm = NULL)
+EDMfun0(smp_cf, yp, x, minest = 0, time)
 }
 \arguments{
-\item{edmdat}{A list of paramter values, which is passed on to the block_lnlp function. See block_lnlp for more details.}
+\item{smp_cf}{a matrix of s-map coefficients, taken from the s_map function. Columns correspond to intercept and time lags, rows to observations.}
 
-\item{xt}{A matrix of dynamics for which abundances at time t+1 are to be predicted. Note that first column is assumed to represent t+1.}
+\item{yp}{a matrix of covariates to be multiplied by the smp_cf (typically time lags). Should have one fewer column than smp_cf.}
 
-\item{yblock}{A matrix of observed values, to be used as training data. Note that first column is assumed to represent t+1.}
+\item{x}{observation at time-1, to be used to make the prediction.}
 
-\item{tm}{Time corresponding to position of xt in y, used to mask observations from training data. Defaults to NULL, meaning that no observations are masked.}
+\item{minest}{minimum value to return for prediction - defaults to 0.}
+
+\item{time}{the time step (i.e. position in smp_cf) for the desired prediction. Prediction will be made based on observation in preceding time point (i.e. time-1).}
 }
 \value{
 a number or numeric vector of length xt, with predicted abundances at time t+1

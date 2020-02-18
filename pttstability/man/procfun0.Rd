@@ -4,22 +4,23 @@
 \alias{procfun0}
 \title{default process noise function}
 \usage{
-procfun0(sp, xt)
+procfun0(sp, xt, inverse = FALSE, time = NULL)
 }
 \arguments{
-\item{sp}{a numeric vector of length two (a, z), specifying intercept and slope for Taylor Power scaling relationship}
+\item{sp}{a numeric vector of length one or two, specifying either the log-transformed standard deviation of the process noise function, or an intercept and slope for calculating process nosise based on a power function of x}
 
 \item{xt}{a number or numeric vector of abundances at time t, before process noise has occurred}
+
+\item{inverse}{a logical specifying whether the inverse (i.e. probability of drawing a value of zero given xt and sp) should be calcualted}
+
+\item{time}{the timestep - defaults to NULL (i.e. not used)}
 }
 \value{
 a number or numeric vector of length xt, with predicted abundances after process noise has occurred
 }
 \description{
-Simulates effects of process noise following the Taylor Power Law, i.e. with standard devation sd(xt) = sqrt(exp(exp(a)+exp(z)*log(xt))).
+Simulates effects of process noise following a Gaussian perturbation.
 Note that process noise only influences positive abundances (i.e. process noise cannot contribute to colonization)
 }
-\keyword{Taylor}
-\keyword{law}
-\keyword{noise,}
-\keyword{power}
+\keyword{noise}
 \keyword{process}

@@ -7,7 +7,7 @@
 colfun0(co, xt)
 }
 \arguments{
-\item{co}{a numeric vector of length two (p, co), specifying the logit-transformed colonization probability when abundance is zero, and the log-transformed abundance observed immediately after a colonization event}
+\item{co}{a numeric vector of length two (p, A), specifying the logit-transformed colonization probability when abundance is zero, and the log-transformed abundance observed immediately after a colonization event}
 
 \item{xt}{a number or numeric vector of abundances at time t, before colonization has occurred}
 }
