@@ -8,7 +8,8 @@ obsfun0(so, yt, xt = NULL, inverse = FALSE, N = NULL, minsd = 0.01,
   time = NULL)
 }
 \arguments{
-\item{so}{a numeric vector of length one, specifying log-transformed standard deviation of the observation error, as a fraction of the observation}
+\item{so}{a numeric vector of length one, specifying either log-transformed standard deviation of the observation error as a fraction of the observation,
+or two log-transformed parameters of the form sd=exp(B0)+exp(B1)*x.}
 
 \item{yt}{a number, representing a potential observed value of xt}
 

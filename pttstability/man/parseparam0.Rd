@@ -8,11 +8,13 @@ parseparam0(param, colparam = c(logit(0.2), log(0.1)),
   detparam = c(log(2), log(1)))
 }
 \arguments{
-\item{param}{List of paramters, of length 2, 3, 6, or 7.
+\item{param}{List of paramters, of length 2, 3, 4, 6, 7, or 8.
 If 2, then in the order (obs1, proc1).
 If 3, then in the order (obs1, proc1, proc2).
+If 4, then in the order (obs1, obs2, proc1, proc2).
 If 6, then in the order (obs1, proc1, pcol1, pcol2, det1, det2)
 If 7, then in the order (obs1, proc1, proc2, pcol1, pcol2, det1, det2)
+If 8, then in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2)
 Note that if param is of length 2 or 3, then detparam  and colparam must be supplied. See obsfun0, procfun0, and detfun0 for more details.}
 
 \item{colparam}{Optional vector of length two, including parameters for the colonization function.}

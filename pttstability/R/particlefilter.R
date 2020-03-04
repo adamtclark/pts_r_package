@@ -45,7 +45,8 @@ EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
 #'
 #' Simulates effects of process noise following a Gaussian perturbation.
 #' Note that process noise only influences positive abundances (i.e. process noise cannot contribute to colonization)
-#' @param sp a numeric vector of length one or two, specifying either the log-transformed standard deviation of the process noise function, or an intercept and slope for calculating process nosise based on a power function of x
+#' @param sp a numeric vector of length one or two, specifying either the log-transformed standard deviation of the process noise function,
+#' or an intercept and slope for calculating variance of process noise based on a power function of x, of the form var=exp(B0)*x^exp(B1)
 #' @param xt a number or numeric vector of abundances at time t, before process noise has occurred
 #' @param inverse a logical specifying whether the inverse (i.e. probability of drawing a value of zero given xt and sp) should be calcualted
 #' @param time the timestep - defaults to NULL (i.e. not used)
@@ -78,7 +79,8 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' Otherwise, simulates N random observations of yt.
 #' Observation error follows a Gaussian distribution truncated at zero, using a Tobit distribution.
 #' Note that probability density is calculated based on a Tobit distribution, with lower boundary zero.
-#' @param so a numeric vector of length one, specifying log-transformed standard deviation of the observation error, as a fraction of the observation
+#' @param so a numeric vector of length one, specifying either log-transformed standard deviation of the observation error as a fraction of the observation,
+#' or two log-transformed parameters of the form sd=exp(B0)+exp(B1)*x.
 #' @param yt a number, representing a potential observed value of xt
 #' @param xt a number or numeric vector of "true" (or simulated) abundances at time t, from which the likelihood of yt will be calculated - defaults to NULL for inverse=TRUE
 #' @param inverse a logical specifying whether inverse (i.e. random number generator) function should be implemented - defaults to FALSE
@@ -93,11 +95,19 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 
 obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
   if(inverse) {
-    std_tmp<-exp(so[1])*yt
+    if(length(so)==1) {
+      std_tmp<-exp(so[1])*yt
+    } else {
+      std_tmp<-exp(so[1])+exp(so[2])*yt
+    }
     std_tmp[std_tmp<minsd]<-minsd
     pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
   } else {
-    std_tmp<-exp(so[1])*xt
+    if(length(so)==1) {
+      std_tmp<-exp(so[1])*xt
+    } else {
+      std_tmp<-exp(so[1])+exp(so[2])*xt
+    }
     std_tmp[std_tmp<minsd]<-minsd
 
     ps<-(xt==0)

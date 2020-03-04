@@ -1,11 +1,13 @@
 #' Parse parameters
 #'
 #' Takes in a vector of 3 or 6 parameters, and puts them into a list of the format expected by the particleFilterLL function.
-#' @param param List of paramters, of length 2, 3, 6, or 7.
+#' @param param List of paramters, of length 2, 3, 4, 6, 7, or 8.
 #' If 2, then in the order (obs1, proc1).
 #' If 3, then in the order (obs1, proc1, proc2).
+#' If 4, then in the order (obs1, obs2, proc1, proc2).
 #' If 6, then in the order (obs1, proc1, pcol1, pcol2, det1, det2)
 #' If 7, then in the order (obs1, proc1, proc2, pcol1, pcol2, det1, det2)
+#' If 8, then in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2)
 #' Note that if param is of length 2 or 3, then detparam  and colparam must be supplied. See obsfun0, procfun0, and detfun0 for more details.
 #' @param colparam Optional vector of length two, including parameters for the colonization function.
 #' @param detparam Optional vector of length two, including paramters for the deterministic function.
@@ -24,6 +26,11 @@ parseparam0<-function(param, colparam=c(logit(0.2), log(0.1)), detparam=c(log(2)
                proc=c(param[2:3]),
                pcol=colparam[c(1:2)],
                det=detparam[c(1:2)])
+  } else if(length(param)==4) {
+    pars<-list(obs=c(param[1:2]),
+               proc=c(param[3:4]),
+               pcol=colparam[c(1:2)],
+               det=detparam[c(1:2)])
   } else if(length(param)==6) {
     pars<-list(obs=c(param[1]),
                proc=c(param[2]),
@@ -34,8 +41,13 @@ parseparam0<-function(param, colparam=c(logit(0.2), log(0.1)), detparam=c(log(2)
                proc=c(param[2:3]),
                pcol=c(param[4:5]),
                det=c(param[6:7]))
+  } else if(length(param)==8) {
+    pars<-list(obs=c(param[1:2]),
+               proc=c(param[3:4]),
+               pcol=c(param[5:6]),
+               det=c(param[7:8]))
   } else {
-    return("error: param must be either length 2, 3, 6, or 7")
+    return("error: param must be of length 2, 3, 4, 6, 7, or 8")
   }
 
   return(pars)

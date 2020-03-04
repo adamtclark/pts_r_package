@@ -7,7 +7,8 @@
 procfun0(sp, xt, inverse = FALSE, time = NULL)
 }
 \arguments{
-\item{sp}{a numeric vector of length one or two, specifying either the log-transformed standard deviation of the process noise function, or an intercept and slope for calculating process nosise based on a power function of x}
+\item{sp}{a numeric vector of length one or two, specifying either the log-transformed standard deviation of the process noise function,
+or an intercept and slope for calculating variance of process noise based on a power function of x, of the form var=exp(B0)*x^exp(B1)}
 
 \item{xt}{a number or numeric vector of abundances at time t, before process noise has occurred}
 
