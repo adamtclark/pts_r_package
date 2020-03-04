@@ -182,8 +182,12 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
   }
 
   if(!is.null(edmdat)) {
-    smp<-s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
-    smp_cf<-smp$smap_coefficients[[1]]
+    if(is.null(edmdat$smp_cf)) {
+      smp<-s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
+      smp_cf<-smp$smap_coefficients[[1]]
+    } else {
+      smp_cf<-edmdat$smp_cf
+    }
   }
 
   if(fulltraceback) {

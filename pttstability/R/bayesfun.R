@@ -19,7 +19,7 @@ parseparam0<-function(param, colparam=c(logit(0.2), log(0.1)), detparam=c(log(2)
                proc=c(param[2]),
                pcol=colparam[c(1:2)],
                det=detparam[c(1:2)])
-  } else if(length(param)==2) {
+  } else if(length(param)==3) {
     pars<-list(obs=c(param[1]),
                proc=c(param[2:3]),
                pcol=colparam[c(1:2)],

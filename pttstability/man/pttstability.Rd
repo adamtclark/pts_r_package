@@ -4,7 +4,7 @@
 \name{pttstability}
 \alias{pttstability}
 \alias{pttstability-package}
-\title{pttstability: A package for fitting state space models using EDM.}
+\title{pttstability: Methods for fitting state space models using EDM.}
 \source{
 Knape, J., and Valpine, P. (2012). Fitting complex population models by combining particle filters with Markov chain Monte Carlo. Ecology 93:256-263.
 
@@ -15,7 +15,7 @@ Ye, H., et al. (2019). rEDM: Applications of Empirical Dynamic Modeling from Tim
 Hartig, F., et al. (2019). BayesianTools: General-Purpose MCMC and SMC Samplers and Tools for Bayesian Statistics. R package version 0.1.6.
 }
 \description{
-The pttstability (or "ParTicle-Taylor Stability" package) is a collection of functions
+The pttstability (or "ParTicle-Takens Stability" package) is a collection of functions
 that can be used to estimate the parameters of a stochastic state space model (i.e.
 a model where a time series is observed with error).
 }
@@ -43,12 +43,12 @@ This package builds on three existing toolkits. First, it applies an updated ver
 observed time series given modeled dynamics.
 Second, it applies empirical dynamic modeling (EDM) methods from the rEDM package to estimate deterministic
 dynamics even in cases where the underlying equations governing system behavior are not known.
+These models are based on Takens delay-embedding theorem, from which this package takes its name.
 Finally, it uses the MCMC fitting methods from the BayesianTools package to estimate paramter values for
 the observation error, process noise, and (optionally) deterministic functions underlying observed dynamics.
 
 The default observation error and process noise functions in this package (obsfun0 and procfun0)
-take advantage of the Taylor Power law to separate noise components for relatively short time series,
-from which the name of this package is derived.
+take advantage of the Taylor Power law to separate noise components for relatively short time series.
 Observation error is assumed to scale with the observed state as sd_obs(x) = x*exp(obs),
 Process noise is either a constant (i.e. sd_proc(x) = exp(proc)), or, if two variables are given,
 process noise scales as a power function of the observed value as sd_proc(x) = sqrt(exp(proc1)*x^exp(proc2))
