@@ -85,7 +85,7 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' @param xt a number or numeric vector of "true" (or simulated) abundances at time t, from which the likelihood of yt will be calculated - defaults to NULL for inverse=TRUE
 #' @param inverse a logical specifying whether inverse (i.e. random number generator) function should be implemented - defaults to FALSE
 #' @param N number of draws from the random number generator, if inverse=TRUE - defaults to NULL
-#' @param minsd minimum observation error allowed (e.g. if observation = 0), to prevent log likelihoods of -infinity - defaults to 0.01
+#' @param minsd minimum observation error allowed (e.g. if observation = 0), to prevent log likelihoods of -infinity - defaults to 0
 #' @param time the timestep - defaults to NULL (i.e. not used)
 #' @keywords observation error
 #' @return If inverse=FALSE, a number or numeric vector of length xt, with predicted log likelihoods of observation yt.
@@ -93,7 +93,7 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' @import stats
 #' @export
 
-obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
+obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0, time=NULL) {
   if(inverse) {
     if(length(so)==1) {
       std_tmp<-exp(so[1])*yt
