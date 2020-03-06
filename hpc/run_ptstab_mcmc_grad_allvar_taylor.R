@@ -79,7 +79,7 @@ if(FALSE) {
 }
 
 #set number of iterations
-niter<-5000#10000
+niter<-10000
 N<-2e3
 Euse<-2
 
