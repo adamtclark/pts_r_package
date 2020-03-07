@@ -26,26 +26,25 @@ source("../pttstability/R/fake_data.R")
 source("../pttstability/R/logit_funs.R")
 source("../pttstability/R/particlefilter.R")
 
-#new detfun
-detfun0<-function(sdet, xt, time=NULL) {
-  K<-(sin(time/2)+exp(sdet[2])+0.5)/2
+## Simulate data
+#sample from priors
+pars0<-pars_true<-list(obs=log(0.2),
+                       proc=c(log(0.1), log(1.2)),
+                       pcol=c(logit(0.2), log(0.1)),
+                       det=c(log(2),log(1)))
+
+detfun0_sin<-function(sdet, xt, time=NULL) {
+  K<-((sin(time/(pi*2))+exp(sdet[2]))*0.5+0.5)
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }
 
-## Simulate data
-#sample from priors
-pars0<-pars_true<-list(obs=log(0.2),
-                       proc=c(log(0.1)),
-                       pcol=c(logit(0.2), log(0.1)),
-                       det=c(log(2),log(1)))
-
 #create priors
-p0<-list(c(-4, 0), c(-4, 0))
+p0<-list(c(log(0.001), log(0.5)), c(log(0.001), log(0.1)), c(log(0.001), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(-4, 0), c(-4, 0), c(-5, 2))
+p0_edm<-list(c(log(0.001), log(0.5)), c(log(0.001), log(0.1)), c(log(0.001), log(3)), c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
@@ -59,31 +58,42 @@ sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=ma
 prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
                          lower = minvUSE_edm, upper = maxvUSE_edm)
 y<-0
-while(sum(y>0)<=(length(y)/20)) { # want at least 5% nonzero values
+while(sum(y>0)<=(length(y)/5)) { # want at least 5% nonzero values
   pars_sim<-parseparam0(unname(sampler_fun_USE()))
   #parseparam0(sampler_fun0(n=1, pars = pars0, priorsd = c(1, 1, 1)))
 
-  datout<-makedynamics_general(n = 100, n0 = (sin(1/2)+1+0.5)/2, pdet=pars_sim$det,
+  datout<-makedynamics_general(n = 100, n0 = exp(rnorm(1,0,0.1)), pdet=pars_sim$det,
                                proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
-                               detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
+                               detfun = detfun0_sin, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
   y<-datout$obs
 }
 
 ## Run filter
-ptrue<-unname(unlist(pars_sim)[1:2])
+ptrue<-unname(unlist(pars_sim)[1:3])
+
+if(FALSE) {
+  exp(ptrue)
+  plot(y, type="l"); abline(h=0, lty=3)
+  sd(datout$true-datout$noproc)
+  sd(datout$true-datout$obs)
+}
 
 #set number of iterations
-niter<-5000
+niter<-10000
 N<-2e3
-Euse<-6
+Euse<-2
+
+#get theta
+tmp<-s_map(y, E=Euse, silent = TRUE)
+thuse<-tmp$theta[which.max(tmp$rho)]
 
 #set up likelihoods
-likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N)
+likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N, detfun = detfun0_sin)
 bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior_USE)
 
 likelihood_EDM<-function(x) {
-  xuse<-x[1:2]
-  tuse_edm<-exp(x[3])
+  xuse<-x[1:(length(x)-1)]
+  tuse_edm<-exp(x[length(x)])
   likelihood0(param = xuse, y=y, parseparam = parseparam0,
               detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse_edm), N = N)
 }
@@ -95,8 +105,8 @@ out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(it
 out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=200))
 
 ## extract parameters
-smp_detfun0<-getSample(out_detfun0, start = 1000)
-smp_EDM<-getSample(out_EDM, start=1000)
+smp_detfun0<-getSample(out_detfun0, start = 2000)
+smp_EDM<-getSample(out_EDM, start=2000)
 
 parsest_det<-cbind(colMeans(smp_detfun0), apply(smp_detfun0, 2, sd))
 parsest_edm<-cbind(colMeans(smp_EDM), apply(smp_EDM, 2, sd))
@@ -136,7 +146,7 @@ optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
 #simulation outputs
 simdat<-list(datout=datout)
 
-save(list = c("simdat", "parslst", "optdat", "filterdat"), file = paste("datout/mcmcout_", commArgin, "_full_oscil.rda", sep=""), version=2)
+save(list = c("simdat", "parslst", "optdat", "filterdat"), file = paste("datout/mcmcout_", commArgin, "_full_taylor_theta.rda", sep=""), version=2)
 
 
 
