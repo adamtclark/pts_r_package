@@ -115,14 +115,14 @@ parsest_edm<-cbind(colMeans(smp_EDM), apply(smp_EDM, 2, sd))
 filterout_det<-particleFilterLL(y, pars=parseparam0(parsest_det[,1]), detfun = detfun0,
                                 dotraceback = TRUE)
 #based on EDM
-filterout_edm<-particleFilterLL(y, pars=parseparam0(parsest_edm[1:length(ptrue),1]), detfun = EDMfun0, edmdat = list(E=Euse, theta=exp(parsest_edm[length(ptrue)+1,1])),
+filterout_edm<-particleFilterLL(y, pars=parseparam0(parsest_edm[1:length(ptrue),1]), detfun = EDMfun0, edmdat = list(E=Euse, theta=thuse),
                                 dotraceback = TRUE)
 #based on true values
 filterout_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = detfun0,
                                 dotraceback = TRUE)
 #based on EDM, with correct values
 sout<-s_map(y, E=Euse,silent = TRUE)
-filterout_edm_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = EDMfun0, edmdat = list(E=Euse, theta=sout$theta[which.max(sout$rho)]),
+filterout_edm_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = EDMfun0, edmdat = list(E=Euse, theta=thuse),
                                 dotraceback = TRUE)
 
 
