@@ -34,17 +34,17 @@ pars0<-pars_true<-list(obs=log(0.2),
                        det=c(log(2),log(1)))
 
 detfun0_sin<-function(sdet, xt, time=NULL) {
-  K<-((sin(time/(pi*2))+exp(sdet[2]))*0.5+0.5)
+  K<-(((sin(time/(pi*2))+exp(sdet[2]))*0.475)+0.025)*10
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }
 
 #create priors
-p0<-list(c(log(0.001), log(0.5)), c(log(0.001), log(0.1)), c(log(0.001), log(3)))
+p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.1)), c(log(0.01), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(log(0.001), log(0.5)), c(log(0.001), log(0.1)), c(log(0.001), log(3)))#, c(-5, 2))
+p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.1)), c(log(0.01), log(3)))#, c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
@@ -67,6 +67,8 @@ while(sum(y>0)<=(length(y)/5)) { # want at least 5% nonzero values
                                detfun = detfun0_sin, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
   y<-datout$obs
 }
+#exp(unlist(pars_sim)[1:3])
+#plot(y, type="l")
 
 ## Run filter
 ptrue<-unname(unlist(pars_sim)[1:3])
