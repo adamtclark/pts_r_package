@@ -16,11 +16,10 @@ pars0<-pars_true<-list(obs=log(0.2),
                        det=c(log(2),log(1)))
 
 detfun0_sin<-function(sdet, xt, time=NULL) {
-  K<-((sin(time/(pi*2))+exp(sdet[2]))*0.5+0.5)
+  K<-(((sin(time/(pi*2))+exp(sdet[2]))*0.475)+0.025)*10
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }
-
 
 #settings
 sp<-2000
@@ -82,6 +81,7 @@ if(FALSE) {
 
 
   for(ifl in 1:length(flst)) {
+    #ifl<-sample(length(flst),1)
     load(paste("datout/", flst[ifl], sep=""))
 
     datout<-simdat$datout
@@ -89,6 +89,7 @@ if(FALSE) {
     out_detfun0<-optdat$optout_det
     out_EDM<-optdat$optout_edm
     pars_true<-parslst$ptrue
+    #exp(pars_true)
 
     summarydat$summed_obs_error[ifl]<-sd(simdat$datout$true-simdat$datout$obs)
     summarydat$summed_proc_error[ifl]<-sd(simdat$datout$true-simdat$datout$noproc)
@@ -160,11 +161,11 @@ if(FALSE) {
 
     #run at optimum parameters
     #if(FALSE) {
-      pfout1_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_detfun0)), N=N, detfun=detfun0_sin, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE)
+      #pfout1_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_detfun0)), N=N, detfun=detfun0_sin, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE)
       #pfout2_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_EDM[,1:2])), N=N, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=Euse, theta=exp(mean(smp_EDM[,3]))), dotraceback=TRUE)
     #}
 
-    #pfout1_opt<-filterdat$filterout_det
+    pfout1_opt<-filterdat$filterout_det
     pfout2_opt<-filterdat$filterout_edm
 
     summarydat$cor_det[ifl]<-cor(pfout1_opt$Nest, datout$true, use="pairwise")^2
@@ -244,9 +245,9 @@ plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowp
 
 
 #tmp
-cutoff<-0.2
-hist(summarydat$summed_obs_error); abline(v=cutoff, col=2, lty=3)
-hist(summarydat$summed_proc_error); abline(v=cutoff, col=2, lty=3)
+cutoff<-0.2*10
+hist(summarydat$summed_obs_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
+hist(summarydat$summed_proc_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
 
 lgtf<-"xy"
 
@@ -254,22 +255,22 @@ lgtf<-"xy"
 plot(obs0~det_obs_mu0, summarydat[summarydat$summed_proc_error<=cutoff & summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 plot(obs0~edm_obs_mu0, summarydat[summarydat$summed_proc_error<=cutoff & summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 
-plot(obs0~det_obs_mu0, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-plot(obs0~edm_obs_mu0, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+#plot(obs0~det_obs_mu0, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+#plot(obs0~edm_obs_mu0, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 
 #proc0
 plot(proc0~det_proc_mu0, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 plot(proc0~edm_proc_mu0, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 
-plot(proc0~det_proc_mu0, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-plot(proc0~edm_proc_mu0, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+#plot(proc0~det_proc_mu0, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+#plot(proc0~edm_proc_mu0, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 
 #proc1
 plot(proc1~det_proc_mu1, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 plot(proc1~edm_proc_mu1, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 
-plot(proc1~det_proc_mu1, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-plot(proc1~edm_proc_mu1, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+#plot(proc1~det_proc_mu1, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+#plot(proc1~edm_proc_mu1, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
 
 
 lf<-function(x) {log(x)}

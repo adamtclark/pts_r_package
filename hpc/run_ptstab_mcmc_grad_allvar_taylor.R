@@ -34,17 +34,17 @@ pars0<-pars_true<-list(obs=log(0.2),
                        det=c(log(2),log(1)))
 
 detfun0_sin<-function(sdet, xt, time=NULL) {
-  K<-(((sin(time/(pi*2))+exp(sdet[2]))*0.475)+0.025)*10
+  K<-(((sin(time/(pi*2))+exp(sdet[2]))*0.475)+0.025)*2
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }
 
 #create priors
-p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.1)), c(log(0.01), log(3)))
+p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.01), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.1)), c(log(0.01), log(3)))#, c(-5, 2))
+p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.01), log(3)))#, c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
@@ -88,6 +88,7 @@ Euse<-2
 #get theta
 tmp<-s_map(y, E=Euse, silent = TRUE)
 thuse<-tmp$theta[which.max(tmp$rho)]
+#plot(tmp$theta, tmp$rho, type="l"); abline(v=thuse, lty=3)
 
 #set up likelihoods
 likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0, N = N, detfun = detfun0_sin)
@@ -128,6 +129,22 @@ filterout_edm_true<-particleFilterLL(y, pars=parseparam0(ptrue), detfun = EDMfun
                                 dotraceback = TRUE)
 
 
+if(FALSE) {
+  par(mar=c(4,4,2,2), mfcol=c(3,2))
+  for(i in 1:length(ptrue)) {
+    xrng<-exp(range(c(smp_detfun0[,i], ptrue[i], p0[[i]])))
+    hist(exp(smp_detfun0[,i]),breaks = 20, probability = TRUE, main="", xlim=xrng);
+    abline(v=exp(p0[[i]]), col=c(3), lty=2)
+    abline(v=exp(ptrue[i]), col=c(2), lty=2)
+  }
+  for(i in 1:length(ptrue)) {
+    xrng<-exp(range(c(smp_EDM[,i], ptrue[i], p0[[i]])))
+    hist(exp(smp_EDM[,i]),breaks = 20, probability = TRUE, main="", xlim=xrng);
+    abline(v=exp(p0[[i]]), col=c(3), lty=2)
+    abline(v=exp(ptrue[i]), col=c(2), lty=2)
+  }
+}
+
 ## save outputs
 parslst<-list(ptrue=ptrue,
               parsest_det=parsest_det, parsest_edm=parsest_edm)
@@ -148,7 +165,7 @@ optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
 #simulation outputs
 simdat<-list(datout=datout)
 
-save(list = c("simdat", "parslst", "optdat", "filterdat"), file = paste("datout/mcmcout_", commArgin, "_full_taylor.rda", sep=""), version=2)
+save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_full_taylor.rda", sep=""), version=2)
 
 
 
