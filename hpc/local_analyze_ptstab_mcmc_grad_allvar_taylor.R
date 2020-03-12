@@ -245,7 +245,7 @@ plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowp
 
 
 #tmp
-cutoff<-0.2*10
+cutoff<-0.2
 hist(summarydat$summed_obs_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
 hist(summarydat$summed_proc_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
 

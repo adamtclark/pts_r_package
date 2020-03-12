@@ -40,11 +40,11 @@ detfun0_sin<-function(sdet, xt, time=NULL) {
 }
 
 #create priors
-p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.01), log(3)))
+p0<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.01), log(3)))#, c(-5, 2))
+p0_edm<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))#, c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
@@ -165,7 +165,7 @@ optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
 #simulation outputs
 simdat<-list(datout=datout)
 
-save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_full_taylor.rda", sep=""), version=2)
+save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_full_taylor2.rda", sep=""), version=2)
 
 
 
