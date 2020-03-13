@@ -247,8 +247,8 @@ plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowp
 
 #tmp
 cutoff<-0.2
-cutoffo<-0.5
-cutoffp<-0.5
+cutoffo<-0.2
+cutoffp<-0.2
 ps<-sqrt(summarydat$summed_proc_error^2+summarydat$summed_obs_error^2)<cutoff
 pso<-(summarydat$summed_proc_error)<cutoffo
 psp<-(summarydat$summed_obs_error)<cutoffp
