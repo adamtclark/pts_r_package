@@ -26,19 +26,19 @@ sp<-2000
 N<-2e3
 collst<-adjustcolor(c("purple", "blue", "red", "black"),alpha.f = 0.3)
 
-p0<-list(c(log(0.001), log(0.5)), c(log(0.001), log(0.1)), c(log(0.001), log(3)))
+p0<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(log(0.001), log(0.5)), c(log(0.001), log(0.1)), c(log(0.001), log(3)))#, c(-5, 2))
+p0_edm<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))#, c(-5, 2))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 flst<-dir("datout")
 flst<-flst[grep("mcmc", flst)]
 flst<-flst[grep("full", flst)]
-flst<-flst[grep("taylor", flst)]
-flst<-flst[-grep("theta", flst)]
+flst<-flst[grep("taylor2", flst)]
+#flst<-flst[-grep("theta", flst)]
 
 Euse<-2
 
@@ -207,12 +207,13 @@ if(FALSE) {
       print(round(ifl/length(flst),2))
     }
   }
-  write.csv(summarydat, "datout/summarydat_full_taylor.csv", row.names = FALSE)
+  write.csv(summarydat, "datout/summarydat_full_taylor2.csv", row.names = FALSE)
 } else {
-  summarydat<-read.csv("datout/summarydat_full_taylor.csv")
+  summarydat<-read.csv("datout/summarydat_full_taylor2.csv")
 }
 
 ## set up for plotting
+if(FALSE) {
 cutoff<-0.2
 cutlst<-c(0, 0.05, 0.1, 0.2, 0.3, 0.5, 1)
 mrowpar<-c(2,3)
@@ -238,7 +239,7 @@ plotfun(plotvar="fit", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowp
 
 ## plot variability of true dynamics
 plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowpar=mrowpar, collst=collst, xlim=c(0.02, 1), ylim=c(0.05,1), cutoff = cutoff)
-
+}
 
 
 
@@ -246,39 +247,82 @@ plotfun(plotvar="det", byvar="proc", summarydat=summarydat, cutlst=cutlst, mrowp
 
 #tmp
 cutoff<-0.2
+cutoffo<-0.5
+cutoffp<-0.5
+ps<-sqrt(summarydat$summed_proc_error^2+summarydat$summed_obs_error^2)<cutoff
+pso<-(summarydat$summed_proc_error)<cutoffo
+psp<-(summarydat$summed_obs_error)<cutoffp
+mean(ps); mean(pso); mean(psp)
+
 hist(summarydat$summed_obs_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
 hist(summarydat$summed_proc_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
 
-lgtf<-"xy"
+lf<-function(x) {log10(x)}
+#lf<-function(x) {(x)}
+summary(modo0d<-lm(lf(obs0)~lf(det_obs_mu0), summarydat[pso & summarydat$gelmandet<=1.1,]))
+summary(modp0d<-lm(lf(proc0)~lf(det_proc_mu0), summarydat[psp & summarydat$gelmandet<=1.1,]))
+summary(modp1d<-lm(lf(proc1)~lf(det_proc_mu1), summarydat[psp & summarydat$gelmandet<=1.1,]))
+
+summary(modo0e<-lm(lf(obs0)~lf(edm_obs_mu0), summarydat[pso & summarydat$gelmandet<=1.1,]))
+summary(modp0e<-lm(lf(proc0)~lf(edm_proc_mu0), summarydat[psp & summarydat$gelmandet<=1.1,]))
+summary(modp1e<-lm(lf(proc1)~lf(edm_proc_mu1), summarydat[psp & summarydat$gelmandet<=1.1,]))
+
 
 #obs
-plot(obs0~det_obs_mu0, summarydat[summarydat$summed_proc_error<=cutoff & summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-plot(obs0~edm_obs_mu0, summarydat[summarydat$summed_proc_error<=cutoff & summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+plot(lf(obs0)~lf(det_obs_mu0), summarydat[pso & summarydat$gelmandet<=1.1,]); abline(a=0, b=1, lty=3)
+abline(modo0d, col=2)
+tmp<-summarydat[pso & summarydat$gelmandet<=1.1,]
+plot(tapply(lf(tmp$det_obs_mu0), cut(lf(tmp$det_obs_mu0), 20), mean), tapply(lf(tmp$obs0), cut(lf(tmp$det_obs_mu0), 20), mean), xlab="pred", ylab="obs")
+abline(a=0, b=1, lty=3)
+abline(modo0d, col=2)
 
-#plot(obs0~det_obs_mu0, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-#plot(obs0~edm_obs_mu0, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+plot(lf(obs0)~lf(edm_obs_mu0), summarydat[pso & summarydat$gelmanedm<=1.1,]); abline(a=0, b=1, lty=3)
+abline(modo0e, col=2)
+tmp<-summarydat[pso & summarydat$gelmanedm<=1.1,]
+plot(tapply(lf(tmp$edm_obs_mu0), cut(lf(tmp$edm_obs_mu0), 20), mean), tapply(lf(tmp$obs0), cut(lf(tmp$edm_obs_mu0), 20), mean), xlab="pred", ylab="obs")
+abline(a=0, b=1, lty=3)
+abline(modo0e, col=2)
 
 #proc0
-plot(proc0~det_proc_mu0, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-plot(proc0~edm_proc_mu0, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+plot(lf(proc0)~lf(det_proc_mu0), summarydat[psp & summarydat$gelmandet<=1.1,]); abline(a=0, b=1, lty=3)
+abline(modp0d, col=2)
+tmp<-summarydat[psp & summarydat$gelmandet<=1.1,]
+plot(tapply(lf(tmp$det_proc_mu0), cut(lf(tmp$det_proc_mu0), 20), mean), tapply(lf(tmp$proc0), cut(lf(tmp$det_proc_mu0), 20), mean), xlab="pred", ylab="obs")
+abline(a=0, b=1, lty=3)
+abline(modp0d, col=2)
 
-#plot(proc0~det_proc_mu0, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-#plot(proc0~edm_proc_mu0, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+plot(lf(proc0)~lf(edm_proc_mu0), summarydat[psp & summarydat$gelmanedm<=1.1,]); abline(a=0, b=1, lty=3)
+abline(modp0e, col=2)
+tmp<-summarydat[psp & summarydat$gelmanedm<=1.1,]
+plot(tapply(lf(tmp$edm_proc_mu0), cut(lf(tmp$edm_proc_mu0), 20), mean), tapply(lf(tmp$proc0), cut(lf(tmp$edm_proc_mu0), 20), mean), xlab="pred", ylab="obs")
+abline(a=0, b=1, lty=3)
+abline(modp0e, col=2)
 
 #proc1
-plot(proc1~det_proc_mu1, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-plot(proc1~edm_proc_mu1, summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+plot(lf(proc1)~lf(det_proc_mu1), summarydat[psp & summarydat$gelmandet<=1.1,]); abline(a=0, b=1, lty=3)
+abline(modp1d, col=2)
+abline(v=lf(2), lty=2)
+tmp<-summarydat[psp & summarydat$gelmandet<=1.1,]
+plot(tapply(lf(tmp$det_proc_mu1), cut(lf(tmp$det_proc_mu1), 20), mean), tapply(lf(tmp$proc1), cut(lf(tmp$det_proc_mu1), 20), mean), xlab="pred", ylab="obs")
+abline(a=0, b=1, lty=3)
+abline(modp1d, col=2)
 
-#plot(proc1~det_proc_mu1, summarydat[summarydat$gelmandet<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
-#plot(proc1~edm_proc_mu1, summarydat[summarydat$gelmanedm<=1.1,], log=lgtf); abline(a=0, b=1, lty=3)
+plot(lf(proc1)~lf(edm_proc_mu1), summarydat[psp & summarydat$gelmanedm<=1.1,]); abline(a=0, b=1, lty=3)
+abline(modp1e, col=2)
+abline(v=lf(2), lty=2)
+tmp<-summarydat[psp & summarydat$gelmanedm<=1.1,]
+plot(tapply(lf(tmp$edm_proc_mu1), cut(lf(tmp$edm_proc_mu1), 20), mean), tapply(lf(tmp$proc1), cut(lf(tmp$edm_proc_mu1), 20), mean), xlab="pred", ylab="obs")
+abline(a=0, b=1, lty=3)
+abline(modp1e, col=2)
 
 
-lf<-function(x) {log(x)}
-summary(lm(lf(obs0)~lf(det_obs_mu0), summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,]))
-summary(lm(lf(proc0)~lf(det_proc_mu0), summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,]))
-summary(lm(lf(proc1)~lf(det_proc_mu1), summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,]))
+coplot(lf(proc1)~lf(edm_proc_mu1)|lf(edm_proc_mu0), summarydat, panel=function(x,y,...) {points(x,y); abline(a=0, b=1, lty=3, col=2)})
 
-summary(lm(lf(obs0)~lf(edm_obs_mu0), summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,]))
-summary(lm(lf(proc0)~lf(edm_proc_mu0), summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,]))
-summary(lm(lf(proc1)~lf(edm_proc_mu1), summarydat[summarydat$summed_obs_error<=cutoff & summarydat$gelmandet<=1.1,]))
 
+pscor<-(summarydat$summed_obs_error>0.1)
+plot(summarydat$cor0[pscor], summarydat$cor_det[pscor]); abline(a=0, b=1, lty=3)
+plot(summarydat$cor0[pscor], summarydat$cor_edm[pscor]); abline(a=0, b=1, lty=3)
+mean(summarydat$cor0[pscor]>summarydat$cor_det[pscor])
+mean(summarydat$cor0[pscor]>summarydat$cor_edm[pscor])
+
+#perhaps plot by category?
