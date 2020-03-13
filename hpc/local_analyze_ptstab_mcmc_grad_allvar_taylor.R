@@ -38,7 +38,7 @@ flst<-dir("datout")
 flst<-flst[grep("mcmc", flst)]
 flst<-flst[grep("full", flst)]
 flst<-flst[grep("taylor2", flst)]
-#flst<-flst[-grep("theta", flst)]
+flst<-flst[-grep("theta", flst)]
 
 Euse<-2
 
