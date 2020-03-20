@@ -8,7 +8,7 @@
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
 #' @export
 
-detfun0<-function(sdet, xt, time=NULL) {
+detfun0<-function(sdet, xt, time=NULL, ...) {
   xt = xt*exp(exp(sdet[1])*(1-xt/exp(sdet[2])))
   return(xt)
 }
@@ -27,7 +27,7 @@ detfun0<-function(sdet, xt, time=NULL) {
 #' @source @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 #' @export
 
-EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
+EDMfun0<-function(smp_cf, yp, x, minest=0, maxest=NULL, time) {
   time_use<-time-1
 
   nD<-ncol(smp_cf)
@@ -37,6 +37,10 @@ EDMfun0<-function(smp_cf, yp, x, minest=0, time) {
     out<-smp_cf[time_use,-1]+smp_cf[time_use,1]*x
   }
   out[out<minest]<-minest
+  if(!is.null(maxest)) {
+    out[out>maxest]<-maxest
+  }
+
   out<-out*(x>0)
   out
 }
@@ -110,11 +114,11 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
     }
     std_tmp[std_tmp<minsd]<-minsd
 
-    ps<-(xt==0)
-    LL<-numeric(length(xt))
     #Tobit distribution:
-    LL[ps]<-pnorm(0, mean=yt/std_tmp[ps], log.p = TRUE)
-    LL[!ps]<-dnorm((yt-xt[!ps])/std_tmp[!ps],log=TRUE)-log(std_tmp[!ps])
+    LL<-dnorm((yt-xt)/std_tmp,log=TRUE)-log(std_tmp)
+    ps<-(xt==0)
+    LL[ps]<-pnorm(-yt/std_tmp[ps], log.p = TRUE)
+
     LL
   }
 }
@@ -197,6 +201,11 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
       smp_cf<-smp$smap_coefficients[[1]]
     } else {
       smp_cf<-edmdat$smp_cf
+      if(!is.null(edmdat$ytot)) {
+        mx<-max(edmdat$ytot, na.rm=T)
+      } else {
+        mx<-NULL
+      }
     }
   }
 
@@ -227,7 +236,7 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
     if(is.null(edmdat)) {
       prd<-detfun(sdet = pars$det, xt = post_smp, time = i+1)
     } else {
-      prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1)
+      prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1, maxest = mx)
     }
 
     #save state
