@@ -97,29 +97,68 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' @import stats
 #' @export
 
+if(FALSE) {
+  obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
+    if(inverse) {
+      if(length(so)==1) {
+        std_tmp<-exp(so[1])*yt
+      } else {
+        std_tmp<-exp(so[1])+exp(so[2])*yt
+      }
+      std_tmp[std_tmp<minsd]<-minsd
+      pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
+    } else {
+      if(length(so)==1) {
+        std_tmp<-exp(so[1])*xt
+      } else {
+        std_tmp<-exp(so[1])+exp(so[2])*xt
+      }
+      std_tmp[std_tmp<minsd]<-minsd
+
+      #Tobit distribution:
+      LL<-dnorm((yt-xt)/std_tmp,log=TRUE)-log(std_tmp)
+      ps<-(xt==0)
+      LL[ps]<-pnorm(-yt/std_tmp[ps], log.p = TRUE)
+
+      LL
+    }
+  }
+}
+
 obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
   if(inverse) {
     if(length(so)==1) {
       std_tmp<-exp(so[1])*yt
     } else {
-      std_tmp<-exp(so[1])+exp(so[2])*yt
+      std_tmp<-minsd+exp(so[1])*yt
     }
     std_tmp[std_tmp<minsd]<-minsd
     pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
   } else {
     if(length(so)==1) {
-      std_tmp<-exp(so[1])*xt
+      std_tmp<-minsd+exp(so[1])*xt
     } else {
       std_tmp<-exp(so[1])+exp(so[2])*xt
     }
-    std_tmp[std_tmp<minsd]<-minsd
 
     #Tobit distribution:
     LL<-dnorm((yt-xt)/std_tmp,log=TRUE)-log(std_tmp)
     ps<-(xt==0)
     LL[ps]<-pnorm(-yt/std_tmp[ps], log.p = TRUE)
+    mxd<-max(LL, na.rm=T)
 
-    LL
+    wts<-exp(LL-mxd)/sum(exp(LL-mxd))
+    pzero<-pnorm(-yt/std_tmp)
+
+    wts[!ps]<-wts[!ps]/sum(wts[!ps])*(1-pzero[!ps])
+    wts[ps]<-pzero[ps]/sum(ps)
+    if(sum(wts)!=0) {
+      wts<-wts/sum(wts)
+    } else {
+      wts[]<-1/length(wts)
+    }
+
+    return(list(LL=LL, wts=wts))
   }
 }
 
@@ -164,7 +203,8 @@ colfun0<-function(co, xt) {
 #' @param fulltraceback A logical, indicating whether full matrix of particles for all time steps should be returned.
 #' @source Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 #' @keywords particle filter, stability, time-series, Taylor power law
-#' @return LL (total log likelihood), LLlst (log likelihood for each time step), Nest (mean estimated state), Nsd (standard deviation of estimated state), Nest_noproc (mean estimated state without process error), Nsd_noproc (standard deviation of estimated state without process error), fulltracemat (full traceback of particle paths)
+#' @return LL (total log likelihood), LLlst (log likelihood for each time step), Nest (mean estimated state), Nsd (standard deviation of estimated state), Nest_noproc (mean estimated state at time t+1 without process error), Nsd_noproc (standard deviation of estimated state at time t+1 without process error),
+#' fulltracemat (full traceback of particle paths), fulltracemat_noproc (full traceback of particle paths at time t+1 without process noise), and fulltraceindex (index positions for the particle traces over time)
 #' @export
 
 particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=FALSE, fulltraceback=FALSE) {
@@ -211,8 +251,17 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
 
   if(fulltraceback) {
     fulltracemat<-matrix(nrow=length(y), ncol=N)
+    fulltraceindex<-matrix(nrow=length(y), ncol=N)
+    fulltracemat_noproc<-matrix(nrow=length(y), ncol=N)
+
+    #state before process noise
+    if(tstart>1) {
+      fulltracemat_noproc[tstart-1,]<-prd
+    }
   } else {
     fulltracemat<-NULL
+    fulltraceindex<-NULL
+    fulltracemat_noproc<-NULL
   }
 
   for(i in tstart:length(y)) {
@@ -222,41 +271,92 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
     proc<-procfun(sp = pars$proc, xt = prd, time = i)
 
     #get likelihood of proc given y[i]
-    dobs<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
+    #dobs<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
+    tmpobsout<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
+    dobs<-tmpobsout$LL
     mxd<-max(dobs, na.rm=T)
-    wdobs<-exp(dobs-mxd)/sum(exp(dobs-mxd))
+    #wdobs<-exp(dobs-mxd)/sum(exp(dobs-mxd))
+    wdobs<-tmpobsout$wts
 
     #estimates of true state for y[i]
-    post_smp<-sample(proc, N, replace=T, prob = wdobs)
     if(fulltraceback) {
-      fulltracemat[i,]<-post_smp
+      smp_tmp<-sample(length(proc), N, replace=T, prob = wdobs)
+      post_smp<-proc[smp_tmp]
+    } else {
+      post_smp<-sample(proc, N, replace=T, prob = wdobs)
     }
 
-    #estimates of deterministic state at t=i+1
+    #now, prd is estimate of deterministic state at t=i+1
     if(is.null(edmdat)) {
       prd<-detfun(sdet = pars$det, xt = post_smp, time = i+1)
     } else {
       prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1, maxest = mx)
     }
 
+    #add colonization
+    prd<-colfun(co=pars$pcol, xt=prd)
+
     #save state
     if(dotraceback) {
+      #state at time t
       Nest[i]<-mean(post_smp)
       Nsd[i]<-sd(post_smp)
 
-      if(i<length(y)) {
-        Nest_noproc[i+1]<-mean(prd)
-        Nsd_noproc[i+1]<-sd(prd)
-      }
+      #state at time t+1, before process noise
+      Nest_noproc[i]<-mean(prd)
+      Nsd_noproc[i]<-sd(prd)
     }
 
-    #add colonization
-    prd<-colfun(co=pars$pcol, xt=prd)
+    if(fulltraceback) {
+      #state at time t
+      fulltracemat[i,]<-post_smp
+      fulltraceindex[i,]<-smp_tmp
+
+      #state at time t+1, before process noise
+      fulltracemat_noproc[i,]<-prd
+    }
 
     #save likelihood
     LL[i]<-log(mean(exp(dobs-mxd)))+mxd
   }
   LLtot <- sum(LL[is.finite(LL)], na.rm=T)
 
-  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd, Nest_noproc=Nest_noproc, Nsd_noproc=Nsd_noproc, fulltracemat=fulltracemat))
+  return(list(LL = LLtot, LLlst=LL, Nest=Nest, Nsd=Nsd, Nest_noproc=Nest_noproc, Nsd_noproc=Nsd_noproc, fulltracemat=fulltracemat, fulltracemat_noproc=fulltracemat_noproc, fulltraceindex=fulltraceindex))
 }
+
+
+#' sort output of particle filter
+#'
+#' Sorts outputs of particle filter based on index - returns a sorted list of particles, based on the
+#' sampling trajectory through time. This is a somewhat more accurate estiamte of the true posterior than
+#' are the stepwise samples provided by the filter.
+#' @param fulltracemat full output of particles from the particleFilterLL function
+#' @param fulltraceindex full output of particle indices from the particleFilterLL function
+#' @param nsmp number of particle paths to sample - defaults to NULL, which samples all paths
+#' @keywords particle filter
+#' @return an index-sorted matrix - each column shows the trajectory of a single particle
+#' @export
+
+indexsort<-function(fulltracemat, fulltraceindex, nsmp=NULL) {
+  sortedmat<-matrix(nrow=nrow(fulltracemat), ncol=ncol(fulltracemat))
+  startps<-min(which(apply(fulltraceindex, 1, function(x) mean(is.na(x)))!=1))
+
+
+  if(is.null(nsmp)) {
+    smpps<-1:ncol(sortedmat)
+  } else {
+    smpps<-sample(ncol(sortedmat), nsmp, replace=FALSE)
+  }
+  for(j in smpps) {
+    indx<-j
+    for(i in nrow(sortedmat):startps) {
+      sortedmat[i,j]<-fulltracemat[i,indx]
+      indx<-fulltraceindex[i,indx]
+    }
+  }
+  sortedmat<-sortedmat[,colMeans(is.na(sortedmat))!=1]
+  sortedmat
+}
+
+
+
