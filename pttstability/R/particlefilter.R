@@ -241,11 +241,16 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
       smp_cf<-smp$smap_coefficients[[1]]
     } else {
       smp_cf<-edmdat$smp_cf
-      if(!is.null(edmdat$ytot)) {
-        mx<-max(edmdat$ytot, na.rm=T)
-      } else {
-        mx<-NULL
-      }
+    }
+
+    if(!is.null(edmdat$ytot)) {
+      mx<-max(edmdat$ytot, na.rm=T)
+    } else {
+      mx<-NULL
+    }
+
+    if(!is.null(edmdat$maxest)) {
+      mx<-edmdat$maxest
     }
   }
 
@@ -290,7 +295,11 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
     if(is.null(edmdat)) {
       prd<-detfun(sdet = pars$det, xt = post_smp, time = i+1)
     } else {
-      prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1, maxest = mx)
+      if(is.null(mx)) {
+        prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1)
+      } else {
+        prd<-detfun(smp_cf = smp_cf, yp = y, x = post_smp, time = i+1, maxest = mx)
+      }
     }
 
     #add colonization
