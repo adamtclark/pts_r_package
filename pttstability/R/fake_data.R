@@ -8,10 +8,10 @@
 
 getcm<-function(dat) {
   #time to colonization
-  pc<-sum(dat[-1]>0 & dat[-length(dat)]==0)/sum(dat[-length(dat)]==0)
+  pc<-sum((!is.na(dat[-1]) & dat[-1]>0) & (!is.na(dat[-length(dat)]) & dat[-length(dat)]==0), na.rm=T)/sum((!is.na(dat[-length(dat)]) & dat[-length(dat)]==0), na.rm=T)
 
   #time to mortality
-  pm<-sum(dat[-1]==0 & dat[-length(dat)]>0)/sum(dat[-length(dat)]>0)
+  pm<-sum((!is.na(dat[-1]) & dat[-1]==0) & (!is.na(dat[-length(dat)]) & dat[-length(dat)]>0), na.rm=T)/sum((!is.na(dat[-length(dat)]) & dat[-length(dat)]>0), na.rm=T)
 
   #mean occupancy
   pocc<-(1/pc*0+1/pm*1)/(1/pc+1/pm)
