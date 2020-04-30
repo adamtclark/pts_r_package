@@ -41,11 +41,11 @@ pars0<-pars_true<-list(obs=c(log(0.2)),
                        det=c(log(1.2),log(1)))
 
 #create priors
-p0<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
+p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.5), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
+p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.5), log(3)))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
@@ -63,7 +63,7 @@ while(sum(y>0)<=(length(y)/3)) { # want at least 5% nonzero values
   pars_sim<-parseparam0(c(unname(sampler_fun_USE())))
   #exp(unlist(pars_sim)[1:3])
 
-  datout<-makedynamics_general(n = 100, n0 = (sin(1/2)+1+0.5)/2, pdet=pars_sim$det,
+  datout<-makedynamics_general(n = 150, n0 = (sin(1/2)+1+0.5)/2, pdet=pars_sim$det,
                                proc = pars_sim$proc, obs = pars_sim$obs, pcol = pars_sim$pcol,
                                detfun = detfun0_sin, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
   y<-datout$obs
@@ -145,7 +145,7 @@ optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
 #simulation outputs
 simdat<-list(datout=datout)
 
-save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_allvar_oscil_taylor_200429.rda", sep=""), version=2)
+save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_allvar_oscil_taylor_200430.rda", sep=""), version=2)
 
 
 
