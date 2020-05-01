@@ -361,4 +361,3 @@ coplot(lf(pctrue+0.01)~lf(pcobs+0.01)|cut(lf(summed_obs_error),ctlvls), summaryd
 
 #TODO
 #longer times to extinction
-#think about reasons for being drawn to 2.

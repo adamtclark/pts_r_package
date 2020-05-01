@@ -4,10 +4,10 @@
 #$ -o iman.out$JOB_ID
 #$ -j y
 #$ -S /bin/bash
-#$ -l h_rt=1:00:00 
+#$ -l h_rt=2:00:00 
 #$ -l h_vmem=6G
 #$ -pe smp 1
-#$ -t 1-1000
+#$ -t 1001-2000
 
 date
 module load GCC/7.3.0-2.30
