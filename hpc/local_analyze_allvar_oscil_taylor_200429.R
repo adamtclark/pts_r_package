@@ -28,16 +28,19 @@ sp<-2000
 N<-2e3
 collst<-adjustcolor(c("purple", "blue", "red", "black"),alpha.f = 0.3)
 
-p0<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
+p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.5), log(3)))
+#p0<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
-p0_edm<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
+p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.5), log(3)))
+#p0_edm<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 flst<-dir("datout")
-flst<-flst[grep("200429", flst)]
+#flst<-flst[grep("200429", flst)]
+flst<-flst[grep("200430", flst)]
 flst<-flst[grep("rda", flst)]
 
 if(FALSE) {
@@ -85,7 +88,10 @@ if(FALSE) {
                      pmdet=NA,
                      pmedm=NA,
                      pmtrue=NA,
-                     pmobs=NA)
+                     pmobs=NA,
+                     pmdet_analy=NA,
+                     pmedm_analy=NA,
+                     pmtrue_analy=NA)
 
 
   for(ifl in 1:length(flst)) {
@@ -96,6 +102,7 @@ if(FALSE) {
     #exp(parslst$ptrue)
     #exp(parslst$parsest_det[,1])
     #exp(parslst$parsest_edm[,1])
+
 
     datout<-simdat$datout
     y<-simdat$datout$obs
@@ -233,6 +240,9 @@ if(FALSE) {
     prtout_det<-indexsort(pfout1_opt$fulltracemat, pfout1_opt$fulltraceindex, nsmp=1)
     prtout_edm<-indexsort(pfout2_opt$fulltracemat, pfout2_opt$fulltraceindex, nsmp=1)
 
+    prtout_det_noproc<-indexsort(pfout1_opt$fulltracemat_noproc, pfout1_opt$fulltraceindex, nsmp=1)
+    prtout_edm_noproc<-indexsort(pfout2_opt$fulltracemat_noproc, pfout2_opt$fulltraceindex, nsmp=1)
+
     cmdet<-getcm(prtout_det)
     cmedm<-getcm(prtout_edm)
     cmtrue<-getcm(datout$true)
@@ -248,116 +258,268 @@ if(FALSE) {
     summarydat$pmtrue[ifl]<-cmtrue$pm
     summarydat$pmobs[ifl]<-cmobs$pm
 
+    xt<-datout$noproc
+    std<-sqrt(exp(parslst$ptrue[2])*xt^exp(parslst$ptrue[3]))
+    summarydat$pmtrue_analy[ifl]<-sum(pnorm(0, xt[xt>0], std[xt>0]))/sum(xt>0)
+
+    xtdet<-prtout_det_noproc
+    stddet<-sqrt(exp(parslst$parsest_det[2])*xtdet^exp(parslst$parsest_det[3]))
+    summarydat$pmdet_analy[ifl]<-sum(pnorm(0, xtdet[!is.na(xtdet) & xtdet>0], stddet[!is.na(xtdet) & xtdet>0]))/sum(!is.na(xtdet) & xtdet>0)
+
+    xtedm<-prtout_edm_noproc
+    stdedm<-sqrt(exp(parslst$parsest_edm[2])*xtedm^exp(parslst$parsest_edm[3]))
+    summarydat$pmedm_analy[ifl]<-sum(pnorm(0, xtedm[!is.na(xtedm) & xtedm>0], stdedm[!is.na(xtedm) & xtedm>0]))/sum(!is.na(xtedm) & xtedm>0)
+
     if(ifl/100 == floor(ifl/100)) {
       print(round(ifl/length(flst),2))
     }
   }
-  write.csv(summarydat, "datout/summarydat_allvar_oscil_taylor_200429.csv", row.names = FALSE)
+  write.csv(summarydat, "datout/summarydat_allvar_oscil_taylor_200430.csv", row.names = FALSE)
 } else {
-  summarydat<-read.csv("datout/summarydat_allvar_oscil_taylor_200429.csv")
+  summarydat<-read.csv("datout/summarydat_allvar_oscil_taylor_200430.csv")
+}
+
+#Plot outputs
+require(msir)
+require(mvtnorm)
+
+e2fun<-function(x,y,ybar=NULL) {
+  if(is.null(ybar)) {
+    ybar<-mean(y,na.rm=T)
+  }
+  1-mean((x-y)^2,na.rm=T)/mean((y-ybar)^2,na.rm=T)
 }
 
 
+rhokernel<-function(x, y, byvar, nsteps=20, niter=1000) {
+  h<-1.06*sd(byvar,na.rm=T)*(length(byvar[is.finite(byvar)])^(-1/5))
+  #Silverman, B.W. (1986) "rule of thumb"
+
+  bylst<-seq(min(byvar, na.rm=T), max(byvar, na.rm=T), length=nsteps)
+  rholst<-matrix(nrow=length(bylst), ncol=niter)
+
+  for(i in 1:length(bylst)) {
+    wt<-dnorm((bylst[i]-byvar)/h)
+    wt[byvar==bylst[i]]<-0
+    wt[is.na(x) | is.na(y)]<-0
+    wt[is.na(wt)]<-0
+    wt<-wt/sum(wt,na.rm=T)
+
+    for(j in 1:niter) {
+      smp<-sample(length(x), rep=TRUE, prob = wt)
+      rholst[i,j]<-cor(x[smp],y[smp])
+    }
+  }
+
+  rhoout<-t(apply(rholst, 1, function(x) quantile(x, c(0.025, 0.5, 0.975))))
+
+  return(list(rhoout=rhoout, rholst=rholst, bylst=bylst))
+}
 
 
+rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=1000) {
+  h<-diag(ncol(byvar))
+  d<-ncol(byvar)
+  for(i in 1:d) {
+    h[i,i]<-(4/(d+2))^(1/(d+4))*nrow(byvar)^(-1/(d+4))*sd(byvar[,i])
+  }
+  #Silverman, B.W. (1986) "rule of thumb"
 
-#tmp
-cutoff<-0.5
-cutoffo<-0.5
-cutoffp<-0.5
-ps<-sqrt(summarydat$summed_proc_error^2+summarydat$summed_obs_error^2)<cutoff
+  bylst<-apply(byvar, 2, function(x) seq(min(x, na.rm=T), max(x, na.rm=T), length=nsteps))
+  rholst<-array(dim=c(nrow(bylst), nrow(bylst), niter))
 
-pso<-(summarydat$summed_proc_error)<cutoffo
-psp<-(summarydat$summed_obs_error)<cutoffp
-mean(ps); mean(pso); mean(psp)
+  for(i in 1:nrow(bylst)) {
+    for(j in 1:nrow(bylst)) {
+      xdiff<-cbind(byvar[,1]-bylst[i,1],
+                   byvar[,2]-bylst[j,2])
 
+      wt<-dmvnorm(xdiff, sigma = h)
+      wt[is.na(x) | is.na(y)]<-0
+      wt[is.na(wt)]<-0
+      wt<-wt/sum(wt,na.rm=T)
 
+      for(k in 1:niter) {
+        smp<-sample(length(x), rep=TRUE, prob = wt)
+        rholst[i,j,k]<-cor(x[smp],y[smp])
+      }
+    }
+  }
 
-hist(summarydat$summed_obs_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
-hist(summarydat$summed_proc_error, breaks = 20); abline(v=cutoff, col=2, lty=3)
+  rhoout<-apply(rholst, 1:2, function(x) quantile(x, c(0.025, 0.5, 0.975)))
+
+  return(list(rhoout=rhoout, rholst=rholst, bylst=bylst))
+}
+
 
 lf<-function(x) {log10(x)}
-pf<-function(x,y,...) {
-  points(x,y)
-  abline(a=0, b=1, lty=2, col="blue", lwd=1.5)
+pf<-function(x,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,...) {
+  clevels<-sort(unique(category))
+  if(is.null(rngx)) {
+    rngx<-range(c(x,y),na.rm=T)
+  }
+  if(is.null(rngy)) {
+    rngy<-range(c(x,y),na.rm=T)
+  }
+  for(i in 1:length(clevels)) {
+    psl<-which(category==clevels[i])
+    xsubs<-x[psl]; ysubs<-y[psl]
 
-  mod<-loess(y~x, enp.target = 2)
-  xsq<-seq(min(x,na.rm=T), max(x, na.rm=T), length=100)
-  prd<-predict(mod, newdata=data.frame(x=xsq), se = TRUE)
+    if(!is.null(mnlst)) {
+      if(mnlst[1]=="none") {
+        mn<-""
+      } else {
+        mn<-mnlst[i]
+      }
+    } else {
+      mn<-clevels[i]
+    }
 
-  matlines(xsq,cbind(prd$fit,prd$fit+prd$se.fit, prd$fit-prd$se.fit), col=2, lty=c(1,2,2), lwd=1.5)
+    plot(xsubs,ysubs, xlab="", ylab="", xlim=rngx, ylim=rngy, main=mn)
+    abline(a=0, b=1, lty=2, col="blue", lwd=1.5)
 
-  rs<-1-mean((x-y)^2,na.rm=T)/mean((y-mean(y,na.rm=T))^2,na.rm=T)
-  legend("topleft", legend = round(rs,3), bty="n")
+    mod<-loess.sd(x = xsubs, y = ysubs, nsigma = qnorm(0.975))
+    polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), col = adjustcolor(1, alpha.f = 0.2), border = NA)
+
+    e2<-pmax(0, 1-mean((xsubs-ysubs)^2,na.rm=T)/mean((ysubs-mean(ysubs,na.rm=T))^2,na.rm=T))
+    r2<-pmax(0, 1-mean((mod$x-mod$y)^2,na.rm=T)/mean((mod$y-mean(mod$y,na.rm=T))^2,na.rm=T))
+
+    text(rngx[1]+diff(rngx)*0.2, rngy[2]-diff(rngy)*0.1, bquote(E[2] == .(round(e2,3))), ps=4)
+    text(rngx[1]+diff(rngx)*0.2, rngy[2]-diff(rngy)*0.25, bquote(R^2 == .(round(r2,3))), ps=4)
+  }
 }
 
 summarydat$lvl<-1
-ctlvls<-3
-10^(tapply(lf(summarydat$summed_proc_error), cut(lf(summarydat$summed_proc_error),ctlvls), mean))
-10^(tapply(lf(summarydat$summed_obs_error), cut(lf(summarydat$summed_obs_error),ctlvls), mean))
+ctlvlslin<-(c(0, 0.1, 0.2, 0.5))
+ctlvls<-lf(c(1e-6, 0.1, 0.2, 0.5))
 
 #obs
-coplot(lf(obs0)~lf(det_obs_mu0)|lvl, summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(obs0)~lf(det_obs_mu0)|cut(lf(summed_obs_error),ctlvls)+cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(obs0)~lf(det_obs_mu0)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(obs0)~lf(det_obs_mu0)|cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
+par(mfcol=c(3,2), mar=c(4,4,2,2))
+pf((summarydat[summarydat$gelmandet<=1.1,]$det_obs_mu0),
+   (summarydat[summarydat$gelmandet<=1.1,]$obs0),
+   cut((summarydat[summarydat$gelmandet<=1.1,]$summed_proc_error),ctlvlslin),
+   rngx = c(0,0.5), rngy = c(0,0.5))
 
-coplot(lf(obs0)~lf(edm_obs_mu0)|lvl, summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(obs0)~lf(edm_obs_mu0)|cut(lf(summed_obs_error),ctlvls)+cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(obs0)~lf(edm_obs_mu0)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(obs0)~lf(edm_obs_mu0)|cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
+pf((summarydat[summarydat$gelmanedm<=1.1,]$edm_obs_mu0),
+   (summarydat[summarydat$gelmanedm<=1.1,]$obs0),
+   cut((summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error),ctlvlslin),
+   rngx = c(0,0.5), rngy = c(0,0.5))
+
+rhokern_obs0_det<-rhokernel(x=summarydat[summarydat$gelmandet<=1.1,]$det_obs_mu0,
+         y=summarydat[summarydat$gelmandet<=1.1,]$obs0,
+         byvar=summarydat[summarydat$gelmandet<=1.1,]$summed_proc_error)
+rhokern_obs0_edm<-rhokernel(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_obs_mu0,
+                          y=summarydat[summarydat$gelmanedm<=1.1,]$obs0,
+                          byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error)
+matplot(rhokern_obs0_det$bylst, rhokern_obs0_det$rhoout, type="l",
+        lty=c(2,1,2), col="blue", xlim=c(0, 0.5), ylim=c(0,1),
+        xlab="Observation Error", ylab="Pearson Correlation")
+matlines(rhokern_obs0_edm$bylst, rhokern_obs0_edm$rhoout,
+        lty=c(2,1,2), col="red")
+abline(h=0, lty=2)
+abline(h=c(-1,1), lty=3)
+
+
 
 #proc0
-coplot(lf(proc0)~lf(det_proc_mu0)|lvl, summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(proc0)~lf(det_proc_mu0)|cut(lf(summed_obs_error),ctlvls)+cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(proc0)~lf(det_proc_mu0)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(proc0)~lf(det_proc_mu0)|cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
+par(mfcol=c(3,2), mar=c(4,4,2,2))
+pf((summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu0),
+   (summarydat[summarydat$gelmandet<=1.1,]$proc0),
+   cut((summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error),ctlvlslin),
+   rngx = c(0,0.5), rngy = c(0,0.5))
 
-coplot(lf(proc0)~lf(edm_proc_mu0)|lvl, summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(proc0)~lf(edm_proc_mu0)|cut(lf(summed_obs_error),ctlvls)+cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(proc0)~lf(edm_proc_mu0)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(proc0)~lf(edm_proc_mu0)|cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
+pf((summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu0),
+   (summarydat[summarydat$gelmanedm<=1.1,]$proc0),
+   cut((summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error),ctlvlslin),
+   rngx = c(0,0.5), rngy = c(0,0.5))
 
+rhokern_proc0_det<-rhokernel(x=summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu0,
+                          y=summarydat[summarydat$gelmandet<=1.1,]$proc0,
+                          byvar=summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error)
+rhokern_proc0_edm<-rhokernel(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu0,
+                          y=summarydat[summarydat$gelmanedm<=1.1,]$proc0,
+                          byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error)
+matplot(rhokern_proc0_det$bylst, rhokern_proc0_det$rhoout, type="l",
+        lty=c(2,1,2), col="blue", xlim=c(0, 0.5), ylim=c(0,1),
+        xlab="Process Noise", ylab="Pearson Correlation")
+matlines(rhokern_proc0_edm$bylst, rhokern_proc0_edm$rhoout,
+         lty=c(2,1,2), col="red")
+abline(h=0, lty=2)
+abline(h=c(-1,1), lty=3)
 
 #proc1
-coplot(lf(proc1)~lf(det_proc_mu1)|lvl, summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(proc1)~lf(det_proc_mu1)|cut(lf(summed_obs_error),ctlvls)+cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(proc1)~lf(det_proc_mu1)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(proc1)~lf(det_proc_mu1)|cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
+ctlvlslin2<-(c(0, 0.2, 0.5))
 
-coplot(lf(proc1)~lf(edm_proc_mu1)|lvl, summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(proc1)~lf(edm_proc_mu1)|cut(lf(summed_obs_error),ctlvls)+cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(proc1)~lf(edm_proc_mu1)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(proc1)~lf(edm_proc_mu1)|cut(lf(summed_proc_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
+par(mfcol=c(2,2), mar=c(4,4,2,2))
+pf((summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu1),
+   (summarydat[summarydat$gelmandet<=1.1,]$proc1),
+   paste(cut((summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error),ctlvlslin2),
+         cut((summarydat[summarydat$gelmandet<=1.1,]$summed_proc_error),ctlvlslin2)),
+   rngx = c(0.5,3), rngy = c(0.5,3))
+
+pf((summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu1),
+   (summarydat[summarydat$gelmanedm<=1.1,]$proc1),
+   paste(cut((summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error),ctlvlslin2),
+         cut((summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error),ctlvlslin2)),
+   rngx = c(0.5,3), rngy = c(0.5,3))
 
 
+rhokern_proc1_det<-rhokernel_2d(x=summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu1,
+                             y=summarydat[summarydat$gelmandet<=1.1,]$proc1,
+                             byvar=cbind(summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error,
+                                         summarydat[summarydat$gelmandet<=1.1,]$summed_proc_error))
+rhokern_proc1_edm<-rhokernel_2d(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu1,
+                             y=summarydat[summarydat$gelmanedm<=1.1,]$proc1,
+                             byvar=cbind(summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error,
+                                         summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error))
+par(mfrow=c(2,1), mar=c(4,4,2,2))
+contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$rhoout[1,,],levels = seq(0, 1, by=0.02))
+contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$rhoout[1,,],levels = seq(0, 1, by=0.02))
 
 
 #Check rates, mor
-coplot(lf(pmtrue+0.01)~lf(pmdet+0.01)|lvl, summarydat[summarydat$gelmandet<=1.1,], panel=pf)
-coplot(lf(pmtrue+0.01)~lf(pmdet+0.01)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
+libl<-150
+coplot(lf(pmax(pmtrue, 1/libl))~lf(pmax(pmdet, 1/libl))|lvl, summarydat[summarydat$gelmandet<=1.1,])
+coplot(lf(pmax(pmtrue, 1/libl))~lf(pmax(pmdet, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,])
 
-coplot(lf(pmtrue+0.01)~lf(pmedm+0.01)|lvl, summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
-coplot(lf(pmtrue+0.01)~lf(pmedm+0.01)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
+coplot(lf(pmax(pmtrue, 1/libl))~lf(pmax(pmedm, 1/libl))|lvl, summarydat[summarydat$gelmanedm<=1.1,])
+coplot(lf(pmax(pmtrue, 1/libl))~lf(pmax(pmedm, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,])
 
-coplot(lf(pmtrue+0.01)~lf(pmobs+0.01)|lvl, summarydat, panel=pf)
-coplot(lf(pmtrue+0.01)~lf(pmobs+0.01)|cut(lf(summed_obs_error),ctlvls), summarydat, panel=pf)
+coplot(lf(pmax(pmtrue, 1/libl))~lf(pmax(pmobs, 1/libl))|lvl, summarydat, panel=pf)
+coplot(lf(pmax(pmtrue, 1/libl))~lf(pmax(pmobs, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat, panel=pf)
 
 
 
 
 #Check rates, col
-coplot(lf(pctrue+0.01)~lf(pcdet+0.01)|lvl, summarydat[summarydat$gelmandet<=1.1 & summarydat$pmtrue>0,], panel=pf)
-coplot(lf(pctrue+0.01)~lf(pcdet+0.01)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1 & summarydat$pmtrue>0,], panel=pf)
+coplot(lf(pmax(pctrue, 1/libl))~lf(pmax(pcdet, 1/libl))|lvl, summarydat[summarydat$gelmandet<=1.1 & summarydat$pmtrue>0,], panel=pf)
+coplot(lf(pmax(pctrue, 1/libl))~lf(pmax(pcdet, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1 & summarydat$pmtrue>0,], panel=pf)
 
-coplot(lf(pctrue+0.01)~lf(pcedm+0.01)|lvl, summarydat[summarydat$gelmanedm<=1.1 & summarydat$pmtrue>0,], panel=pf)
-coplot(lf(pctrue+0.01)~lf(pcedm+0.01)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1 & summarydat$pmtrue>0,], panel=pf)
+coplot(lf(pmax(pctrue, 1/libl))~lf(pmax(pcedm, 1/libl))|lvl, summarydat[summarydat$gelmanedm<=1.1 & summarydat$pmtrue>0,], panel=pf)
+coplot(lf(pmax(pctrue, 1/libl))~lf(pmax(pcedm, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1 & summarydat$pmtrue>0,], panel=pf)
 
-coplot(lf(pctrue+0.01)~lf(pcobs+0.01)|lvl, summarydat[summarydat$pmtrue>0,], panel=pf)
-coplot(lf(pctrue+0.01)~lf(pcobs+0.01)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$pmtrue>0,], panel=pf)
-
-
+coplot(lf(pmax(pctrue, 1/libl))~lf(pmax(pcobs, 1/libl))|lvl, summarydat[summarydat$pmtrue>0,], panel=pf)
+coplot(lf(pmax(pctrue, 1/libl))~lf(pmax(pcobs, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$pmtrue>0,], panel=pf)
 
 
-#TODO
-#longer times to extinction
+
+
+#Analytical times to extinction
+coplot(lf(pmtrue_analy)~lf(pmdet_analy)|lvl, summarydat[summarydat$gelmandet<=1.1,], panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmdet_analy)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1,], panel=pf)
+
+coplot(lf(pmtrue_analy)~lf(pmedm_analy)|lvl, summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmedm_analy)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1,], panel=pf)
+
+coplot(lf(pmtrue_analy)~lf(pmax(pmobs, 1/libl))|lvl, summarydat, panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmax(pmobs, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat, panel=pf)
+
+coplot(lf(pmtrue_analy)~lf(pmdet_analy)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1 & summarydat$pmtrue_analy<(1/libl),], panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmedm_analy)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1 & summarydat$pmtrue_analy<(1/libl),], panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmax(pmobs, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$pmtrue_analy<(1/libl),], panel=pf)
+
+
+coplot(lf(pmtrue_analy)~lf(pmdet_analy)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmandet<=1.1 & summarydat$pmtrue_analy>(1/libl),], panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmedm_analy)|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$gelmanedm<=1.1 & summarydat$pmtrue_analy>(1/libl),], panel=pf)
+coplot(lf(pmtrue_analy)~lf(pmax(pmobs, 1/libl))|cut(lf(summed_obs_error),ctlvls), summarydat[summarydat$pmtrue_analy>(1/libl),], panel=pf)
+
+
