@@ -145,7 +145,7 @@ optdat<-list(optout_det=out_detfun0, optout_edm=out_EDM)
 #simulation outputs
 simdat<-list(datout=datout)
 
-save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_allvar_oscil_taylor_200430.rda", sep=""), version=2)
+save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_allvar_oscil_taylor_200507.rda", sep=""), version=2)
 
 
 
