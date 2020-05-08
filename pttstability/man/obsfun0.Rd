@@ -24,7 +24,8 @@ or two log-transformed parameters of the form sd=exp(B0)+exp(B1)*x.}
 \item{time}{the timestep - defaults to NULL (i.e. not used)}
 }
 \value{
-If inverse=FALSE, a number or numeric vector of length xt, with predicted log likelihoods of observation yt.
+If inverse=FALSE, returns a list including LL, a number or numeric vector of length xt, with predicted log likelihoods of observation yt,
+and wts, a number or vector with weights corresponding to the relative likelihood of each observation (after accounting for variable continuous vs. discrete probability distributions).
 If inverse = FALSE, returns N random draws from the observation function.
 }
 \description{

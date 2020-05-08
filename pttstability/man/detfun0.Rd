@@ -4,7 +4,7 @@
 \alias{detfun0}
 \title{default deterministic function}
 \usage{
-detfun0(sdet, xt, time = NULL)
+detfun0(sdet, xt, time = NULL, ...)
 }
 \arguments{
 \item{sdet}{a numeric vector of length two, specifying growth rate and carrying capacity}
@@ -12,6 +12,8 @@ detfun0(sdet, xt, time = NULL)
 \item{xt}{a number or numeric vector of abundances at time t}
 
 \item{time}{the timestep - defaults to NULL (i.e. not used)}
+
+\item{...}{additional arguments, for compatability with other usages of the function - values are not used in this implementation}
 }
 \value{
 a number or numeric vector of length xt, with predicted abundances at time t+1

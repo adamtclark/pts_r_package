@@ -14,6 +14,12 @@ returns back-transformed values of parameters
 }
 \description{
 Takes in a matrix, where each column represents a parameter. Returns parameters in untransformed space.
+If length = 2, then in the order (obs1, proc1).
+If 3, then in the order (obs1, proc1, proc2).
+If 4, then in the order (obs1, obs2, proc1, proc2).
+If 6, then in the order (obs1, proc1, pcol1, pcol2, det1, det2)
+If 7, then in the order (obs1, proc1, proc2, pcol1, pcol2, det1, det2)
+If 8, then in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2)
 }
 \keyword{MCMC}
 \keyword{optimization}

@@ -35,7 +35,8 @@ Default for edmdat is NULL, which implies that EDM will not be applied - instead
 \item{fulltraceback}{A logical, indicating whether full matrix of particles for all time steps should be returned.}
 }
 \value{
-LL (total log likelihood), LLlst (log likelihood for each time step), Nest (mean estimated state), Nsd (standard deviation of estimated state), Nest_noproc (mean estimated state without process error), Nsd_noproc (standard deviation of estimated state without process error), fulltracemat (full traceback of particle paths)
+LL (total log likelihood), LLlst (log likelihood for each time step), Nest (mean estimated state), Nsd (standard deviation of estimated state), Nest_noproc (mean estimated state at time t+1 without process error), Nsd_noproc (standard deviation of estimated state at time t+1 without process error),
+fulltracemat (full traceback of particle paths), fulltracemat_noproc (full traceback of particle paths at time t+1 without process noise), and fulltraceindex (index positions for the particle traces over time)
 }
 \description{
 General function for caluclating the log-likeihood of a stochastic discrete-time model,

@@ -4,10 +4,12 @@
 \alias{ilogit}
 \title{Inverse logit}
 \usage{
-ilogit(x)
+ilogit(x, ...)
 }
 \arguments{
 \item{x}{a number, vector, matrix, etc. to be transformed from (-inf, inf) to (0 1) by the inverse logit transform}
+
+\item{...}{additional arguments to be passed to plogis}
 }
 \value{
 transformed result

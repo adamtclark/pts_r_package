@@ -4,6 +4,7 @@
 #' @param sdet a numeric vector of length two, specifying growth rate and carrying capacity
 #' @param xt a number or numeric vector of abundances at time t
 #' @param time the timestep - defaults to NULL (i.e. not used)
+#' @param ... additional arguments, for compatability with other usages of the function - values are not used in this implementation
 #' @keywords deterministic function, discrete-time model, time-series, fake data
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
 #' @export
@@ -24,7 +25,6 @@ detfun0<-function(sdet, xt, time=NULL, ...) {
 #' @param time the time step (i.e. position in smp_cf) for the desired prediction. Prediction will be made based on observation in preceding time point (i.e. time-1).
 #' @keywords applies EDM from the rEDM package to reconstruct deterministic time series dynamics
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
-#' @import rEDM
 #' @source @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 #' @export
 
@@ -211,7 +211,12 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
 
   if(!is.null(edmdat)) {
     if(is.null(edmdat$smp_cf)) {
-      smp<-s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
+      if (!requireNamespace("rEDM", quietly = TRUE)) {
+        stop("Package \"rEDM\" needed for this function to work. Please either install it, or provide an \"smp_cf\" matrix in the \"edmdat\" list.",
+             call. = FALSE)
+      }
+
+      smp<-rEDM::s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
       smp_cf<-smp$smap_coefficients[[1]]
     } else {
       smp_cf<-edmdat$smp_cf

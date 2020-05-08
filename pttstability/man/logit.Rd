@@ -4,10 +4,12 @@
 \alias{logit}
 \title{Logit}
 \usage{
-logit(x)
+logit(x, ...)
 }
 \arguments{
 \item{x}{a number, vector, matrix, etc. to be transformed from (0, 1) to (-inf inf) by the logit transform}
+
+\item{...}{additional arguments to be passed to plogis}
 }
 \value{
 transformed result - impossible values are replaced with NA, without warnings

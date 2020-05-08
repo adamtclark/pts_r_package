@@ -17,7 +17,7 @@ sampler_fun0(n = 1, minv, maxv)
 returns random draws from the priors
 }
 \description{
-Text...
+Draws samples from a flat prior
 }
 \keyword{MCMC}
 \keyword{optimization}
