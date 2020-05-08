@@ -6,11 +6,7 @@
 #' @return transformed result - impossible values are replaced with NA, without warnings
 #' @export
 
-logit<-function(x) {
-  suppressWarnings(res<-(-log(1/x-1)))
-  res[!is.finite(res)]<-NA
-  res
-}
+logit<-function(x, ...) qlogis(x, ...)
 
 
 #' Inverse logit
@@ -21,9 +17,7 @@ logit<-function(x) {
 #' @return transformed result
 #' @export
 
-ilogit<-function(x) {
-  1/(1+exp(-x))
-}
+ilogit<-function(x, ...) plogis(x, ...)
 
 #' Get inverse logit-normal mode
 #'

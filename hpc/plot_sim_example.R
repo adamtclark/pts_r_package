@@ -10,7 +10,6 @@ source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
 source("../pttstability/R/logit_funs.R")
 source("../pttstability/R/particlefilter.R")
-source("plotfun.R")
 
 eifun<-function(x,y,i=1,ybar=NULL) {
   if(is.null(ybar)) {
@@ -93,7 +92,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_example_timeseries.pdf",
   #m<-cbind(c(1,1,1), c(1,1,1), c(1,1,1), c(1,1,1), c(1,1,1), c(1,1,1), c(2,3,4), c(2,3,4), c(2,3,4), c(5,6,7), c(5,6,7),  c(5,6,7), c(8,8,8),c(8,8,8),c(8,8,8),c(8,8,8))
   m<-cbind(c(1,1,1,1,1,1,1,1,8,8,8,8,8,8,8), c(1,1,1,1,1,1,1,1,8,8,8,8,8,8,8), c(2,2,2,2,2,3,3,3,3,3,4,4,4,4,4), c(5,5,5,5,5,6,6,6,6,6,7,7,7,7,7))
   layout(m)
-  
+
   par(mar=c(3,2,1,3), oma=c(1,2,0,0))
   plot(1,1, type="n", ylim=c(0, 3), xlim=c(0, 50), xlab="", ylab="", xaxs="i")
   polygon(c(1:150, 150:1), c(qprt_det[,1], rev(qprt_det[,3])), col=adjustcolor("dodgerblue", alpha.f = 0.3), border=NA)
@@ -102,7 +101,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_example_timeseries.pdf",
   lines(datout$true, lwd=1.5)
   abline(h=0, lty=3)
   title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-  
+
   legend("topright", legend = c("Analytical Function", "EDM Estimate", "Raw Observation", "True Dynamics"),
            fill = c("dodgerblue", "firebrick", NA, NA),
            border = c(1,1, NA, NA),
@@ -111,7 +110,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_example_timeseries.pdf",
            bty="n")
   mtext("Time", side = 1, line=2.5)
   mtext("Abundance", side = 2, line=2.5)
-  
+
   par(mar=c(3,1.5,1,1))
   parnames<-c(expression(paste("Observation Error Slope, ", beta[obs])),
               expression(paste("Process Noise Intercept, ", beta[proc[0]])),
@@ -123,14 +122,14 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_example_timeseries.pdf",
     plot(dns$x, dns$y, xlim=xrng, col="dodgerblue", lwd=1.5, type="l",
          xlab="", ylab="")
     title(paste(letters[i+1], ".", sep=""), line=-1.05, xpd=NA, adj=0.08, cex.main=1.5)
-    
+
     if(i==2) {
       mtext("Probability Density", side = 2, line=2.2)
     }
-    
+
     abline(v=exp(p0[[i]]), h=0, col=c(1), lty=3)
     abline(v=exp(ptrue[i]), col=c(1), lty=2, lwd=1.5)
-    
+
     mtext(parnames[i], side=1, adj=0.9, line=lnnum[i], outer=TRUE, xpd=NA)
   }
   for(i in 1:length(ptrue)) {
@@ -139,11 +138,11 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_example_timeseries.pdf",
     plot(dns$x, dns$y, xlim=xrng, col="firebrick", lwd=1.5, type="l",
          xlab="", ylab="")
     title(paste(letters[i+4], ".", sep=""), line=-1.05, xpd=NA, adj=0.08, cex.main=1.5)
-    
+
     abline(v=exp(p0[[i]]), h=0, col=c(1), lty=3)
     abline(v=exp(ptrue[i]), col=c(1), lty=2, lwd=1.5)
   }
-  
+
   par(mar=c(3,2,1,3))
   mxy<-max(c(datout$true, y, pfout1_opt$Nest, pfout2_opt$Nest))
   plot(y, datout$true, col=adjustcolor("goldenrod", alpha.f = 0.5), xlim=c(0, mxy), ylim=c(0, mxy), cex=0.9, pch=18, xlab="", ylab="")
@@ -151,13 +150,13 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_example_timeseries.pdf",
   points(pfout2_opt$Nest, datout$true, col=adjustcolor("firebrick", alpha.f = 0.5), cex=0.9, pch=17)
   abline(a=0, b=1, lty=2, lwd=1.5)
   title("h.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-  
+
   legend("bottomright",
          legend=c(as.expression(bquote(rho==.(paste(round(cdet,2), ";", sep="")) ~ E[1] ~ "=" ~ .(round(eifun(pfout1_opt$Nest, datout$true), 2)))),
                   as.expression(bquote(rho==.(paste(round(cedm,2), ";", sep="")) ~ E[1] ~ "=" ~ .(round(eifun(pfout2_opt$Nest, datout$true), 2)))),
-                  as.expression(bquote(rho==.(paste(round(c0,2), ";", sep="")) ~ E[1] ~ "=" ~ .(round(eifun(y, datout$true), 2))))),  
+                  as.expression(bquote(rho==.(paste(round(c0,2), ";", sep="")) ~ E[1] ~ "=" ~ .(round(eifun(y, datout$true), 2))))),
          pch=16:18, col=c("dodgerblue", "firebrick", "goldenrod"), bty="n")
   mtext("Estimated Abundance", side = 1, line=2.5)
   mtext("True Abundance", side = 2, line=2.5)
-  
+
 dev.off()

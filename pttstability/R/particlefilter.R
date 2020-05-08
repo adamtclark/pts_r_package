@@ -20,6 +20,7 @@ detfun0<-function(sdet, xt, time=NULL, ...) {
 #' @param yp a matrix of covariates to be multiplied by the smp_cf (typically time lags). Should have one fewer column than smp_cf.
 #' @param x observation at time-1, to be used to make the prediction.
 #' @param minest minimum value to return for prediction - defaults to 0.
+#' @param maxest maximum value to return for prediction - defaults to NULL (no maximum)
 #' @param time the time step (i.e. position in smp_cf) for the desired prediction. Prediction will be made based on observation in preceding time point (i.e. time-1).
 #' @keywords applies EDM from the rEDM package to reconstruct deterministic time series dynamics
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
@@ -92,38 +93,11 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' @param minsd minimum observation error allowed (e.g. if observation = 0), to prevent log likelihoods of -infinity - defaults to 0.01
 #' @param time the timestep - defaults to NULL (i.e. not used)
 #' @keywords observation error
-#' @return If inverse=FALSE, a number or numeric vector of length xt, with predicted log likelihoods of observation yt.
+#' @return If inverse=FALSE, returns a list including LL, a number or numeric vector of length xt, with predicted log likelihoods of observation yt,
+#' and wts, a number or vector with weights corresponding to the relative likelihood of each observation (after accounting for variable continuous vs. discrete probability distributions).
 #' If inverse = FALSE, returns N random draws from the observation function.
 #' @import stats
 #' @export
-
-if(FALSE) {
-  obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
-    if(inverse) {
-      if(length(so)==1) {
-        std_tmp<-exp(so[1])*yt
-      } else {
-        std_tmp<-exp(so[1])+exp(so[2])*yt
-      }
-      std_tmp[std_tmp<minsd]<-minsd
-      pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
-    } else {
-      if(length(so)==1) {
-        std_tmp<-exp(so[1])*xt
-      } else {
-        std_tmp<-exp(so[1])+exp(so[2])*xt
-      }
-      std_tmp[std_tmp<minsd]<-minsd
-
-      #Tobit distribution:
-      LL<-dnorm((yt-xt)/std_tmp,log=TRUE)-log(std_tmp)
-      ps<-(xt==0)
-      LL[ps]<-pnorm(-yt/std_tmp[ps], log.p = TRUE)
-
-      LL
-    }
-  }
-}
 
 obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
   if(inverse) {
@@ -334,7 +308,7 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
 }
 
 
-#' sort output of particle filter
+#' Sort output of particle filter
 #'
 #' Sorts outputs of particle filter based on index - returns a sorted list of particles, based on the
 #' sampling trajectory through time. This is a somewhat more accurate estiamte of the true posterior than

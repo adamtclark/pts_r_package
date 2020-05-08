@@ -10,7 +10,6 @@ source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
 source("../pttstability/R/logit_funs.R")
 source("../pttstability/R/particlefilter.R")
-source("plotfun.R")
 
 #new detfun
 pars0<-pars_true<-list(obs=c(log(0.2)),

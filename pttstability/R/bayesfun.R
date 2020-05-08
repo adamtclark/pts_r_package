@@ -123,7 +123,7 @@ density_fun0 = function(param, minv, maxv){
 
 #' Default sampler function for prior
 #'
-#' Text...
+#' Draws samples from a flat prior
 #' @param n number of random draws to take from the priors
 #' @param minv Vector of minimum values to return for each parameter
 #' @param maxv Vector of maximum values to return for each parameter
@@ -144,6 +144,13 @@ sampler_fun0 = function(n=1, minv, maxv){
 #' Default inverse transormation function
 #'
 #' Takes in a matrix, where each column represents a parameter. Returns parameters in untransformed space.
+#' If length = 2, then in the order (obs1, proc1).
+#' If 3, then in the order (obs1, proc1, proc2).
+#' If 4, then in the order (obs1, obs2, proc1, proc2).
+#' If 6, then in the order (obs1, proc1, pcol1, pcol2, det1, det2)
+#' If 7, then in the order (obs1, proc1, proc2, pcol1, pcol2, det1, det2)
+#' If 8, then in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2)
+
 #' @param x an nxm matrix with
 #' @keywords stability, time-series, MCMC optimization
 #' @return returns back-transformed values of parameters
@@ -154,12 +161,16 @@ inv_fun0<-function(x) {
     cbind(exp(x[,1]), exp(x[,2]))
   } else if(ncol(x)==3) {
     cbind(exp(x[,1]), exp(x[,2]), exp(x[,3]))
+  } else if(ncol(x)==4) {
+    cbind(exp(x[,1]), exp(x[,2]), exp(x[,3]), exp(x[,4]))
   } else if(ncol(x)==6) {
     cbind(exp(x[,1]), exp(x[,2]), ilogit(x[,3]), exp(x[,4]), exp(x[,5]), exp(x[,6]))
   } else if(ncol(x)==7) {
     cbind(exp(x[,1]), exp(x[,2]), exp(x[,3]), ilogit(x[,4]), exp(x[,5]), exp(x[,6]), exp(x[,7]))
+  } else if(ncol(x)==8) {
+      cbind(exp(x[,1]), exp(x[,2]), exp(x[,3]), exp(x[,4]), ilogit(x[,5]), exp(x[,6]), exp(x[,7]), exp(x[,8]))
   } else {
-    return("error: x must be a matrix with 2, 3, 6, or 7 columns.")
+    return("error: x must be a matrix with 2, 3, 4, 6, 7, or 8 columns.")
   }
 }
 
