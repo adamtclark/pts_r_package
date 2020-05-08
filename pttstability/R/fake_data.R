@@ -94,7 +94,7 @@ makedynamics_general<-function(n=1000, n0=0.1,
   for(j in 1:(n)) {
     Sdat_obs[j]<-pmax(0, obsfun(obs, Sdat[j], inverse=TRUE, N=1, time=j))
   }
-  #Sdat_obs[Sdat==0]<-0 #no false positives
+  Sdat_obs[Sdat==0]<-0 #no false positives
 
   #Output matrix
   datout<-data.frame(obs=Sdat_obs, true=Sdat, noproc=Sdat_noproc)
