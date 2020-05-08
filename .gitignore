@@ -7,3 +7,4 @@ hpc/plotout/*
 *.history
 hpc/summarydata/*
 hpc/old/*
+pttstability.Rcheck/*
