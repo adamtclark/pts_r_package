@@ -30,17 +30,16 @@ N<-2e3
 collst<-adjustcolor(c("purple", "blue", "red", "black"),alpha.f = 0.3)
 
 p0<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.5), log(3)))
-#p0<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
 minvUSE<-unlist(lapply(p0, function(x) x[1]))
 maxvUSE<-unlist(lapply(p0, function(x) x[2]))
 
 p0_edm<-list(c(log(0.01), log(0.5)), c(log(0.01), log(0.5)), c(log(0.5), log(3)))
-#p0_edm<-list(c(log(0.01), log(1)), c(log(0.01), log(1)), c(log(0.01), log(3)))
 minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 flst<-dir("datout")
 #flst<-flst[grep("200429", flst)]
+#flst<-flst[grep("200507", flst)]
 flst<-flst[grep("200430", flst)]
 flst<-flst[grep("rda", flst)]
 
@@ -187,13 +186,8 @@ if(FALSE) {
     }
 
     #run at optimum parameters
-    #if(FALSE) {
-      pfout1_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_detfun0)), N=N, detfun=detfun0_sin, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE, fulltraceback = TRUE)
-      pfout2_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_EDM)), N=N, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=Euse, theta=tuse, ytot=y), dotraceback=TRUE, fulltraceback = TRUE)
-    #}
-
-    #pfout1_opt<-filterdat$filterout_det
-    #pfout2_opt<-filterdat$filterout_edm
+    pfout1_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_detfun0)), N=N, detfun=detfun0_sin, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=NULL, dotraceback=TRUE, fulltraceback = TRUE)
+    pfout2_opt<-particleFilterLL(y=y, pars=parseparam0(colMeans(smp_EDM)), N=N, detfun=EDMfun0, procfun=procfun0, obsfun=obsfun0, colfun=colfun0, edmdat=list(E=Euse, theta=tuse, ytot=y), dotraceback=TRUE, fulltraceback = TRUE)
 
     summarydat$cor_det[ifl]<-cor(pfout1_opt$Nest, datout$true, use="pairwise")^2
     summarydat$cor_edm[ifl]<-cor(pfout2_opt$Nest, datout$true, use="pairwise")^2
@@ -280,8 +274,11 @@ if(FALSE) {
   summarydat<-read.csv("datout/summarydat_allvar_oscil_taylor_200430.csv")
 }
 
-#Plot outputs
 
+
+
+
+#Plot outputs
 e2fun<-function(x,y,ybar=NULL) {
   if(is.null(ybar)) {
     ybar<-mean(y,na.rm=T)
@@ -295,9 +292,6 @@ eifun<-function(x,y,i=1,ybar=NULL) {
   }
   1-mean(abs(x-y)^i,na.rm=T)/mean(abs(y-ybar)^i,na.rm=T)
 }
-
-
-
 
 rhokernel<-function(x, y, byvar, nsteps=20, niter=1000,ei=1) {
   h<-1.06*sd(byvar,na.rm=T)*(length(byvar[is.finite(byvar)])^(-1/5))
@@ -446,8 +440,6 @@ pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0
     title(paste(letters[i+ladj],".", sep=""), line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
   }
 }
-
-
 
 
 summarydat$lvl<-1
