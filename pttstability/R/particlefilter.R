@@ -126,6 +126,7 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
 
     wts[!ps]<-wts[!ps]/sum(wts[!ps])*(1-pzero[!ps])
     wts[ps]<-pzero[ps]/sum(ps)
+    wts[!is.finite(wts)]<-0
     if(sum(wts)!=0) {
       wts<-wts/sum(wts)
     } else {
