@@ -211,6 +211,7 @@ pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0
 #Make plots
 summarydat$lvl<-1
 ctlvlslin<-(c(0, 0.1, 0.2, 0.5))
+ctlvlslin2<-(c(0, 0.2, 0.5))
 ctlvls<-lf(c(1e-6, 0.1, 0.2, 0.5))
 
 ### obs
@@ -419,7 +420,7 @@ rhokern_mor_edm<-rhokernel(x=lf(summarydat[summarydat$gelmanedm<=1.1,]$pmedm_ana
                            y=lf(summarydat[summarydat$gelmanedm<=1.1,]$pmtrue_analy),
                            byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error,
                            nsteps = 20)
-rhokern_mor_obs<-rhokernel(x=lf(summarydat$pmobs),
+rhokern_mor_obs<-rhokernel(x=lf(pmax(summarydat$pmobs, 1/libl)),
                            y=lf(summarydat$pmtrue_analy),
                            byvar=summarydat$summed_obs_error,
                            nsteps = 20)
@@ -479,6 +480,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_mor.pdf", width=6, height=
            expression(paste("Coefficient of Efficiency, ", E[1]))),
          fill = c("dodgerblue", "firebrick", "goldenrod", NA, NA), border = c(1, 1, 1, NA, NA),
          lty=c(NA, NA, NA, 1:2), lwd=c(NA, NA, NA, 1.5,1.5), col=c(NA, NA, NA, 1,1), bty="n")
+  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
 
 
   ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
@@ -487,7 +489,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_mor.pdf", width=6, height=
       x3 = lf(pmax(summarydat$pmobs[ps], 1/libl)),
       y = lf(summarydat$pmtrue_analy[ps]),
       category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
-      rngx = (c(-22,-0.5)), rngy = (c(-22,-0.5)), ladj = 2,vline = lf(1/libl),
+      rngx = (c(-22,-0.5)), rngy = (c(-22,-0.5)), ladj = 1,vline = lf(1/libl),
       mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.1]")),
                 expression(paste(sigma[italic(O)[tot]] %in% "(0.1,0.2]")),
                 expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5]"))))
@@ -508,7 +510,7 @@ rhokern_col_edm<-rhokernel(x=lf(summarydat[summarydat$gelmanedm<=1.1 & !is.na(su
                            y=lf(summarydat[summarydat$gelmanedm<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pctrue),
                            byvar=summarydat[summarydat$gelmanedm<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$summed_obs_error,
                            nsteps = 20)
-rhokern_col_obs<-rhokernel(x=lf(summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pcobs),
+rhokern_col_obs<-rhokernel(x=lf(pmax(summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pcobs, 1/libl)),
                            y=lf(summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pctrue),
                            byvar=summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$summed_obs_error,
                            nsteps = 20)
@@ -569,6 +571,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_col.pdf", width=6, height=
            expression(paste("Coefficient of Efficiency, ", E[1]))),
          fill = c("dodgerblue", "firebrick", "goldenrod", NA, NA), border = c(1, 1, 1, NA, NA),
          lty=c(NA, NA, NA, 1:2), lwd=c(NA, NA, NA, 1.5,1.5), col=c(NA, NA, NA, 1,1), bty="n")
+  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
 
 
   ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0
@@ -577,7 +580,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_col.pdf", width=6, height=
       x3 = lf(pmax(summarydat$pcobs[ps], 1/libl)),
       y = lf(summarydat$pctrue[ps]),
       category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
-      rngx = (c(-1.5,-0)), rngy = (c(-1.5,-0)), ladj = 2, vline = lf(1/libl),
+      rngx = (c(-1.5,-0)), rngy = (c(-1.5,-0)), ladj = 1, vline = lf(1/libl),
       mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.1]")),
                 expression(paste(sigma[italic(O)[tot]] %in% "(0.1,0.2]")),
                 expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5]"))))
