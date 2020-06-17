@@ -347,5 +347,73 @@ indexsort<-function(fulltracemat, fulltraceindex, nsmp=NULL) {
   sortedmat
 }
 
+#' calculate likelihood for piecewise data
+#'
+#' Calculates likelihoods across several segments of data - e.g. multiple plots from a single experiment.
+#' Requires several implicitely defined variables to run:
+#' y (the time series to be analyzed);
+#' libuse_y (a matrix with two columns, specifying the start end end positions of segments within vector y);
+#' smap_coefs (a matrix of s-mapping coefficients);
+#' Euse (embedding dimension for the s-mapping analysis);
+#' tuse (theta for s-mapping analysis);
+#' N (number of particles).
+#' @param param parameters to be passed to likelihood0 function
+#' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
+#' @keywords dewdrop regression, particle filter
+#' @return summed log likelihood across all segments
+#' @export
+
+likelihood_EDM_piecewise<-function(param, colpar=c(logit(1e-6), log(0.1))) {
+  LLtot<-0
+
+  for(i in 1:nrow(libuse_y)) {
+    ysegment<-y[libuse_y[i,1]:libuse_y[i,2]]
+    smap_coefs_segment<-smap_coefs[libuse_y[i,1]:libuse_y[i,2],]
+
+    LLtot<-LLtot+likelihood0(param = param, y=ysegment, parseparam = function(x) parseparam0(x, colparam=colpar),
+                             detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse, smp_cf=smap_coefs_segment, ytot=y), N = N)
+  }
+
+  return(LLtot)
+}
 
 
+#' run particle filter across piecewise data
+#'
+#' Calculates likelihoods across several segments of data - e.g. multiple plots from a single experiment.
+#' Requires several implicitely defined variables to run:
+#' y (the time series to be analyzed);
+#' libuse_y (a matrix with two columns, specifying the start end end positions of segments within vector y);
+#' smap_coefs (a matrix of s-mapping coefficients);
+#' Euse (embedding dimension for the s-mapping analysis);
+#' tuse (theta for s-mapping analysis);
+#' @param param parameters to be passed to parseparam0 function
+#' @param N number of particles
+#' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
+#' @param nsmp number of sample particle trajectories to return - defaults to 1
+#' @keywords dewdrop regression, particle filter
+#' @return results from particle filter - including mean estimates (Nest) and standard deviations (Nsd), across particles,
+#' and sample particle trajectories with (Nsmp) and without (Nsmp_noproc) process noise
+#' @export
+
+particleFilterLL_piecewise<-function(param, N, colpar=c(logit(1e-6), log(0.1)), nsmp=1) {
+  pars<-parseparam0(param, colparam=colpar)
+  tuse_edm<-tuse
+
+  pfout<-data.frame(rep=NA, Nest=rep(NA, length(y)), Nsd=NA, Nsmp=NA, Nsmp_noproc=NA)
+  for(i in 1:nrow(libuse_y)) {
+    ysegment<-y[libuse_y[i,1]:libuse_y[i,2]]
+    smap_coefs_segment<-smap_coefs[libuse_y[i,1]:libuse_y[i,2],]
+
+    tmp<-particleFilterLL(ysegment, pars, N=N, detfun = EDMfun0,
+                          edmdat = list(E=Euse, theta=tuse_edm, smp_cf=smap_coefs_segment),
+                          dotraceback = TRUE, fulltraceback = TRUE)
+    pfout$Nest[libuse_y[i,1]:libuse_y[i,2]]<-tmp$Nest
+    pfout$Nsd[libuse_y[i,1]:libuse_y[i,2]]<-tmp$Nsd
+    pfout$rep[libuse_y[i,1]:libuse_y[i,2]]<-i
+    pfout$Nsmp[libuse_y[i,1]:libuse_y[i,2]]<-c(indexsort(tmp$fulltracemat, tmp$fulltraceindex, nsmp=nsmp))
+    pfout$Nsmp_noproc[libuse_y[i,1]:libuse_y[i,2]]<-c(indexsort(tmp$fulltracemat_noproc, tmp$fulltraceindex, nsmp=nsmp))
+  }
+
+  return(pfout)
+}
