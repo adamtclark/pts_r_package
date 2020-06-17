@@ -350,20 +350,19 @@ indexsort<-function(fulltracemat, fulltraceindex, nsmp=NULL) {
 #' calculate likelihood for piecewise data
 #'
 #' Calculates likelihoods across several segments of data - e.g. multiple plots from a single experiment.
-#' Requires several implicitely defined variables to run:
-#' y (the time series to be analyzed);
-#' libuse_y (a matrix with two columns, specifying the start end end positions of segments within vector y);
-#' smap_coefs (a matrix of s-mapping coefficients);
-#' Euse (embedding dimension for the s-mapping analysis);
-#' tuse (theta for s-mapping analysis);
-#' N (number of particles).
 #' @param param parameters to be passed to likelihood0 function
+#' @param y the time series to be analyzed
+#' @param libuse_y a matrix with two columns, specifying the start end end positions of segments within vector y
+#' @param smap_coefs a matrix of s-mapping coefficients
+#' @param Euse embedding dimension for the s-mapping analysis
+#' @param tuse theta for s-mapping analysis
+#' @param N number of particles
 #' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
 #' @keywords dewdrop regression, particle filter
 #' @return summed log likelihood across all segments
 #' @export
 
-likelihood_EDM_piecewise<-function(param, colpar=c(logit(1e-6), log(0.1))) {
+likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N, colpar=c(logit(1e-6), log(0.1))) {
   LLtot<-0
 
   for(i in 1:nrow(libuse_y)) {
@@ -382,13 +381,13 @@ likelihood_EDM_piecewise<-function(param, colpar=c(logit(1e-6), log(0.1))) {
 #'
 #' Calculates likelihoods across several segments of data - e.g. multiple plots from a single experiment.
 #' Requires several implicitely defined variables to run:
-#' y (the time series to be analyzed);
-#' libuse_y (a matrix with two columns, specifying the start end end positions of segments within vector y);
-#' smap_coefs (a matrix of s-mapping coefficients);
-#' Euse (embedding dimension for the s-mapping analysis);
-#' tuse (theta for s-mapping analysis);
 #' @param param parameters to be passed to parseparam0 function
 #' @param N number of particles
+#' @param y the time series to be analyzed
+#' @param libuse_y a matrix with two columns, specifying the start end end positions of segments within vector y
+#' @param smap_coefs a matrix of s-mapping coefficients
+#' @param Euse embedding dimension for the s-mapping analysis
+#' @param tuse theta for s-mapping analysis
 #' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
 #' @param nsmp number of sample particle trajectories to return - defaults to 1
 #' @keywords dewdrop regression, particle filter
@@ -396,7 +395,7 @@ likelihood_EDM_piecewise<-function(param, colpar=c(logit(1e-6), log(0.1))) {
 #' and sample particle trajectories with (Nsmp) and without (Nsmp_noproc) process noise
 #' @export
 
-particleFilterLL_piecewise<-function(param, N, colpar=c(logit(1e-6), log(0.1)), nsmp=1) {
+particleFilterLL_piecewise<-function(param, N, y, libuse_y, smap_coefs, Euse, tuse, colpar=c(logit(1e-6), log(0.1)), nsmp=1) {
   pars<-parseparam0(param, colparam=colpar)
   tuse_edm<-tuse
 
