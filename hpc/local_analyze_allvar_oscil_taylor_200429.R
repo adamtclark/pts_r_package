@@ -59,7 +59,7 @@ eifun<-function(x,y,i=1,ybar=NULL) {
   1-mean(abs(x-y)^i,na.rm=T)/mean(abs(y-ybar)^i,na.rm=T)
 }
 
-rhokernel<-function(x, y, byvar, nsteps=20, niter=1000,ei=1) {
+rhokernel<-function(x, y, byvar, nsteps=20, niter=1000,ei=2) {
   h<-1.06*sd(byvar,na.rm=T)*(length(byvar[is.finite(byvar)])^(-1/5))
   #Silverman, B.W. (1986) "rule of thumb"
 
@@ -89,7 +89,7 @@ rhokernel<-function(x, y, byvar, nsteps=20, niter=1000,ei=1) {
 }
 
 
-rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=1000, ei=1) {
+rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=1000, ei=2) {
   h<-diag(ncol(byvar))
   d<-ncol(byvar)
   for(i in 1:d) {
@@ -178,7 +178,7 @@ pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0
     points(x2subs,ysubs, col = adjustcolor("firebrick", alpha.f = 0.2), pch=17, cex=0.6)
 
     if(!is.null(x3)) {
-      points(x3subs,ysubs, col = adjustcolor("goldenrod", alpha.f = 0.2), pch=18, cex=0.6)
+      points(x3subs,ysubs, col = adjustcolor("gold", alpha.f = 0.2), pch=18, cex=0.6)
     }
 
     abline(a=0, b=1, lty=2, col="black", lwd=1.5)
@@ -194,8 +194,8 @@ pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0
 
     if(!is.null(x3)) {
       mod3<-loess.sd(x = x3subs[is.finite(x3subs)], y = ysubs[is.finite(x3subs)], nsigma = 1, weights = 1/wts3[psl][is.finite(x3subs)], enp.target=4)
-      lines(mod3$x, mod3$y, lwd=1.5, col="goldenrod")
-      polygon(c(mod3$x, rev(mod3$x)), c(mod3$lower, rev(mod3$upper)), col = adjustcolor("goldenrod", alpha.f = 0.5), border = NA)
+      lines(mod3$x, mod3$y, lwd=1.5, col="gold")
+      polygon(c(mod3$x, rev(mod3$x)), c(mod3$lower, rev(mod3$upper)), col = adjustcolor("gold", alpha.f = 0.5), border = NA)
     }
 
     if(!is.null(vline)) {
@@ -206,6 +206,43 @@ pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0
     title(paste(letters[i+ladj],".", sep=""), line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
   }
 }
+
+pf3<-function(x,y,...) {
+  points(x,y,...)
+
+  ps<-is.finite(x)&is.finite(y)
+  mod<-loess.sd(x = x[ps], y = y[ps], nsigma = 1)
+  polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), border = NA, ...)
+}
+
+
+
+
+#total fit
+pdf("plotout/local_analyze_allvar_oscil_taylor_200429_totfit.pdf", width=4, height=5, colormodel = "cmyk", useDingbats = FALSE)
+  par(mfrow=c(2,1), mar=c(2,2,1,1), oma=c(2,2,0,0))
+  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
+
+  plot(range(summarydat$summed_obs_error[ps]), c(0, 1), type="n", xlab="", ylab="")
+  pf3(summarydat$summed_obs_error[ps], summarydat$cor0[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$summed_obs_error[ps], summarydat$cor_det[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$summed_obs_error[ps], summarydat$cor_edm[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
+  abline(h=c(0,1), v=c(0), lty=3)
+  mtext(expression(paste("Pearson Correlation, ", rho)), 2, line=2.8)
+  title("a.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+
+  plot(range(summarydat$summed_obs_error[ps]), c(0, 1), type="n", xlab="", ylab="")
+  pf3(summarydat$summed_obs_error[ps], (1-summarydat$rmse0/summarydat$proc_true_mu)[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$summed_obs_error[ps], (1-summarydat$rmse_det/summarydat$proc_true_mu)[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$summed_obs_error[ps], (1-summarydat$rmse_edm/summarydat$proc_true_mu)[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
+  abline(h=c(0,1), v=c(0), lty=3)
+  mtext(expression(paste("Coefficient of Efficiency, ", E[2])), 2, line=2.8)
+  title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+
+  mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
+dev.off()
+
+
 
 
 #Make plots
@@ -257,7 +294,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_obs0.pdf", width=6, height
   legend(0.228, -0.5,
          c("Analytical Function","EDM Estimate",
            expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[1]))),
+           expression(paste("Coefficient of Efficiency, ", E[2]))),
          fill = c("dodgerblue", "firebrick", NA, NA), border = c(1, 1, NA, NA),
          lty=c(NA, NA, 1:2), lwd=c(NA, NA, 1.5,1.5), col=c(NA, NA, 1,1), bty="n")
 
@@ -326,7 +363,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_proc0.pdf", width=6, heigh
   legend(0.196, -0.5,
          c("Analytical Function","EDM Estimate",
            expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[1]))),
+           expression(paste("Coefficient of Efficiency, ", E[2]))),
          fill = c("dodgerblue", "firebrick", NA, NA), border = c(1, 1, NA, NA),
          lty=c(NA, NA, 1:2), lwd=c(NA, NA, 1.5,1.5), col=c(NA, NA, 1,1), bty="n")
 
@@ -383,7 +420,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_proc1.pdf", width=7, heigh
   contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$eiout[2,,],levels = seq(-2, 1, by=0.05), lty=2, col="firebrick", method="flattest")
   contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$eiout[2,,],levels = seq(0, 1, by=0.05), lty=2, col="dodgerblue", method="edge", add=TRUE)
   title("b.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-  title(expression(paste("Coefficient of Efficiency, ", E[1])))
+  title(expression(paste("Coefficient of Efficiency, ", E[2])))
 
   mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 2, line=0, outer=TRUE)
   mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
@@ -448,9 +485,9 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_mor.pdf", width=6, height=
 
   polygon(c(rhokern_mor_obs$bylst, rev(rhokern_mor_obs$bylst)),
           c(rhokern_mor_obs$rhoout[,1], rev(rhokern_mor_obs$rhoout[,3])),
-          col=adjustcolor("goldenrod", alpha.f = 0.5), border=NA)
+          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
   lines(rhokern_mor_obs$bylst, rhokern_mor_obs$rhoout[,2],
-        col="goldenrod", lwd=1.5, lty=1)
+        col="gold", lwd=1.5, lty=1)
 
 
   polygon(c(rhokern_mor_det$bylst, rev(rhokern_mor_det$bylst)),
@@ -467,9 +504,9 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_mor.pdf", width=6, height=
 
   polygon(c(rhokern_mor_obs$bylst, rev(rhokern_mor_obs$bylst)),
           c(rhokern_mor_obs$eiout[,1], rev(rhokern_mor_obs$eiout[,3])),
-          col=adjustcolor("goldenrod", alpha.f = 0.5), border=NA)
+          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
   lines(rhokern_mor_obs$bylst, rhokern_mor_obs$eiout[,2],
-        col="goldenrod", lwd=1.5, lty=2)
+        col="gold", lwd=1.5, lty=2)
 
   abline(h=0, lty=2)
   abline(h=c(-1,1), lty=3)
@@ -477,8 +514,8 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_mor.pdf", width=6, height=
   legend(0.196, -0.5,
          c("Analytical Function","EDM Estimate", "Raw Observation",
            expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[1]))),
-         fill = c("dodgerblue", "firebrick", "goldenrod", NA, NA), border = c(1, 1, 1, NA, NA),
+           expression(paste("Coefficient of Efficiency, ", E[2]))),
+         fill = c("dodgerblue", "firebrick", "gold", NA, NA), border = c(1, 1, 1, NA, NA),
          lty=c(NA, NA, NA, 1:2), lwd=c(NA, NA, NA, 1.5,1.5), col=c(NA, NA, NA, 1,1), bty="n")
   title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
 
@@ -539,9 +576,9 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_col.pdf", width=6, height=
 
   polygon(c(rhokern_col_obs$bylst, rev(rhokern_col_obs$bylst)),
           c(rhokern_col_obs$rhoout[,1], rev(rhokern_col_obs$rhoout[,3])),
-          col=adjustcolor("goldenrod", alpha.f = 0.5), border=NA)
+          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
   lines(rhokern_col_obs$bylst, rhokern_col_obs$rhoout[,2],
-        col="goldenrod", lwd=1.5, lty=1)
+        col="gold", lwd=1.5, lty=1)
 
 
   polygon(c(rhokern_col_det$bylst, rev(rhokern_col_det$bylst)),
@@ -558,9 +595,9 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_col.pdf", width=6, height=
 
   polygon(c(rhokern_col_obs$bylst, rev(rhokern_col_obs$bylst)),
           c(rhokern_col_obs$eiout[,1], rev(rhokern_col_obs$eiout[,3])),
-          col=adjustcolor("goldenrod", alpha.f = 0.5), border=NA)
+          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
   lines(rhokern_col_obs$bylst, rhokern_col_obs$eiout[,2],
-        col="goldenrod", lwd=1.5, lty=2)
+        col="gold", lwd=1.5, lty=2)
 
   abline(h=0, lty=2)
   abline(h=c(-1,1), lty=3)
@@ -568,8 +605,8 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_200429_col.pdf", width=6, height=
   legend(0, -0.5,
          c("Analytical Function","EDM Estimate", "Raw Observation",
            expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[1]))),
-         fill = c("dodgerblue", "firebrick", "goldenrod", NA, NA), border = c(1, 1, 1, NA, NA),
+           expression(paste("Coefficient of Efficiency, ", E[2]))),
+         fill = c("dodgerblue", "firebrick", "gold", NA, NA), border = c(1, 1, 1, NA, NA),
          lty=c(NA, NA, NA, 1:2), lwd=c(NA, NA, NA, 1.5,1.5), col=c(NA, NA, NA, 1,1), bty="n")
   title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
 
