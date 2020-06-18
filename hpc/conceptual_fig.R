@@ -176,8 +176,8 @@ axis(2); axis(1, at=c(2,4,6,8,10), seq(tmps2[1]+1, tmps2[length(tmps2)], length=
 box()
 
 lines(1:10, datout$true[tm[tmps2]], lwd=1.5)
-points(1:10, datout$noproc[tm[tmps2]], col="forestgreen", pch=17, cex=1.2)
-segments(1:10, datout$true[tm[tmps2]], 1:10, datout$noproc[tm[tmps2]], col="forestgreen", lwd=1.5)
+points(1:10, datout$noproc[tm[tmps2]], col="green1", pch=17, cex=1.2)
+segments(1:10, datout$true[tm[tmps2]], 1:10, datout$noproc[tm[tmps2]], col="green1", lwd=1.5)
 
 pnoproc<-indexsort(pfout$fulltracemat_noproc[tm[tmps2]-1,], pfout$fulltraceindex[tm[tmps2]-1,], nsmp = 2e3)
 
@@ -189,12 +189,14 @@ polygon(c(1:10, 10:1),
 abline(h=0, lty=3)
 
 legend(1, 2.15, c(expression(paste("Pre-Disturbance State")), expression(paste("Filter Estimate"))), cex=1.4,
-       pch=c(19, NA), border = c(NA, 1), fill = c(NA, adjustcolor("dodgerblue", alpha.f = 0.5)), lty=c(1, NA), lwd=c(1.5, 1.5),
-       col=c("forestgreen", "dodgerblue"), bty="n")
+       pch=c(17, NA),
+       border = c(NA, 1),
+       fill = c(NA, adjustcolor("dodgerblue", alpha.f = 0.5)), lty=c(1, NA), lwd=c(1.5, 1.5),
+       col=c("green1", "dodgerblue"), bty="n")
 title(main="f.", cex.main=1.6, adj=0.015, line=-1.2)
 
-mtext(expression(paste("Abundance")), 1, line = 2.4, cex=1.2, adj=1/4)
-mtext(expression(paste("Time")), 2, line = 2.4, cex=1.2, adj=1/4)
+mtext(expression(paste("Abundance")), 1, line = 2.4, cex=1.2)
+mtext(expression(paste("Time")), 2, line = 2.4, cex=1.2)
 
 
 #mu vs. sd
@@ -206,20 +208,20 @@ pmor<-pnorm(0, musq, sdsq)
 plot(musq,pmor, type="l", col="sienna", lwd=1.5, log="y", xlab="", ylab="",lty=2, xlim=c(-0.08, 2))
 
 par(new=TRUE)
-plot(musq,sdsq, type="l", lwd=1.5, xlab="", ylab="",  axes=F, col="forestgreen", xlim=c(-0.08, 2))
+plot(musq,sdsq, type="l", lwd=1.5, xlab="", ylab="",  axes=F, col="green1", xlim=c(-0.08, 2))
 axis(4)
 
 abline(h=0, v=0, lty=3)
 
 legend(0.01, 0.57, c(expression(paste("Pr"[mor])), expression(paste(sigma[italic(P)[italic(tot)]]))), cex=1.4,
        lty=c(2,1), lwd=c(1.5, 1.5),
-       col=c("sienna", "forestgreen"), bty="n")
+       col=c("sienna", "green1"), bty="n")
 title(main="g.", cex.main=1.6, adj=0.01, line=-1.2)
 
 
-mtext(expression(paste("Pre-Disturbane Abundance")), 1, line = 2.4, cex=1.2, adj=1/4)
-mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 4, line = 2.9, cex=1.2, adj=1/4)
-mtext(expression(paste("Mortality Probability, Pr"[mor])), 2, line = 2.4, cex=1.2, adj=1/4)
+mtext(expression(paste("Pre-Disturbane Abundance")), 1, line = 2.4, cex=1.2)
+mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 4, line = 2.9, cex=1.2)
+mtext(expression(paste("Mortality Probability, Pr"[mor])), 2, line = 2.4, cex=1.2)
 
 
 
