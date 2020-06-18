@@ -195,8 +195,8 @@ legend(1, 2.15, c(expression(paste("Pre-Disturbance State")), expression(paste("
        col=c("green1", "dodgerblue"), bty="n")
 title(main="f.", cex.main=1.6, adj=0.015, line=-1.2)
 
-mtext(expression(paste("Abundance")), 1, line = 2.4, cex=1.2)
-mtext(expression(paste("Time")), 2, line = 2.4, cex=1.2)
+mtext(expression(paste("Time")), 1, line = 2.4, cex=1.2)
+mtext(expression(paste("Abundance")), 2, line = 2.4, cex=1.2)
 
 
 #mu vs. sd
