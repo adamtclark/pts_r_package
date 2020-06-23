@@ -29,6 +29,7 @@ summed log likelihood across all segments
 }
 \description{
 Calculates likelihoods across several segments of data - e.g. multiple plots from a single experiment.
+See documentation for particleFilterLL_piecewise for examples of use.
 }
 \keyword{dewdrop}
 \keyword{filter}
