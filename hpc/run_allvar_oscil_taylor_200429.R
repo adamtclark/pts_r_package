@@ -16,9 +16,14 @@ if(length(commArgin)==0) {
 }
 print(commArg_ps)
 
-require(mvtnorm)
-require(rEDM)
-require(BayesianTools)
+if(!require("mvtnorm", character.only = TRUE)) {
+  require(mvtnorm, lib.loc = "/cl_tmp/clarka/Rpkg/")
+  require(rEDM, lib.loc = "/cl_tmp/clarka/Rpkg/")
+  require(BayesianTools, lib.loc = "/cl_tmp/clarka/Rpkg/")
+} else {
+  require(rEDM)
+  require(BayesianTools)
+}
 
 source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
