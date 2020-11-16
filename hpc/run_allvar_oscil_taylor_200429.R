@@ -17,13 +17,12 @@ if(length(commArgin)==0) {
 print(commArg_ps)
 
 if(!require("mvtnorm", character.only = TRUE)) {
-  require(mvtnorm, lib.loc = "/cl_tmp/clarka/Rpkg/")
-  require(rEDM, lib.loc = "/cl_tmp/clarka/Rpkg/")
-  require(BayesianTools, lib.loc = "/cl_tmp/clarka/Rpkg/")
-} else {
-  require(rEDM)
-  require(BayesianTools)
+  .libPaths("/cl_tmp/clarka/Rpkg/")
+  require(mvtnorm)
 }
+require(rEDM)
+require(BayesianTools)
+
 
 source("../pttstability/R/bayesfun.R")
 source("../pttstability/R/fake_data.R")
