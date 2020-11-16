@@ -4,9 +4,16 @@
 \alias{likelihood0}
 \title{Default likelihood function}
 \usage{
-likelihood0(param, y = y, parseparam = parseparam0, N = 1000,
-  detfun = detfun0, edmdat = NULL, neff = FALSE,
-  lowerbound = (-999))
+likelihood0(
+  param,
+  y = y,
+  parseparam = parseparam0,
+  N = 1000,
+  detfun = detfun0,
+  edmdat = NULL,
+  neff = FALSE,
+  lowerbound = (-999)
+)
 }
 \arguments{
 \item{param}{An unformatted vector of parameters, to be passed to parseparam function.}

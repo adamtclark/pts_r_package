@@ -4,13 +4,15 @@
 \name{dat}
 \alias{dat}
 \title{Microcosm experimental data}
-\format{A data frame with 272 rows and 4 variables:
+\format{
+A data frame with 272 rows and 4 variables:
 \describe{
   \item{treatment}{Experimental treatment}
   \item{number}{Replicate number}
   \item{time}{Day of experiment}
   \item{Chlamydomonas.terricola}{Species abundance}
-}}
+}
+}
 \source{
 Burgmer & Hillebrand 2011, Oikos 120:922-933.
 }

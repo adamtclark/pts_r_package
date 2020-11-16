@@ -4,8 +4,16 @@
 \alias{likelihood_EDM_piecewise}
 \title{calculate likelihood for piecewise data}
 \usage{
-likelihood_EDM_piecewise(param, y, libuse_y, smap_coefs, Euse, tuse, N,
-  colpar = c(logit(1e-06), log(0.1)))
+likelihood_EDM_piecewise(
+  param,
+  y,
+  libuse_y,
+  smap_coefs,
+  Euse,
+  tuse,
+  N,
+  colpar = c(logit(1e-06), log(0.1))
+)
 }
 \arguments{
 \item{param}{parameters to be passed to likelihood0 function}

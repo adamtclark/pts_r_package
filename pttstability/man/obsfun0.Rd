@@ -4,8 +4,15 @@
 \alias{obsfun0}
 \title{default observation noise function}
 \usage{
-obsfun0(so, yt, xt = NULL, inverse = FALSE, N = NULL, minsd = 0.01,
-  time = NULL)
+obsfun0(
+  so,
+  yt,
+  xt = NULL,
+  inverse = FALSE,
+  N = NULL,
+  minsd = 0.01,
+  time = NULL
+)
 }
 \arguments{
 \item{so}{a numeric vector of length one, specifying either log-transformed standard deviation of the observation error as a fraction of the observation,

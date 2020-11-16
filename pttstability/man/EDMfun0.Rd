@@ -4,13 +4,13 @@
 \alias{EDMfun0}
 \title{REDM deterministic function}
 \source{
-@source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
+Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 }
 \usage{
 EDMfun0(smp_cf, yp, x, minest = 0, maxest = NULL, time)
 }
 \arguments{
-\item{smp_cf}{a matrix of s-map coefficients, taken from the s_map function. Columns correspond to intercept and time lags, rows to observations.}
+\item{smp_cf}{a matrix of s-map coefficients. Columns correspond to intercept and time lags, rows to observations. Final column corresponds to intercept term.}
 
 \item{yp}{a matrix of covariates to be multiplied by the smp_cf (typically time lags). Should have one fewer column than smp_cf.}
 
@@ -26,17 +26,6 @@ EDMfun0(smp_cf, yp, x, minest = 0, maxest = NULL, time)
 a number or numeric vector of length xt, with predicted abundances at time t+1
 }
 \description{
-Estimates future states of xt based on based benavior
+Estimates future states of xt based on based behaviour
 }
 \keyword{EDM}
-\keyword{applies}
-\keyword{deterministic}
-\keyword{dynamics}
-\keyword{from}
-\keyword{package}
-\keyword{rEDM}
-\keyword{reconstruct}
-\keyword{series}
-\keyword{the}
-\keyword{time}
-\keyword{to}

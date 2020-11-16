@@ -7,9 +7,18 @@
 Adapted from Knape and Valpine (2012), Ecology 93:256-263.
 }
 \usage{
-particleFilterLL(y, pars, N = 1000, detfun = detfun0,
-  procfun = procfun0, obsfun = obsfun0, colfun = colfun0,
-  edmdat = NULL, dotraceback = FALSE, fulltraceback = FALSE)
+particleFilterLL(
+  y,
+  pars,
+  N = 1000,
+  detfun = detfun0,
+  procfun = procfun0,
+  obsfun = obsfun0,
+  colfun = colfun0,
+  edmdat = NULL,
+  dotraceback = FALSE,
+  fulltraceback = FALSE
+)
 }
 \arguments{
 \item{y}{A numeric vector of observed values, from which the likelihood of parameters and functions will be determined.}

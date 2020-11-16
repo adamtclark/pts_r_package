@@ -4,8 +4,11 @@
 \alias{parseparam0}
 \title{Parse parameters}
 \usage{
-parseparam0(param, colparam = c(logit(0.2), log(0.1)),
-  detparam = c(log(1.2), log(1)))
+parseparam0(
+  param,
+  colparam = c(logit(0.2), log(0.1)),
+  detparam = c(log(1.2), log(1))
+)
 }
 \arguments{
 \item{param}{List of paramters, of length 2, 3, 4, 6, 7, or 8.

@@ -4,8 +4,17 @@
 \alias{particleFilterLL_piecewise}
 \title{run particle filter across piecewise data}
 \usage{
-particleFilterLL_piecewise(param, N, y, libuse_y, smap_coefs, Euse, tuse,
-  colpar = c(logit(1e-06), log(0.1)), nsmp = 1)
+particleFilterLL_piecewise(
+  param,
+  N,
+  y,
+  libuse_y,
+  smap_coefs,
+  Euse,
+  tuse,
+  colpar = c(logit(1e-06), log(0.1)),
+  nsmp = 1
+)
 }
 \arguments{
 \item{param}{parameters to be passed to parseparam0 function}
@@ -68,7 +77,10 @@ timesteps<-dat$time[yps]
 
 # get EDM parameters
 require(rEDM) # load rEDM package
-sout<-s_map(y, E=2:4, silent = TRUE, lib = libuse_y)
+sout<-NULL
+for(E in 2:4) {
+  sout<-rbind(sout, s_map(y, E=E, silent = TRUE, lib = libuse_y))
+}
 tuse<-sout$theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
 euse<-sout$E[which.max(sout$rho)] # find embedding dimension
 spred<-s_map(y, E=euse, theta=tuse, silent = TRUE,

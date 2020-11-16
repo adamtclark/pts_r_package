@@ -3,7 +3,6 @@
 \docType{package}
 \name{pttstability}
 \alias{pttstability}
-\alias{pttstability-package}
 \title{pttstability: Methods for fitting state space models using EDM.}
 \source{
 Knape, J., and Valpine, P. (2012). Fitting complex population models by combining particle filters with Markov chain Monte Carlo. Ecology 93:256-263.

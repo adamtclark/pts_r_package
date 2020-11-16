@@ -4,10 +4,19 @@
 \alias{makedynamics_general}
 \title{Simulate general time series}
 \usage{
-makedynamics_general(n = 1000, n0 = 0.1, pdet = c(log(3), log(1)),
-  proc = c(log(1)), obs = c(log(1)), pcol = c(logit(0.2), log(1)),
-  detfun = detfun0, procfun = procfun0, obsfun = obsfun0,
-  colfun = colfun0, doplot = FALSE)
+makedynamics_general(
+  n = 1000,
+  n0 = 0.1,
+  pdet = c(log(3), log(1)),
+  proc = c(log(1)),
+  obs = c(log(1)),
+  pcol = c(logit(0.2), log(1)),
+  detfun = detfun0,
+  procfun = procfun0,
+  obsfun = obsfun0,
+  colfun = colfun0,
+  doplot = FALSE
+)
 }
 \arguments{
 \item{n}{number of timesteps to simulate}

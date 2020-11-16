@@ -465,7 +465,10 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'
 #' # get EDM parameters
 #' require(rEDM) # load rEDM package
-#' sout<-s_map(y, E=2:4, silent = TRUE, lib = libuse_y)
+#' sout<-NULL
+#' for(E in 2:4) {
+#'   sout<-rbind(sout, s_map(y, E=E, silent = TRUE, lib = libuse_y))
+#' }
 #' tuse<-sout$theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
 #' euse<-sout$E[which.max(sout$rho)] # find embedding dimension
 #' spred<-s_map(y, E=euse, theta=tuse, silent = TRUE,
