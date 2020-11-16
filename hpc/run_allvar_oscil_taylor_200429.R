@@ -16,7 +16,6 @@ if(length(commArgin)==0) {
 }
 print(commArg_ps)
 
-#require(BayesianTools)
 require(mvtnorm)
 require(rEDM)
 require(BayesianTools)
@@ -77,7 +76,11 @@ ptrue<-unname(unlist(pars_sim)[1:3])
 niter<-1e4
 N<-2e3
 
-sout<-s_map(y, E=2:4, silent = TRUE)
+sout<-NULL
+for(E in 2:4) {
+  sout<-rbind(sout, s_map(y, E=E, silent = TRUE))
+}
+
 tuse<-sout$theta[which.max(sout$rho)]
 Euse<-sout$E[which.max(sout$rho)]
 
@@ -95,7 +98,7 @@ bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = pr
 if(FALSE) {
   #likelihoods at "correct" parameters
   tmp<-s_map(y, E = Euse, theta = tuse, silent = TRUE)
-  max(tmp$rho)
+  tmp$rho
   likelihood_detfun0(ptrue)
   likelihood_EDM(ptrue)
 }

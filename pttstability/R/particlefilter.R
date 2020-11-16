@@ -16,16 +16,16 @@ detfun0<-function(sdet, xt, time=NULL, ...) {
 
 #' REDM deterministic function
 #'
-#' Estimates future states of xt based on based benavior
-#' @param smp_cf a matrix of s-map coefficients, taken from the s_map function. Columns correspond to intercept and time lags, rows to observations.
+#' Estimates future states of xt based on based behaviour
+#' @param smp_cf a matrix of s-map coefficients. Columns correspond to intercept and time lags, rows to observations. Final column corresponds to intercept term.
 #' @param yp a matrix of covariates to be multiplied by the smp_cf (typically time lags). Should have one fewer column than smp_cf.
 #' @param x observation at time-1, to be used to make the prediction.
 #' @param minest minimum value to return for prediction - defaults to 0.
 #' @param maxest maximum value to return for prediction - defaults to NULL (no maximum)
 #' @param time the time step (i.e. position in smp_cf) for the desired prediction. Prediction will be made based on observation in preceding time point (i.e. time-1).
-#' @keywords applies EDM from the rEDM package to reconstruct deterministic time series dynamics
+#' @keywords EDM
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
-#' @source @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
+#' @source Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 #' @export
 
 EDMfun0<-function(smp_cf, yp, x, minest=0, maxest=NULL, time) {
@@ -44,6 +44,42 @@ EDMfun0<-function(smp_cf, yp, x, minest=0, maxest=NULL, time) {
 
   out<-out*(x>0)
   out
+}
+
+#' Process s-mapping coefficients
+#'
+#' Processes s-mapping coefficients from rEDM into a matrix of form C1, C2, C3, ... C0, where C0 is the intercept,
+#' C1 is the current time step t, C2 is timestep t-1, C3 is timestep t-2, and so on.
+#' Rows correspond to the time step used to produce the prediction, e.g. row 4 is used to calculate
+#' predicted value for time step 5. This is the format expected by the EDMfun0 function.
+#' Note - the format produced by the rEDM package has changed substantially over time,
+#' and so if you find that predictions are no longer working in this package, it is likely that this is
+#' due to another change in reporting format, in which case you may need to update this function
+#' accordingly (e.g. to re-align columns or rows).
+#' @param smap_coefs a matrix of s-map coefficients, taken from the s_map function.
+#' @return a matrix of s-mapping coefficients
+#' @export
+
+process_scof <- function(smap_coefs) {
+  ps <- which(colnames(smap_coefs)=="Index")
+  if(length(ps) > 0) {
+    index = smap_coefs[,ps]
+    smap_coefs = smap_coefs[,-ps]
+
+    ps2 <- which(colnames(smap_coefs)=="C0")
+    if(length(ps2) > 0) {
+      smap_coefs = smap_coefs[,c(c(1:ncol(smap_coefs))[-ps2], ps2)]
+    }
+    colnames(smap_coefs) <- paste("C", c(1:(ncol(smap_coefs)-1), 0), sep="")
+
+    if(min(index) > 2) {
+      for(i in 1:(min(index)-2)) {
+        smap_coefs = rbind(rep(NA, ncol(smap_coefs)), smap_coefs)
+      }
+    }
+  }
+
+  smap_coefs
 }
 
 #' default process noise function
@@ -218,7 +254,7 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
       }
 
       smp<-rEDM::s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
-      smp_cf<-smp$smap_coefficients[[1]]
+      smp_cf<-process_scof(smap_coefs = smp$smap_coefficients[[1]])
     } else {
       smp_cf<-edmdat$smp_cf
     }

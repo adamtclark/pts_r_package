@@ -76,7 +76,7 @@ parseparam0<-function(param, colparam=c(logit(0.2), log(0.1)), detparam=c(log(1.
 likelihood0 <- function(param, y=y, parseparam=parseparam0, N=1e3, detfun=detfun0, edmdat=NULL, neff=FALSE, lowerbound=(-999)) {
   pars<-parseparam(param)
 
-  tmp<-particleFilterLL(y, pars, N=N, detfun = detfun, edmdat = edmdat)
+  tmp<-particleFilterLL(y = y, pars = pars, N=N, detfun = detfun, edmdat = edmdat)
   LL<-tmp$LL
   if(LL<=lowerbound) {
     LL<-lowerbound
