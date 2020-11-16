@@ -12,6 +12,6 @@
 date
 module load R
 
-cd /cl_tmp/clarka/
+cd /cl_tmp/clarka/pts_r_package/hpc
 ./run_allvar_oscil_taylor_200429.R $SGE_TASK_ID
 date
