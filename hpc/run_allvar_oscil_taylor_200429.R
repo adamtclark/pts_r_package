@@ -16,10 +16,10 @@ if(length(commArgin)==0) {
 }
 print(commArg_ps)
 
-if(!require("mvtnorm", character.only = TRUE)) {
+if(length(dir("/cl_tmp/clarka/Rpkg/"))>0) {
   .libPaths("/cl_tmp/clarka/Rpkg/")
-  require(mvtnorm)
 }
+require(mvtnorm)
 require(rEDM)
 require(BayesianTools)
 
