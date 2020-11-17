@@ -26,7 +26,7 @@ require(rEDM)
 require(BayesianTools)
 
 
-commArgin_kp = commArgin
+commArgin_kp = commArg_ps
 tmp = NULL
 
 for(iclu in 1:nrep) {
