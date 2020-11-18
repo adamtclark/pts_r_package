@@ -8,9 +8,9 @@
 #$ -N pts_all
 #$ -m e
 #$ -cwd
-#$ -l h_rt=4:00:00 
+#$ -l h_rt=14:00:00 
 #$ -pe smp 1
-#$ -t 43-74
+#$ -t 107-138
 
 date
 module load R

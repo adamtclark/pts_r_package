@@ -8,7 +8,7 @@ if(FALSE) {
 
 ## Load functions:
 nclus <- 32
-nrep <- 2
+nrep <- 10
 commArgin<-commandArgs(1)
 if(length(commArgin)==0) {
   commArgin<-round(runif(1)*1e6)
