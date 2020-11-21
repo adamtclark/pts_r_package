@@ -37,8 +37,7 @@ minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 #load summary data
-summarydat<-read.csv("datout/summarydat_allvar_oscil_taylor_201116.csv")
-
+load("datout/summarydat_201116.rda")
 
 #Plotting and summary functions
 e2fun<-function(x,y,ybar=NULL) {
