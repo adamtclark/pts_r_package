@@ -7,7 +7,6 @@
 #$ -l h_vmem=4G
 #$ -N pts_all
 #$ -m e
-#$ -M adam.clark@uni-graz.at
 #$ -cwd
 #$ -l h_rt=14:00:00 
 #$ -pe smp 1

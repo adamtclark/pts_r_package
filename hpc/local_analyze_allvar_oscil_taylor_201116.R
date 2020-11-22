@@ -1,5 +1,7 @@
 rm(list=ls())
 
+set.seed(201116)
+
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 require(BayesianTools)
 require(mvtnorm)
@@ -54,7 +56,7 @@ eifun<-function(x,y,i=1,ybar=NULL) {
   1-mean(abs(x-y)^i,na.rm=T)/mean(abs(y-ybar)^i,na.rm=T)
 }
 
-rhokernel<-function(x, y, byvar, nsteps=20, niter=1000,ei=2) {
+rhokernel<-function(x, y, byvar, nsteps=20, niter=2e4,ei=2) {
   h<-1.06*sd(byvar,na.rm=T)*(length(byvar[is.finite(byvar)])^(-1/5))
   #Silverman, B.W. (1986) "rule of thumb"
 
@@ -84,7 +86,7 @@ rhokernel<-function(x, y, byvar, nsteps=20, niter=1000,ei=2) {
 }
 
 
-rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=1000, ei=2) {
+rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=2e4, ei=2) {
   h<-diag(ncol(byvar))
   d<-ncol(byvar)
   for(i in 1:d) {
@@ -407,8 +409,8 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_201116_proc1.pdf", width=7, heigh
   layout(m)
   par(mar=c(2,2,2,2), oma=c(2,2,0,0.5))
 
-  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$rhoout[2,,],levels = seq(0, 1, by=0.05), col="firebrick", method="flattest")
-  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$rhoout[2,,],levels = seq(0, 1, by=0.05), method="edge", col="dodgerblue", add=TRUE)
+  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$rhoout[2,,],levels = seq(0, 1, by=0.025), col="firebrick", method="flattest")
+  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$rhoout[2,,],levels = seq(0, 1, by=0.025), method="edge", col="dodgerblue", add=TRUE)
   title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
   title(expression(paste("Pearson Correlation, ", rho)))
 
