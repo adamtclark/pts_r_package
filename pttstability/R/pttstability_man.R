@@ -49,20 +49,24 @@
 #' require(rEDM)
 #' require(BayesianTools)
 #'
+#' #Load packages
+#' require(rEDM)
+#' require(BayesianTools)
+#'
 #' #Set seed
-#' set.seed(200218)
+#' set.seed(201116)
 #'
 #' ## Simulate data
 #' pars_true<-list(obs=log(0.2),
-#'                 proc=c(log(0.1), log(1.5)),
+#'                 proc=c(log(0.05), log(1.2)),
 #'                 pcol=c(logit(0.2), log(0.1)),
 #'                 det=c(log(1.2),log(1)))
 #'
-#' #generate random parameter values
+#' #generate dynamics
 #' datout<-makedynamics_general(n = 100, n0 = 1, pdet=pars_true$det,
 #'                              proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
 #'                              detfun = detfun0, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
-#' y<-datout$obs
+#' y<-datout$obs # noisy observed abundances
 #'
 #' #get theta paramter for s-mapping
 #' #note - rEDM must be installed to conduct
@@ -80,15 +84,15 @@
 #'                                 edmdat = list(E=2, theta=tuse),
 #'                                 dotraceback = TRUE, fulltraceback = TRUE)
 #'
-#' #get sorted sampels from the particle filters
+#' #get sorted samples from the particle filters
 #' sorted_filter_det<-indexsort(fulltracemat = filterout_det$fulltracemat,
-#' fulltraceindex = filterout_det$fulltraceindex, nsmp = 100)
+#'                              fulltraceindex = filterout_det$fulltraceindex, nsmp = 100)
 #' sorted_filter_edm<-indexsort(fulltracemat = filterout_edm$fulltracemat,
-#' fulltraceindex = filterout_edm$fulltraceindex, nsmp = 100)
+#'                              fulltraceindex = filterout_edm$fulltraceindex, nsmp = 100)
 #'
 #' #plot filter output
 #' par(mar=c(4,4,2,2), mfrow=c(3,1))
-#' #plot 30 of the 1000 particles to show general trend
+#' #plot 100 particles to show general trend
 #' matplot(1:length(y), sorted_filter_det, col=adjustcolor("dodgerblue",alpha.f = 0.5), lty=3,
 #'         type="l", xlab="time", ylab="abund", main="detfun0")
 #' lines(1:length(y), y, col="goldenrod", lwd=1.5) #observations
@@ -105,12 +109,12 @@
 #' points(y, datout$true, col="goldenrod")
 #' abline(a=0, b=1, lty=2)
 #' legend("topleft", c("detfun", "EDM", "obs"),
-#' pch=1, col=c("dodgerblue","firebrick","goldenrod"), bty="n")
+#'        pch=1, col=c("dodgerblue","firebrick","goldenrod"), bty="n")
 #'
-#' #note improvement in fit, for both filters
-#' cor(datout$true, datout$obs) #observations
-#' cor(datout$true, filterout_det$Nest) #deterministic filter
-#' cor(datout$true, filterout_edm$Nest) #EDM filter
+#' #note improvement in mean absolute error, for both filters
+#' mean(abs(datout$true-datout$obs)) #observations
+#' mean(abs(datout$true-filterout_det$Nest)) #deterministic filter
+#' mean(abs(datout$true-filterout_edm$Nest)) #EDM filter
 #'
 #' ## Run optimizers
 #' \dontrun{
