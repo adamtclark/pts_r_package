@@ -624,3 +624,5 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_201116_col.pdf", width=6, height=
 dev.off()
 
 
+#save.image("datout/plotting_save.rda", version = 2)
+#load("datout/plotting_save.rda")
