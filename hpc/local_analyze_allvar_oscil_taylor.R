@@ -465,7 +465,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_201116_mor.pdf", width=6, height=
 
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
   matplot(1,1, xlim=c(0.006, 0.45), ylim=c(-1,1.05), xlab="", ylab="", type="n")
-  mtext(expression(paste("Goodness of Fit, ", italic(beta)[proc[0]])), 2, line=2.5)
+  mtext(expression(paste("Goodness of Fit, ", Pr[mor])), 2, line=2.5)
   mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
 
   polygon(c(rhokern_mor_det$bylst, rev(rhokern_mor_det$bylst)),
@@ -556,7 +556,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_201116_col.pdf", width=6, height=
 
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
   matplot(1,1, xlim=c(0.006, 0.45), ylim=c(-1,1.05), xlab="", ylab="", type="n")
-  mtext(expression(paste("Goodness of Fit, ", italic(beta)[proc[0]])), 2, line=2.5)
+  mtext(expression(paste("Goodness of Fit, ", Pr[col])), 2, line=2.5)
   mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
 
   polygon(c(rhokern_col_det$bylst, rev(rhokern_col_det$bylst)),
