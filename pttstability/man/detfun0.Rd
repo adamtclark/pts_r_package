@@ -21,10 +21,6 @@ a number or numeric vector of length xt, with predicted abundances at time t+1
 \description{
 Simulates deterministic component of Ricker model, of the form xt+1 = xt exp(exp(sdet[1])*(1-xt/exp(sdet[2])))
 }
-\keyword{data}
 \keyword{deterministic}
 \keyword{discrete-time}
-\keyword{fake}
-\keyword{function,}
-\keyword{model,}
-\keyword{time-series,}
+\keyword{time-series}

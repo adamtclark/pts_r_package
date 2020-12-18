@@ -15,5 +15,5 @@ a list including colonization and mortality probability per time step (pc and pm
 \description{
 Calculates colonization rate, mortality rate, and expected mean occupancy time based on a time series
 }
-\keyword{stability,}
+\keyword{stability}
 \keyword{time-series}

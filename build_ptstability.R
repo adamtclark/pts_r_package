@@ -1,3 +1,5 @@
+rm(list = ls())
+
 require(devtools)
 require(roxygen2)
 
@@ -6,7 +8,8 @@ require(roxygen2)
 
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/pttstability/")
 document()
-check()
+check(cran = TRUE)
+
 build()
 load_all()
 

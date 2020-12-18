@@ -22,5 +22,5 @@ flat priors for all paramters, within the given interval. Density function integ
 }
 \keyword{MCMC}
 \keyword{optimization}
-\keyword{stability,}
-\keyword{time-series,}
+\keyword{stability}
+\keyword{time-series}

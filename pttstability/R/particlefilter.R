@@ -5,7 +5,7 @@
 #' @param xt a number or numeric vector of abundances at time t
 #' @param time the timestep - defaults to NULL (i.e. not used)
 #' @param ... additional arguments, for compatability with other usages of the function - values are not used in this implementation
-#' @keywords deterministic function, discrete-time model, time-series, fake data
+#' @keywords deterministic discrete-time time-series
 #' @return a number or numeric vector of length xt, with predicted abundances at time t+1
 #' @export
 
@@ -213,7 +213,7 @@ colfun0<-function(co, xt) {
 #' @param dotraceback A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE
 #' @param fulltraceback A logical, indicating whether full matrix of particles for all time steps should be returned.
 #' @source Adapted from Knape and Valpine (2012), Ecology 93:256-263.
-#' @keywords particle filter, stability, time-series, Taylor power law
+#' @keywords particle filter stability time-series Taylor power law
 #' @return LL (total log likelihood), LLlst (log likelihood for each time step), Nest (mean estimated state), Nsd (standard deviation of estimated state), Nest_noproc (mean estimated state at time t+1 without process error), Nsd_noproc (standard deviation of estimated state at time t+1 without process error),
 #' fulltracemat (full traceback of particle paths), fulltracemat_noproc (full traceback of particle paths at time t+1 without process noise), and fulltraceindex (index positions for the particle traces over time)
 #' @export
@@ -395,7 +395,7 @@ indexsort<-function(fulltracemat, fulltraceindex, nsmp=NULL) {
 #' @param tuse theta for s-mapping analysis
 #' @param N number of particles
 #' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
-#' @keywords dewdrop regression, particle filter
+#' @keywords dewdrop regression particle filter
 #' @return summed log likelihood across all segments
 #' @export
 
@@ -427,7 +427,7 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' @param tuse theta for s-mapping analysis
 #' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
 #' @param nsmp number of sample particle trajectories to return - defaults to 1
-#' @keywords dewdrop regression, particle filter
+#' @keywords dewdrop regression particle filter
 #' @return results from particle filter - including mean estimates (Nest) and standard deviations (Nsd), across particles,
 #' and sample particle trajectories with (Nsmp) and without (Nsmp_noproc) process noise
 #' @export

@@ -1,4 +1,4 @@
-#' pttstability: Methods for fitting state space models using EDM.
+#' pttstability: A Particle-Takens Filter for Measuring Stability of Nonstationary Systems.
 #'
 #' The pttstability (or "ParTicle-Takens Stability" package) is a collection of functions
 #' that can be used to estimate the parameters of a stochastic state space model (i.e.

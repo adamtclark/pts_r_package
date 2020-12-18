@@ -2,7 +2,7 @@
 #'
 #' Calculates colonization rate, mortality rate, and expected mean occupancy time based on a time series
 #' @param dat a numeric vector, including the timeseries
-#' @keywords stability, time-series
+#' @keywords stability time-series
 #' @return a list including colonization and mortality probability per time step (pc and pm, respectively), and pocc, the expected fraction of time that the species will be present
 #' @export
 
@@ -36,7 +36,7 @@ getcm<-function(dat) {
 #' then function should simulate N draws from the observation function, centered around value yt. If inverse = FALSE, then function should return log probability denisty of observed value yt given predicted values in xt. Defaults to obsfun0.
 #' @param colfun A function simulating colonization events, that takes in two arguments: co, a vector of parameter values taken from pars$pcol, and xt, a number or numeric vector of abundances at time t, before colonization has occurred. Returns predicted abundances after colonization has occurred. Defaults to colful0.
 #' @param doplot a logical specifying wether output should be plotted - defaults to FALSE
-#' @keywords Taylor power law, stability, time-series, fake data
+#' @keywords Taylor power law stability time-series
 #' @return An n-by-3 dataframe of states, including obs (observed values), truth (true values), and noproc (values without process noise)
 #' @import graphics
 #' @import stats

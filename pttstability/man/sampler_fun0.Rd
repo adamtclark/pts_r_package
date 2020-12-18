@@ -21,5 +21,5 @@ Draws samples from a flat prior
 }
 \keyword{MCMC}
 \keyword{optimization}
-\keyword{stability,}
-\keyword{time-series,}
+\keyword{stability}
+\keyword{time-series}

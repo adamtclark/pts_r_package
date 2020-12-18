@@ -32,5 +32,5 @@ Takes in a vector of 3 or 6 parameters, and puts them into a list of the format 
 }
 \keyword{filter}
 \keyword{particle}
-\keyword{stability,}
-\keyword{time-series,}
+\keyword{stability}
+\keyword{time-series}

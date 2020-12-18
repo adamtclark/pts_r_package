@@ -42,4 +42,4 @@ See documentation for particleFilterLL_piecewise for examples of use.
 \keyword{dewdrop}
 \keyword{filter}
 \keyword{particle}
-\keyword{regression,}
+\keyword{regression}

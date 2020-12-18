@@ -53,9 +53,9 @@ based on a noisy observation of time-series y. Returns estimates of true values 
 Function is adapted from the R code of Knape and Valpine (2012), Ecology 93:256-263.
 }
 \keyword{Taylor}
-\keyword{filter,}
+\keyword{filter}
 \keyword{law}
 \keyword{particle}
 \keyword{power}
-\keyword{stability,}
-\keyword{time-series,}
+\keyword{stability}
+\keyword{time-series}

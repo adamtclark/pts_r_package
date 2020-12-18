@@ -23,5 +23,5 @@ If 8, then in the order (obs1, obs2, proc1, proc2, pcol1, pcol2, det1, det2)
 }
 \keyword{MCMC}
 \keyword{optimization}
-\keyword{stability,}
-\keyword{time-series,}
+\keyword{stability}
+\keyword{time-series}

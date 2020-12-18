@@ -143,4 +143,4 @@ prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_US
 \keyword{dewdrop}
 \keyword{filter}
 \keyword{particle}
-\keyword{regression,}
+\keyword{regression}

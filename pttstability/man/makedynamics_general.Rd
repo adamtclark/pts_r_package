@@ -66,9 +66,7 @@ Simulates a time series following a user-defined deterministic function, observa
  summary(mod<-lm(log(var)~log(mu), tdat)); abline(mod, col=2)
 }
 \keyword{Taylor}
-\keyword{data}
-\keyword{fake}
-\keyword{law,}
+\keyword{law}
 \keyword{power}
-\keyword{stability,}
-\keyword{time-series,}
+\keyword{stability}
+\keyword{time-series}

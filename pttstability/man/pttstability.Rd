@@ -3,7 +3,7 @@
 \docType{package}
 \name{pttstability}
 \alias{pttstability}
-\title{pttstability: Methods for fitting state space models using EDM.}
+\title{pttstability: A Particle-Takens Filter for Measuring Stability of Nonstationary Systems.}
 \source{
 Knape, J., and Valpine, P. (2012). Fitting complex population models by combining particle filters with Markov chain Monte Carlo. Ecology 93:256-263.
 
