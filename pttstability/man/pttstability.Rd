@@ -3,7 +3,7 @@
 \docType{package}
 \name{pttstability}
 \alias{pttstability}
-\title{pttstability: A Particle-Takens Filter for Measuring Stability of Nonstationary Systems.}
+\title{pttstability: Methods for Measuring Stability in Systems Without Static Equilibria}
 \source{
 Knape, J., and Valpine, P. (2012). Fitting complex population models by combining particle filters with Markov chain Monte Carlo. Ecology 93:256-263.
 
@@ -14,7 +14,7 @@ Ye, H., et al. (2019). rEDM: Applications of Empirical Dynamic Modeling from Tim
 Hartig, F., et al. (2019). BayesianTools: General-Purpose MCMC and SMC Samplers and Tools for Bayesian Statistics. R package version 0.1.6.
 }
 \description{
-The pttstability (or "ParTicle-Takens Stability" package) is a collection of functions
+The pttstability ("ParTicle-Takens Stability") package is a collection of functions
 that can be used to estimate the parameters of a stochastic state space model (i.e.
 a model where a time series is observed with error).
 }

@@ -1,6 +1,6 @@
-#' pttstability: A Particle-Takens Filter for Measuring Stability of Nonstationary Systems.
+#' pttstability: Methods for Measuring Stability in Systems Without Static Equilibria
 #'
-#' The pttstability (or "ParTicle-Takens Stability" package) is a collection of functions
+#' The pttstability ("ParTicle-Takens Stability") package is a collection of functions
 #' that can be used to estimate the parameters of a stochastic state space model (i.e.
 #' a model where a time series is observed with error).
 #'

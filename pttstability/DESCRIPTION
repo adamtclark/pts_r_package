@@ -1,5 +1,5 @@
 Package: pttstability
-Title: A Particle-Takens Filter for Measuring Stability of Nonstationary Systems
+Title: Particle-Takens Stability
 Version: 1.0
 Authors@R: person("Adam", "Clark", email = "adam.tclark@gmail.com", role = c("aut", "cre"))
 Description: Abbreviation for "ParTicle-Takens Stability". Includes a collection of functions
