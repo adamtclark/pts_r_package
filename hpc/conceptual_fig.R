@@ -5,10 +5,7 @@ setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 #load scripts
 require(rEDM)
 require(scatterplot3d)
-source("../pttstability/R/particlefilter.R")
-source("../pttstability/R/fake_data.R")
-source("../pttstability/R/logit_funs.R")
-source("../pttstability/R/bayesfun.R")
+require(pttstability)
 
 #set up simulations
 #seeduse<-round(runif(1)*1e5)

@@ -6,11 +6,7 @@ require(mvtnorm)
 require(rEDM)
 require(msir)
 require(viridis)
-
-source("../pttstability/R/bayesfun.R")
-source("../pttstability/R/fake_data.R")
-source("../pttstability/R/logit_funs.R")
-source("../pttstability/R/particlefilter.R")
+require(pttstability)
 
 eifun<-function(x,y,i=1,ybar=NULL) {
   if(is.null(ybar)) {
