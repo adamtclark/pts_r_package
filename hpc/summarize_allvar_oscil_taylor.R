@@ -24,7 +24,7 @@ pars0<-pars_true<-list(obs=c(log(0.2)),
                        det=c(log(1.2),log(1)))
 
 detfun0_sin<-function(sdet, xt, time=NULL) {
-  K<-(sin(time/2)+exp(sdet[2])+0.5)/2
+  K<-(sin(time/2)+exp(sdet[2])+0.5)*(2/3)
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }
@@ -43,7 +43,7 @@ minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 flst<-dir("datout")
-flst<-flst[grep("201116", flst)]
+flst<-flst[grep("210105", flst)]
 flst<-flst[grep("rda", flst)]
 
 
@@ -268,5 +268,5 @@ for(ifl in 1:length(flst)) {
   if(ifl/100 == floor(ifl/100)) {
     print(round(ifl/length(flst),2))
   }
-  save(list = c("summarydat"), file = "datout/summarydat_201116.rda", version=2)
+  save(list = c("summarydat"), file = "datout/summarydat_210105.rda", version=2)
 }

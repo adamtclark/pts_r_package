@@ -22,7 +22,7 @@ pars0<-pars_true<-list(obs=c(log(0.2)),
                        det=c(log(1.2),log(1)))
 
 detfun0_sin<-function(sdet, xt, time=NULL) {
-  K<-(sin(time/2)+exp(sdet[2])+0.5)/2
+  K<-(sin(time/2)+exp(sdet[2])+0.5)*(2/3)
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }

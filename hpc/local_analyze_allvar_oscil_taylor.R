@@ -1,6 +1,6 @@
 rm(list=ls())
 
-set.seed(201116)
+set.seed(210105)
 
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 require(BayesianTools)
@@ -16,7 +16,7 @@ pars0<-pars_true<-list(obs=c(log(0.2)),
                        det=c(log(1.2),log(1)))
 
 detfun0_sin<-function(sdet, xt, time=NULL) {
-  K<-(sin(time/2)+exp(sdet[2])+0.5)/2
+  K<-(sin(time/2)+exp(sdet[2])+0.5)*(2/3)
   xt = xt*exp(exp(sdet[1])*(1-xt/K))
   return(xt)
 }
@@ -35,7 +35,7 @@ minvUSE_edm<-unlist(lapply(p0_edm, function(x) x[1]))
 maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 
 #load summary data
-load("datout/summarydat_201116.rda")
+load("datout/summarydat_210105.rda")
 
 #Plotting and summary functions
 e2fun<-function(x,y,ybar=NULL) {
@@ -212,7 +212,7 @@ pf3<-function(x,y,...) {
 
 
 #total fit
-pdf("plotout/local_analyze_allvar_oscil_taylor_201116_totfit.pdf", width=4, height=5, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/local_analyze_allvar_oscil_taylor_210105_totfit.pdf", width=4, height=5, colormodel = "cmyk", useDingbats = FALSE)
   par(mfrow=c(2,1), mar=c(2,2,1,1), oma=c(2,2,0,0))
   ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
 
@@ -254,7 +254,7 @@ rhokern_obs0_edm<-rhokernel(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_obs_mu0
          byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error,
          nsteps = 20)
 
-pdf("plotout/local_analyze_allvar_oscil_taylor_201116_obs0.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/local_analyze_allvar_oscil_taylor_210105_obs0.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
   m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
   layout(m)
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
@@ -323,7 +323,7 @@ rhokern_proc0_edm<-rhokernel(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_m
                             byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error,
                             nsteps = 20)
 
-pdf("plotout/local_analyze_allvar_oscil_taylor_201116_proc0.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc0.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
   m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
   layout(m)
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
@@ -395,7 +395,7 @@ rhokern_proc1_edm<-rhokernel_2d(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_pro
                                          summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error))
 
 
-pdf("plotout/local_analyze_allvar_oscil_taylor_201116_proc1.pdf", width=7, height=4, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc1.pdf", width=7, height=4, colormodel = "cmyk", useDingbats = FALSE)
   m<-cbind(c(1,1,1,2,2,2), c(1,1,1,2,2,2),
            c(1,1,1,2,2,2), c(1,1,1,2,2,2),
            c(3,3,3,4,4,4),c(3,3,3,4,4,4),
@@ -455,7 +455,7 @@ rhokern_mor_obs<-rhokernel(x=lf(pmax(summarydat$pmobs, 1/libl)),
                            byvar=summarydat$summed_obs_error,
                            nsteps = 20)
 
-pdf("plotout/local_analyze_allvar_oscil_taylor_201116_mor.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/local_analyze_allvar_oscil_taylor_210105_mor.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
   m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
   layout(m)
 
@@ -546,7 +546,7 @@ rhokern_col_obs<-rhokernel(x=lf(pmax(summarydat[!is.na(summarydat$pctrue) & summ
                            nsteps = 20)
 
 
-pdf("plotout/local_analyze_allvar_oscil_taylor_201116_col.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/local_analyze_allvar_oscil_taylor_210105_col.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
   m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
   layout(m)
 

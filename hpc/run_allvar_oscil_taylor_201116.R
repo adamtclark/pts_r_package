@@ -39,7 +39,7 @@ for(iclu in 1:nrep) {
 
   #new detfun
   detfun0_sin<-function(sdet, xt, time=NULL) {
-    K<-(sin(time/2)+exp(sdet[2])+0.5)/2
+    K<-(sin(time/2)+exp(sdet[2])+0.5)*(2/3)
     xt = xt*exp(exp(sdet[1])*(1-xt/K))
     return(xt)
   }
@@ -160,5 +160,5 @@ for(iclu in 1:nrep) {
   #simulation outputs
   simdat<-list(datout=datout)
 
-  save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_allvar_oscil_taylor_201116.rda", sep=""), version=2)
+  save(list = c("simdat", "parslst", "optdat", "filterdat", "cordat"), file = paste("datout/mcmcout_", commArgin, "_allvar_oscil_taylor_210105.rda", sep=""), version=2)
 }
