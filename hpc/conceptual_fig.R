@@ -50,14 +50,16 @@ obstm<-seq(tm[1], tm[length(tm)], by=1)
 
 x<-datout$true[tm]
 #mnx<-mean(x)
-mnx<-1
+#mnx<-1
+#set mean of time series to one
+mnx <- mean((sin((seq(0,150,by=0.1))/stm)+1+0.5)/2)
 x<-x/mnx
 
 obs<-datout$obs[tm]
 obs<-obs/mnx
 
 plot(tm-min(tm)+1, x, type="l", lwd=1.5, xlab="", ylab="",
-     ylim=c(0, 2))
+     ylim=c(0, 2.8))
 abline(h=0, lty=3)
 points(tm-min(tm)+1, obs, col="gold", pch=18, cex=1.2)
 segments(tm-min(tm)+1, x, tm-min(tm)+1, obs, col="gold", lwd=1.5)
@@ -89,8 +91,8 @@ nt<-trprdfull[(1+2*stepsize):(nsq)]
 
 psuse<-1:150
 etmp<-s_map((datout$obs/mnx)[psuse], E=2, theta=2, silent = TRUE, stats_only = FALSE)
-plot(etmp$model_output[[1]]$pred, (datout$true/mnx)[psuse],
-     xlim=c(0,2), ylim=c(0, 2))
+plot(etmp$model_output[[1]]$Predictions, (datout$true/mnx)[psuse],
+     xlim=c(0,2.8), ylim=c(0, 2.8))
 abline(a=0, b=1, lty=2, lwd=1.5)
 
 mtext(expression(paste("Takens Prediction, ", italic(N)[Takens])), 1, line = 3.2, cex=1.2)

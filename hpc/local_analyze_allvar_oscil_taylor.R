@@ -52,7 +52,7 @@ eifun<-function(x,y,i=1,ybar=NULL) {
   1-mean(abs(x-y)^i,na.rm=T)/mean(abs(y-ybar)^i,na.rm=T)
 }
 
-rhokernel<-function(x, y, byvar, nsteps=20, niter=2e4,ei=2) {
+rhokernel<-function(x, y, byvar, nsteps=20, niter=1e3,ei=2) {
   h<-1.06*sd(byvar,na.rm=T)*(length(byvar[is.finite(byvar)])^(-1/5))
   #Silverman, B.W. (1986) "rule of thumb"
 
@@ -69,20 +69,28 @@ rhokernel<-function(x, y, byvar, nsteps=20, niter=2e4,ei=2) {
     wt<-wt/sum(wt,na.rm=T)
 
     for(j in 1:niter) {
+      #smp<-sample(length(x), size = length(x)/nsteps, rep=FALSE, prob = wt)
       smp<-sample(length(x), rep=TRUE, prob = wt)
       rholst[i,j]<-cor(x[smp],y[smp])
       eilst[i,j]<-eifun(x[smp],y[smp],ybar,i = ei)
     }
   }
 
-  rhoout<-t(apply(rholst, 1, function(x) quantile(x, c(0.025, 0.5, 0.975))))
-  eiout<-t(apply(eilst, 1, function(x) quantile(x, c(0.025, 0.5, 0.975))))
+  rhoout<-t(apply(rholst, 1, function(x) quantile(x, pnorm(-1:1))))
+  eiout<-t(apply(eilst, 1, function(x) quantile(x, pnorm(-1:1))))
 
   return(list(rhoout=rhoout, rholst=rholst, eiout=eiout, eilst=eilst, bylst=bylst))
 }
 
 
-rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=2e4, ei=2) {
+rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=1e3, ei=2) {
+  byvarold = byvar
+  for(i in 1:ncol(byvar)) {
+    byvar[,i] = byvar[,i]-mean(byvar[,i], na.rm=T)
+    byvar[,i] = byvar[,i]/sd(byvar[,i], na.rm=T)
+  }
+
+
   h<-diag(ncol(byvar))
   d<-ncol(byvar)
   for(i in 1:d) {
@@ -106,15 +114,31 @@ rhokernel_2d<-function(x, y, byvar, nsteps=20, niter=2e4, ei=2) {
       wt<-wt/sum(wt,na.rm=T)
 
       for(k in 1:niter) {
+        #smp<-sample(length(x), size = length(x)/nsteps, rep=FALSE, prob = wt)
         smp<-sample(length(x), rep=TRUE, prob = wt)
+
+        if(FALSE) {
+          eifun(x[smp],y[smp],ybar,i = ei)
+          cor(x[smp],y[smp])
+          hist(byvar[smp,1])
+          hist(byvar[smp,2])
+          plot(byvar[smp,], xlim = c(-2,4), ylim=c(-2,4))
+          plot(x[smp],y[smp]); abline(a= 0, b = 1)
+        }
+
         rholst[i,j,k]<-cor(x[smp],y[smp])
         eilst[i,j,k]<-eifun(x[smp],y[smp],ybar,i = ei)
       }
     }
   }
 
-  rhoout<-apply(rholst, 1:2, function(x) quantile(x, c(0.025, 0.5, 0.975)))
-  eiout<-apply(eilst, 1:2, function(x) quantile(x, c(0.025, 0.5, 0.975)))
+  rhoout<-apply(rholst, 1:2, function(x) quantile(x, pnorm(-1:1)))
+  eiout<-apply(eilst, 1:2, function(x) quantile(x, pnorm(-1:1)))
+
+  for(i in 1:ncol(byvarold)) {
+    bylst[,i] = bylst[,i]*sd(byvarold[,i], na.rm=T)
+    bylst[,i] = bylst[,i]+mean(byvarold[,i], na.rm=T)
+  }
 
   return(list(rhoout=rhoout, rholst=rholst, eiout=eiout, eilst=eilst, bylst=bylst))
 }
@@ -240,9 +264,9 @@ dev.off()
 
 #Make plots
 summarydat$lvl<-1
-ctlvlslin<-(c(0, 0.1, 0.2, 0.5))
-ctlvlslin2<-(c(0, 0.2, 0.5))
-ctlvls<-lf(c(1e-6, 0.1, 0.2, 0.5))
+ctlvlslin<-(c(0, 0.15, 0.3, 0.7))
+ctlvlslin2<-(c(0, 0.3, 0.7))
+ctlvls<-lf(c(1e-6, 0.15, 0.3, 0.7))
 
 ### obs
 rhokern_obs0_det<-rhokernel(x=summarydat[summarydat$gelmandet<=1.1,]$det_obs_mu0,
@@ -258,7 +282,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_obs0.pdf", width=6, height
   m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
   layout(m)
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.06, 0.45), ylim=c(-1,1.05), xlab="", ylab="", type="n")
+  matplot(1,1, xlim=c(0.06, 0.6), ylim=c(-1,1.05), xlab="", ylab="", type="n")
   mtext(expression(paste("Goodness of Fit, ", italic(beta)[obs])), 2, line=2.5)
   mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 1, line=2.8)
 
@@ -305,15 +329,15 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_obs0.pdf", width=6, height
       wts2=(summarydat$edm_obs_qt0.3[ps]-summarydat$edm_obs_qt0.2[ps]),
       category = cut((summarydat[ps,]$summed_proc_error),ctlvlslin),
       rngx = (c(0,0.5)), rngy = (c(0,0.5)), ladj = 1,
-      mnlst = c(expression(paste(sigma[italic(P)[tot]] %in% "(0,0.1]")),
-                 expression(paste(sigma[italic(P)[tot]] %in% "(0.1,0.2]")),
-                 expression(paste(sigma[italic(P)[tot]] %in% "(0.2,0.5]"))))
+      mnlst = c(expression(paste(sigma[italic(P)[tot]] %in% "(0,0.15]")),
+                 expression(paste(sigma[italic(P)[tot]] %in% "(0.15,0.3]")),
+                 expression(paste(sigma[italic(P)[tot]] %in% "(0.3,0.6]"))))
 
   mtext(expression(paste("True ", italic(beta)[obs])), 2, outer = TRUE, line=-32)
   mtext(expression(paste("Predicted ", italic(beta)[obs])), 1, line=2.8)
 dev.off()
 
-### proc1
+### proc0
 rhokern_proc0_det<-rhokernel(x=summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu0,
                             y=summarydat[summarydat$gelmandet<=1.1,]$proc0,
                             byvar=summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error,
@@ -327,7 +351,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc0.pdf", width=6, heigh
   m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
   layout(m)
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.006, 0.45), ylim=c(-1,1.05), xlab="", ylab="", type="n")
+  matplot(1,1, xlim=c(0.006, 0.6), ylim=c(-1,1.05), xlab="", ylab="", type="n")
   mtext(expression(paste("Goodness of Fit, ", italic(beta)[proc[0]])), 2, line=2.5)
   mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
 
@@ -353,7 +377,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc0.pdf", width=6, heigh
   lines(rhokern_proc0_edm$bylst, rhokern_proc0_edm$eiout[,2],
         col="firebrick", lwd=1.5, lty=2)
 
-  legend(0.196, -0.5,
+  legend(0, -0.5,
          c("Analytical Function","EDM Estimate",
            expression(paste("Pearson Correlation, ", rho)),
            expression(paste("Coefficient of Efficiency, ", E[2]))),
@@ -374,9 +398,9 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc0.pdf", width=6, heigh
       wts2=(summarydat$edm_proc_qt0.3[ps]-summarydat$edm_proc_qt0.2[ps]),
       category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
       rngx = (c(0,0.5)), rngy = (c(0,0.5)), ladj = 1,
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.1]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.1,0.2]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5]"))))
+      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.15]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0.15,0.3]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6]"))))
 
   mtext(expression(paste("True ", italic(beta)[proc[0]])), 2, outer = TRUE, line=-32)
   mtext(expression(paste("Predicted ", italic(beta)[proc[0]])), 1, line=2.8)
@@ -385,14 +409,15 @@ dev.off()
 
 
 #proc1
-rhokern_proc1_det<-rhokernel_2d(x=summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu1,
-                             y=summarydat[summarydat$gelmandet<=1.1,]$proc1,
-                             byvar=cbind(summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error,
-                                         summarydat[summarydat$gelmandet<=1.1,]$summed_proc_error))
-rhokern_proc1_edm<-rhokernel_2d(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu1,
-                             y=summarydat[summarydat$gelmanedm<=1.1,]$proc1,
-                             byvar=cbind(summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error,
-                                         summarydat[summarydat$gelmanedm<=1.1,]$summed_proc_error))
+pskp = summarydat$gelmandet<=1.1 & summarydat$gelmanedm<=1.1
+rhokern_proc1_det<-rhokernel_2d(x=summarydat[pskp,]$det_proc_mu1,
+                             y=summarydat[pskp,]$proc1,
+                             byvar=cbind(summarydat[pskp,]$summed_obs_error,
+                                         summarydat[pskp,]$summed_proc_error), nsteps = 20, niter = 1000)
+rhokern_proc1_edm<-rhokernel_2d(x=summarydat[pskp,]$edm_proc_mu1,
+                             y=summarydat[pskp,]$proc1,
+                             byvar=cbind(summarydat[pskp,]$summed_obs_error,
+                                         summarydat[pskp,]$summed_proc_error), nsteps = 20, niter = 1000)
 
 
 pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc1.pdf", width=7, height=4, colormodel = "cmyk", useDingbats = FALSE)
@@ -405,13 +430,17 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc1.pdf", width=7, heigh
   layout(m)
   par(mar=c(2,2,2,2), oma=c(2,2,0,0.5))
 
-  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$rhoout[2,,],levels = seq(0, 1, by=0.025), col="firebrick", method="flattest")
-  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$rhoout[2,,],levels = seq(0, 1, by=0.025), method="edge", col="dodgerblue", add=TRUE)
+  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$rhoout[2,,],
+          levels = seq(0, 1, by=0.15), col="firebrick", method="flattest")
+  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$rhoout[2,,],
+          levels = seq(0, 1, by=0.15), method="flattest", col="dodgerblue", add=TRUE)
   title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
   title(expression(paste("Pearson Correlation, ", rho)))
 
-  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$eiout[2,,],levels = seq(-2, 1, by=0.05), lty=2, col="firebrick", method="flattest")
-  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$eiout[2,,],levels = seq(0, 1, by=0.05), lty=2, col="dodgerblue", method="edge", add=TRUE)
+  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$eiout[2,,],
+          levels = seq(-2, 1, by=0.15), lty=2, col="firebrick", method="flattest")
+  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$eiout[2,,],
+          levels = seq(0, 1, by=0.15), lty=2, col="dodgerblue", method="flattest", add=TRUE)
   title("b.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
   title(expression(paste("Coefficient of Efficiency, ", E[2])))
 
@@ -425,12 +454,12 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_proc1.pdf", width=7, heigh
       y = (summarydat$proc1[ps]),
       wts1=(summarydat$det_proc_qt1.3[ps]-summarydat$det_proc_qt1.2[ps]),
       wts2=(summarydat$edm_proc_qt1.3[ps]-summarydat$edm_proc_qt1.2[ps]),
-      category = paste(cut((summarydat[ps,]$summed_obs_error),ctlvlslin2), cut((summarydat[ps,]$summed_proc_error),ctlvlslin2)),
+      category = paste(cut((summarydat[ps,]$summed_obs_error),ctlvlslin2), cut((summarydat[ps,]$summed_proc_error),ctlvlslin2+c(0,0,0.2))),
       rngx = (c(0.5,3)), rngy = (c(0.5,3)), ladj = 2,
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.2], ", sigma[italic(P)[tot]] %in% "(0,0.2]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0,0.2], ", sigma[italic(P)[tot]] %in% "(0.2,0.5]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5], ", sigma[italic(P)[tot]] %in% "(0,0.2]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5], ", sigma[italic(P)[tot]] %in% "(0.2,0.5]"))))
+      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.3], ", sigma[italic(P)[tot]] %in% "(0,0.3]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0,0.3], ", sigma[italic(P)[tot]] %in% "(0.3,0.6]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6], ", sigma[italic(P)[tot]] %in% "(0,0.3]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6], ", sigma[italic(P)[tot]] %in% "(0.3,0.6]"))))
 
   mtext(expression(paste("True ", italic(beta)[proc[1]])), 2, outer = TRUE, line=-17)
   mtext(expression(paste("Predicted ", italic(beta)[proc[1]])), 1, line=0.9, outer = TRUE, adj = 0.7)
@@ -460,7 +489,7 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_mor.pdf", width=6, height=
   layout(m)
 
   par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.006, 0.45), ylim=c(-1,1.05), xlab="", ylab="", type="n")
+  matplot(1,1, xlim=c(0.006, 0.6), ylim=c(-1,1.05), xlab="", ylab="", type="n")
   mtext(expression(paste("Goodness of Fit, ", Pr[mor])), 2, line=2.5)
   mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
 
@@ -520,9 +549,9 @@ pdf("plotout/local_analyze_allvar_oscil_taylor_210105_mor.pdf", width=6, height=
       y = lf(summarydat$pmtrue_analy[ps]),
       category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
       rngx = (c(-22,-0.5)), rngy = (c(-22,-0.5)), ladj = 1,vline = lf(1/libl),
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.1]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.1,0.2]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5]"))))
+      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.15]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0.15,0.3]")),
+                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6]"))))
 
   mtext(expression(paste("True ", log[10], "(", Pr[mor], ")")), 2, outer = TRUE, line=-32)
   mtext(expression(paste("Predicted ", log[10], "(", Pr[mor], ")")), 1, line=2.8)
@@ -530,95 +559,5 @@ dev.off()
 
 
 
-
-
-rhokern_col_det<-rhokernel(x=lf(summarydat[summarydat$gelmandet<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pcdet),
-                           y=lf(summarydat[summarydat$gelmandet<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pctrue),
-                           byvar=summarydat[summarydat$gelmandet<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$summed_obs_error,
-                           nsteps = 20)
-rhokern_col_edm<-rhokernel(x=lf(summarydat[summarydat$gelmanedm<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pcedm),
-                           y=lf(summarydat[summarydat$gelmanedm<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pctrue),
-                           byvar=summarydat[summarydat$gelmanedm<=1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0,]$summed_obs_error,
-                           nsteps = 20)
-rhokern_col_obs<-rhokernel(x=lf(pmax(summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pcobs, 1/libl)),
-                           y=lf(summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$pctrue),
-                           byvar=summarydat[!is.na(summarydat$pctrue) & summarydat$pctrue>0,]$summed_obs_error,
-                           nsteps = 20)
-
-
-pdf("plotout/local_analyze_allvar_oscil_taylor_210105_col.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
-  m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
-  layout(m)
-
-  par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.006, 0.45), ylim=c(-1,1.05), xlab="", ylab="", type="n")
-  mtext(expression(paste("Goodness of Fit, ", Pr[col])), 2, line=2.5)
-  mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
-
-  polygon(c(rhokern_col_det$bylst, rev(rhokern_col_det$bylst)),
-          c(rhokern_col_det$rhoout[,1], rev(rhokern_col_det$rhoout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_col_det$bylst, rhokern_col_det$rhoout[,2],
-        col="dodgerblue", lwd=1.5, lty=1)
-
-  polygon(c(rhokern_col_edm$bylst, rev(rhokern_col_edm$bylst)),
-          c(rhokern_col_edm$rhoout[,1], rev(rhokern_col_edm$rhoout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_col_edm$bylst, rhokern_col_edm$rhoout[,2],
-        col="firebrick", lwd=1.5, lty=1)
-
-  polygon(c(rhokern_col_obs$bylst, rev(rhokern_col_obs$bylst)),
-          c(rhokern_col_obs$rhoout[,1], rev(rhokern_col_obs$rhoout[,3])),
-          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
-  lines(rhokern_col_obs$bylst, rhokern_col_obs$rhoout[,2],
-        col="gold", lwd=1.5, lty=1)
-
-
-  polygon(c(rhokern_col_det$bylst, rev(rhokern_col_det$bylst)),
-          c(rhokern_col_det$eiout[,1], rev(rhokern_col_det$eiout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_col_det$bylst, rhokern_col_det$eiout[,2],
-        col="dodgerblue", lwd=1.5, lty=2)
-
-  polygon(c(rhokern_col_edm$bylst, rev(rhokern_col_edm$bylst)),
-          c(rhokern_col_edm$eiout[,1], rev(rhokern_col_edm$eiout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_col_edm$bylst, rhokern_col_edm$eiout[,2],
-        col="firebrick", lwd=1.5, lty=2)
-
-  polygon(c(rhokern_col_obs$bylst, rev(rhokern_col_obs$bylst)),
-          c(rhokern_col_obs$eiout[,1], rev(rhokern_col_obs$eiout[,3])),
-          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
-  lines(rhokern_col_obs$bylst, rhokern_col_obs$eiout[,2],
-        col="gold", lwd=1.5, lty=2)
-
-  abline(h=0, lty=2)
-  abline(h=c(-1,1), lty=3)
-
-  legend(0, -0.5,
-         c("Analytical Function","EDM Estimate", "Raw Observation",
-           expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[2]))),
-         fill = c("dodgerblue", "firebrick", "gold", NA, NA), border = c(1, 1, 1, NA, NA),
-         lty=c(NA, NA, NA, 1:2), lwd=c(NA, NA, NA, 1.5,1.5), col=c(NA, NA, NA, 1,1), bty="n")
-  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-
-
-  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1 & !is.na(summarydat$pctrue) & summarydat$pctrue>0
-  pf2(x1 = lf(summarydat$pcdet[ps]),
-      x2 = lf(summarydat$pcedm[ps]),
-      x3 = lf(pmax(summarydat$pcobs[ps], 1/libl)),
-      y = lf(summarydat$pctrue[ps]),
-      category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
-      rngx = (c(-1.5,-0)), rngy = (c(-1.5,-0)), ladj = 1, vline = lf(1/libl),
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.1]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.1,0.2]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.2,0.5]"))))
-
-  mtext(expression(paste("True ", log[10], "(", Pr[col], ")")), 2, outer = TRUE, line=-32)
-  mtext(expression(paste("Predicted ", log[10], "(", Pr[col], ")")), 1, line=2.8)
-dev.off()
-
-
-#save.image("datout/plotting_save.rda", version = 2)
-#load("datout/plotting_save.rda")
+#save.image("datout/plotting_save_210109.rda", version = 2)
+#load("datout/plotting_save_210109.rda")
