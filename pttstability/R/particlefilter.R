@@ -151,25 +151,27 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
       std_tmp<-exp(so[1])+exp(so[2])*xt
     }
 
-    #Tobit distribution:
-    LL<-dnorm((yt-xt)/std_tmp,log=TRUE)-log(std_tmp)
-    ps<-(xt==0)
-    LL[ps]<-pnorm(-yt/std_tmp[ps], log.p = TRUE)
-    mxd<-max(LL, na.rm=T)
+    #Tobit distribution (modified from script by J.Clark):
+    if(yt == 0) {
+      tiny <- 10e-6
+      lo = -Inf; hi = 0 # lower and upper limits of normal quantiles for censored region in Tobit (i.e. values <= 0)
 
-    wts<-exp(LL-mxd)/sum(exp(LL-mxd))
-    pzero<-pnorm(-yt/std_tmp)
+      q1 <- pnorm(lo,xt,std_tmp)
+      q2 <- pnorm(hi,xt,std_tmp)
 
-    wts[!ps]<-wts[!ps]/sum(wts[!ps])*(1-pzero[!ps])
-    wts[ps]<-pzero[ps]/sum(ps)
-    wts[!is.finite(wts)]<-0
-    if(sum(wts)!=0) {
-      wts<-wts/sum(wts)
+      # simulate potential values of y along a normal distribution given modeled mean and sd
+      z <- runif(n = length(xt), min = q1, max = q2)
+      z <- qnorm(z,xt,std_tmp)
+
+      z[z == Inf]  <- lo[z == Inf] + tiny
+      z[z == -Inf] <- hi[z == -Inf] - tiny
+
+      LL = dnorm(z, xt, std_tmp, log = TRUE)
     } else {
-      wts[]<-1/length(wts)
+      LL = dnorm(yt, xt, std_tmp, log = TRUE)
     }
 
-    return(list(LL=LL, wts=wts))
+    return(LL)
   }
 }
 
@@ -292,12 +294,12 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
     proc<-procfun(sp = pars$proc, xt = prd, time = i)
 
     #get likelihood of proc given y[i]
-    #dobs<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
-    tmpobsout<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
-    dobs<-tmpobsout$LL
+    dobs<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
+    #tmpobsout<-obsfun(so = pars$obs, yt = y[i], xt = proc, time = i)
+    #dobs<-tmpobsout$LL
     mxd<-max(dobs, na.rm=T)
-    #wdobs<-exp(dobs-mxd)/sum(exp(dobs-mxd))
-    wdobs<-tmpobsout$wts
+    wdobs<-exp(dobs-mxd)/sum(exp(dobs-mxd))
+    #wdobs<-tmpobsout$wts
 
     #estimates of true state for y[i]
     if(fulltraceback) {
