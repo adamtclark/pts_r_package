@@ -114,6 +114,37 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 }
 
 
+
+
+#' continuous-time process noise function
+#'
+#' Simulates effects of process noise following a Gaussian perturbation.
+#' Note that process noise only influences positive abundances (i.e. process noise cannot contribute to colonization)
+#' @param sp a numeric vector of length two or three, where terms 1-2 specify either the log-transformed standard deviation of the process noise function,
+#' or an intercept and slope for calculating variance of process noise based on a power function of x, of the form var=exp(B0)*x^exp(B1)
+#' The final term in the vector represents the recovery rate - i.e. the continuous time rate at which abundances recover from perturbation
+#' @param xt a number or numeric vector of abundances at time t, before process noise has occurred
+#' @param inverse a logical specifying whether the inverse (i.e. probability of drawing a value of zero given xt and sp) should be calcualted
+#' @param time the timestep - defaults to NULL (i.e. not used)
+#' @keywords process noise
+#' @return a number or numeric vector of length xt, with predicted abundances after process noise has occurred
+#' @import stats
+#' @export
+
+procfun_ct<-function(sp, xt, time=NULL) {
+  if(length(sp)==2) {
+    std_tmp<-exp(sp[1])
+  } else {
+    std_tmp<-sqrt(exp(sp[1])*xt^exp(sp[2]))
+  }
+  rgr = exp(sp[length(sp)])
+
+  sm<-length(xt)
+  xt = pmax(0, xt + rnorm(sm, 0, std_tmp))*(xt>0)
+  return(xt)
+}
+
+
 #' default observation noise function
 #'
 #' Two options: If inverse=FALSE, calculates the log probability density of observation yt based on true state xt and observation error.
