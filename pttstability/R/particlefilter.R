@@ -138,9 +138,9 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
   if(inverse) {
     if(length(so)==1) {
-      std_tmp<-exp(so[1])*yt
-    } else {
       std_tmp<-minsd+exp(so[1])*yt
+    } else {
+      std_tmp<-exp(so[1])+exp(so[2])*yt
     }
     std_tmp[std_tmp<minsd]<-minsd
     pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
