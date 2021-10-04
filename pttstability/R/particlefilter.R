@@ -124,23 +124,44 @@ procfun0<-function(sp, xt, inverse = FALSE, time=NULL) {
 #' or an intercept and slope for calculating variance of process noise based on a power function of x, of the form var=exp(B0)*x^exp(B1)
 #' The final term in the vector represents the recovery rate - i.e. the continuous time rate at which abundances recover from perturbation
 #' @param xt a number or numeric vector of abundances at time t, before process noise has occurred
-#' @param inverse a logical specifying whether the inverse (i.e. probability of drawing a value of zero given xt and sp) should be calcualted
+#' @param waiting_time average time between disturbance events: defaults to 1
 #' @param time the timestep - defaults to NULL (i.e. not used)
 #' @keywords process noise
 #' @return a number or numeric vector of length xt, with predicted abundances after process noise has occurred
 #' @import stats
 #' @export
 
-procfun_ct<-function(sp, xt, time=NULL) {
+procfun_ct<-function(sp, xt, waiting_time = 1, time=NULL) {
   if(length(sp)==2) {
     std_tmp<-exp(sp[1])
+    ps2 = 1
   } else {
     std_tmp<-sqrt(exp(sp[1])*xt^exp(sp[2]))
   }
   rgr = exp(sp[length(sp)])
 
-  sm<-length(xt)
-  xt = pmax(0, xt + rnorm(sm, 0, std_tmp))*(xt>0)
+  # number of disturbances in this timestep
+  ne = rpois(length(xt),waiting_time)
+
+  maxne = max(ne)
+  if(maxne > 0) {
+    # disturbance times
+    dist_times = matrix(nrow = length(xt), ncol = maxne, data = qexp(pexp(runif(length(xt)*maxne),1/waiting_time),1/waiting_time))
+
+    # apply disturbances
+    for(n in 1:maxne) {
+      ps = which(ne == n & xt>0) # cycle trough disturbance events: disturbances cannot reverse extinction
+      if(length(ps)>0) {
+        #nt_dist = nt_det + dist*exp(-rt)
+        if(length(std_tmp) == length(xt)) {
+          ps2 = ps
+        }
+        xt[ps] = pmax(0, xt[ps] + rowSums(rnorm(length(ps)*n, 0, std_tmp[ps2])*exp(-rgr*(1-dist_times[ps,1:n,drop = FALSE]))))
+      }
+    }
+  }
+
+  # return output
   return(xt)
 }
 
