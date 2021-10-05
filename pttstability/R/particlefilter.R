@@ -224,7 +224,7 @@ procfun_ct<-function(sp, xt, waiting_time = 1, time=NULL) {
 obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL) {
   if(inverse) {
     if(length(so)==1) {
-      std_tmp<-minsd+exp(so[1])*yt
+      std_tmp<-exp(so[1])*yt
     } else {
       std_tmp<-exp(so[1])+exp(so[2])*yt
     }
@@ -232,10 +232,11 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
     pmax(0, rnorm(n = N, mean = yt, sd = std_tmp))
   } else {
     if(length(so)==1) {
-      std_tmp<-minsd+exp(so[1])*xt
+      std_tmp<-exp(so[1])*xt
     } else {
       std_tmp<-exp(so[1])+exp(so[2])*xt
     }
+    std_tmp[std_tmp<minsd]<-minsd
 
     #Tobit distribution (modified from script by J.Clark):
     if(yt == 0) {
@@ -249,8 +250,8 @@ obsfun0<-function(so, yt, xt=NULL, inverse=FALSE, N=NULL, minsd=0.01, time=NULL)
       z <- runif(n = length(xt), min = q1, max = q2)
       z <- qnorm(z,xt,std_tmp)
 
-      z[z == Inf]  <- lo[z == Inf] + tiny
-      z[z == -Inf] <- hi[z == -Inf] - tiny
+      z[is.infinite(z) & sign(z)>0]  <- lo + tiny
+      z[is.infinite(z) & sign(z)<0] <- hi - tiny
 
       LL = dnorm(z, xt, std_tmp, log = TRUE)
     } else {

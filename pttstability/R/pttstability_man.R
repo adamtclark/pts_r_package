@@ -65,9 +65,9 @@
 #'
 #' #generate random parameter values
 #' datout<-makedynamics_general(n = 100, n0 = exp(pars_true$det[2]), pdet=pars_true$det,
-#'                              proc = pars_true$proc, obs = pars_true$obs,
-#'                              pcol = pars_true$pcol, detfun = detfun0_sin,
-#'                              procfun = procfun_ct, obsfun=obsfun0, colfun=colfun0)
+#'                              proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
+#'                              detfun = detfun0_sin, procfun = procfun_ct,
+#'                              obsfun=obsfun0, colfun=colfun0)
 #' y<-datout$obs
 #' plot(y, type = "l", xlab="time", ylab="observed abundance")
 #'
@@ -80,8 +80,7 @@
 #' ## Run filter
 #' N = 1e3
 #' #based on detful0
-#' filterout_det<-particleFilterLL(y, pars=pars_filter, N, detfun = detfun0_sin,
-#'                                 procfun = procfun0,
+#' filterout_det<-particleFilterLL(y, pars=pars_filter, N, detfun = detfun0_sin, procfun = procfun0,
 #'                                 dotraceback = TRUE, fulltraceback = TRUE)
 #' #based on EDM
 #' filterout_edm<-particleFilterLL(y, pars=pars_filter, N, detfun = EDMfun0,
@@ -121,8 +120,8 @@
 #' minvUSE<-c(-4, -4) #minimum interval for obs and proc
 #' maxvUSE<-c(0, 0) #maximum interval for obs and proc
 #'
-#' minvUSE_edm<-c(-4, -4, -5) #minimum interval for obs, proc, and theta
-#' maxvUSE_edm<-c(0, 0, 2) #maximum interval for obs, proc, and theta
+#' minvUSE_edm<-c(-4, -4) #minimum interval for obs and proc
+#' maxvUSE_edm<-c(0, 0) #maximum interval for obs and proc
 #'
 #' #density, sampler, and prior functions for deterministic function
 #' density_fun_USE<-function(param) density_fun0(param = param, minv = minvUSE, maxv=maxvUSE)
@@ -133,8 +132,7 @@
 #' #density, sampler, and prior functions for EDM function
 #' density_fun_USE_edm<-function(param) density_fun0(param = param,
 #'                          minv = minvUSE_edm, maxv=maxvUSE_edm)
-#' sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm,
-#'                          maxv=maxvUSE_edm)
+#' sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
 #' prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
 #'                          lower = minvUSE_edm, upper = maxvUSE_edm)
 #' ## Run filter
@@ -145,26 +143,23 @@
 #' #likelihood and bayesian set-ups for deterministic functions
 #' likelihood_detfun0<-function(x) likelihood0(param=x, y=y, parseparam = parseparam0,
 #'                          detfun = detfun0_sin, procfun = procfun0, N = N)
-#' bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0,
-#'                          prior = prior_USE)
+#' bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, prior = prior_USE)
 #'
 #' #likelihood and bayesian set-ups for EDM functions
 #' likelihood_EDM<-function(x) {
-#'   xuse<-x[1:2]
-#'   tuse_edm<-exp(x[3])
-#'   likelihood0(param = xuse, y=y, parseparam = parseparam0, procfun = procfun0,
-#'               detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse_edm), N = N)
+#'   likelihood0(param = x, y=y, parseparam = parseparam0, procfun = procfun0,
+#'               detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse), N = N)
 #' }
 #'
 #' bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior_edm)
 #'
 #' #run MCMC optimization
 #' out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
-#'                          settings = list(iterations=niter, consoleUpdates=20))
+#'               settings = list(iterations=niter, consoleUpdates=20))
 #' out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
-#'                          settings = list(iterations=niter, consoleUpdates=20))
+#'               settings = list(iterations=niter, consoleUpdates=20))
 #'
-#' #plot results, with a 200-step burn-in
+#' #plot results, with a 1000-step burn-in
 #' plot(out_detfun0, start = 1000, thin = 2)
 #' plot(out_EDM, start = 1000, thin = 2)
 #'
@@ -182,8 +177,6 @@
 #' abline(v=exp(pars_true$obs), col=2)
 #' hist(exp(smp_EDM[,2]), main="EDM function", xlab="proc", breaks = 20)
 #' abline(v=sd_abs, col=2)
-#'
-#' hist(exp(smp_EDM[,2]), main="EDM function", xlab="theta", breaks = 20)
 #'
 #' ## compare total EDM coefficient prediction error to total model error
 #' s_full<-s_map(y, E=Euse, theta=tuse, silent = TRUE)

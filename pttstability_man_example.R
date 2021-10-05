@@ -6,7 +6,6 @@
 ## Load functions:
 #setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/pttstability/")
 require(BayesianTools)
-require(mvtnorm)
 require(rEDM)
 source("R/bayesfun.R")
 source("R/fake_data.R")
@@ -82,8 +81,8 @@ cor(datout$true, filterout_edm$Nest)^2 #EDM filter
 minvUSE<-c(-4, -4) #minimum interval for obs and proc
 maxvUSE<-c(0, 0) #maximum interval for obs and proc
 
-minvUSE_edm<-c(-4, -4, -5) #minimum interval for obs, proc, and theta
-maxvUSE_edm<-c(0, 0, 2) #maximum interval for obs, proc, and theta
+minvUSE_edm<-c(-4, -4) #minimum interval for obs and proc
+maxvUSE_edm<-c(0, 0) #maximum interval for obs and proc
 
 #density, sampler, and prior functions for deterministic function
 density_fun_USE<-function(param) density_fun0(param = param, minv = minvUSE, maxv=maxvUSE)
@@ -107,10 +106,8 @@ bayesianSetup_detfun0 <- createBayesianSetup(likelihood = likelihood_detfun0, pr
 
 #likelihood and bayesian set-ups for EDM functions
 likelihood_EDM<-function(x) {
-  xuse<-x[1:2]
-  tuse_edm<-exp(x[3])
-  likelihood0(param = xuse, y=y, parseparam = parseparam0, procfun = procfun0,
-              detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse_edm), N = N)
+  likelihood0(param = x, y=y, parseparam = parseparam0, procfun = procfun0,
+              detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse), N = N)
 }
 
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior_edm)
@@ -119,7 +116,7 @@ bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = pr
 out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=20))
 out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=20))
 
-#plot results, with a 200-step burn-in
+#plot results, with a 1000-step burn-in
 plot(out_detfun0, start = 1000, thin = 2)
 plot(out_EDM, start = 1000, thin = 2)
 
@@ -133,8 +130,6 @@ hist(exp(smp_detfun0[,2]), main="det. function", xlab="proc", breaks = 20); abli
 
 hist(exp(smp_EDM[,1]), main="EDM function", xlab="obs", breaks = 20); abline(v=exp(pars_true$obs), col=2)
 hist(exp(smp_EDM[,2]), main="EDM function", xlab="proc", breaks = 20); abline(v=sd_abs, col=2)
-
-hist(exp(smp_EDM[,2]), main="EDM function", xlab="theta", breaks = 20)
 
 ## compare total EDM coefficient prediction error to total model error
 s_full<-s_map(y, E=Euse, theta=tuse, silent = TRUE)
