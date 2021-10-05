@@ -14,6 +14,40 @@ detfun0<-function(sdet, xt, time=NULL, ...) {
   return(xt)
 }
 
+#' deterministic function with time-varying carrying capacity
+#'
+#' Simulates deterministic component of Ricker model, of the form xt+1 = xt exp(exp(sdet[1])*(1-xt/K))
+#' where K varies with time as (sin(time/2)+exp(sdet[2])+0.5)*(2/3). Function is calibrated such that
+#' for exp(sdet[2]) = 1, mean(K) = 1.
+#' @param sdet a numeric vector of length two, specifying growth rate and carrying capacity
+#' @param xt a number or numeric vector of abundances at time t
+#' @param time the timestep - defaults to NULL (i.e. not used)
+#' @param ... additional arguments, for compatability with other usages of the function - values are not used in this implementation
+#' @keywords deterministic discrete-time time-series
+#' @return a number or numeric vector of length xt, with predicted abundances at time t+1
+#' @export
+#'
+detfun0_sin<-function(sdet, xt, time=NULL, ...) {
+  K<-(sin(time/2)+exp(sdet[2])+0.5)*(2/3)
+  xt = xt*exp(exp(sdet[1])*(1-xt/K))
+  return(xt)
+}
+
+#' calculate estimated total variance
+#'
+#' Function for estimating stochastic variation in linar process x as a function of relative growth rate and disturbance regime standard deviation.
+#' @param sd_proc standard deviation of the (Gaussian) disturbance process
+#' @param rgr relative growth rate of the linear process
+#' @param waiting_time average waiting time between (random exponentially distributed through time) disturbance events
+#' @keywords stochastic linear system
+#' @return standard deviation of stochastic variability in x
+#' @export
+#'
+#'
+sdproc_abstract<-function(sd_proc, rgr, waiting_time = 1) {
+  sqrt((sd_proc^2/waiting_time)/(2*rgr))
+}
+
 #' REDM deterministic function
 #'
 #' Estimates future states of xt based on based behaviour

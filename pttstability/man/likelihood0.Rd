@@ -11,6 +11,8 @@ likelihood0(
   N = 1000,
   detfun = detfun0,
   edmdat = NULL,
+  obsfun = obsfun0,
+  procfun = procfun0,
   neff = FALSE,
   lowerbound = (-999)
 )
@@ -29,6 +31,10 @@ Returns estimated abundances at time t+1 based on deterministic function (either
 
 \item{edmdat}{A list including arguments to be passed to block_lnlp from rEDM package - see block_lnlp help file for details.
 Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.}
+
+\item{obsfun}{The observation error function to be used: defaults to obsfun0}
+
+\item{procfun}{The process noise function to be used: defaults to procfun0}
 
 \item{neff}{Should effective sample size be used to scale likelihood? Defaults to FALSE. TRUE uses automatic sample size, based on correlations in y. Otherwise, can be any positive number.}
 
