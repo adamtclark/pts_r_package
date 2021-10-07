@@ -145,16 +145,16 @@ for(iclu in 1:nrep) {
 
   #based on detful0
   filterout_det<-particleFilterLL(y, pars=parseparam0(parsest_det[,1]), detfun = detfun0_sin,
-                                  dotraceback = TRUE, fulltraceback = TRUE)
+                                  dotraceback = TRUE)
   #based on EDM
   filterout_edm<-particleFilterLL(y, pars=parseparam0(parsest_edm[,1]), detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse, ytot=y),
-                                  dotraceback = TRUE, fulltraceback = TRUE)
+                                  dotraceback = TRUE)
   #based on true values
   filterout_true<-particleFilterLL(y, pars=parseparam0(ptrue_abs), detfun = detfun0_sin,
-                                  dotraceback = TRUE, fulltraceback = TRUE)
+                                  dotraceback = TRUE)
   #based on EDM, with correct values
   filterout_edm_true<-particleFilterLL(y, pars=parseparam0(ptrue_abs), detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse, ytot=y),
-                                  dotraceback = TRUE, fulltraceback = TRUE)
+                                  dotraceback = TRUE)
 
   ## save outputs
   parslst<-list(ptrue=ptrue,

@@ -42,6 +42,9 @@ maxvUSE_edm<-unlist(lapply(p0_edm, function(x) x[2]))
 flst<-dir("datout")
 flst<-flst[grep("211005", flst)]
 flst<-flst[grep("rda", flst)]
+if(length(grep("summarydat", flst))>0) {
+  flst<-flst[-grep("summarydat", flst)]
+}
 
 zero_cutoff = 1e-3
 
