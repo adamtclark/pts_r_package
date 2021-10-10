@@ -98,7 +98,10 @@ summarydat<-data.frame(summed_obs_error=NA,
                        pm_actual=NA,
                        pmdet_analy=NA,
                        pmedm_analy=NA,
-                       pmtrue_analy=NA)
+                       pmtrue_analy=NA,
+                       pmdet_analy_noproc=NA,
+                       pmedm_analy_noproc=NA,
+                       pmtrue_analy_noproc=NA)
 
 
 for(ifl in 1:length(flst)) {
@@ -232,25 +235,19 @@ for(ifl in 1:length(flst)) {
   summarydat$Euse[ifl]<-Euse
   summarydat$tuse[ifl]<-tuse
 
+  pfout1_opt<-particleFilterLL(y, pars=parseparam0(parslst$parsest_det[,1]), detfun = detfun0_sin,
+                                  dotraceback = TRUE, fulltraceback = TRUE)
+  pfout2_opt<-particleFilterLL(y, pars=parseparam0(parslst$parsest_edm[,1]), detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse, ytot=y),
+                                  dotraceback = TRUE, fulltraceback = TRUE)
 
-  #extinction and colonization rates
-  #if(FALSE) {
-    #based pfout1_opt detful0
-    pfout1_opt<-particleFilterLL(y, pars=parseparam0(parslst$parsest_det[,1]), detfun = detfun0_sin,
-                                    dotraceback = TRUE, fulltraceback = TRUE)
-    #based on EDM
-    pfout2_opt<-particleFilterLL(y, pars=parseparam0(parslst$parsest_edm[,1]), detfun = EDMfun0, edmdat = list(E=Euse, theta=tuse, ytot=y),
-                                    dotraceback = TRUE, fulltraceback = TRUE)
-  #}
+  prtout_det<-indexsort(pfout1_opt$fulltracemat, pfout1_opt$fulltraceindex, nsmp=N)
+  prtout_edm<-indexsort(pfout2_opt$fulltracemat, pfout2_opt$fulltraceindex, nsmp=N)
 
-  prtout_det<-indexsort(pfout1_opt$fulltracemat, pfout1_opt$fulltraceindex, nsmp=1)
-  prtout_edm<-indexsort(pfout2_opt$fulltracemat, pfout2_opt$fulltraceindex, nsmp=1)
+  prtout_det_noproc<-indexsort(pfout1_opt$fulltracemat_noproc, pfout1_opt$fulltraceindex, nsmp=N)
+  prtout_edm_noproc<-indexsort(pfout2_opt$fulltracemat_noproc, pfout2_opt$fulltraceindex, nsmp=N)
 
-  prtout_det_noproc<-indexsort(pfout1_opt$fulltracemat_noproc, pfout1_opt$fulltraceindex, nsmp=1)
-  prtout_edm_noproc<-indexsort(pfout2_opt$fulltracemat_noproc, pfout2_opt$fulltraceindex, nsmp=1)
-
-  cmdet<-getcm(prtout_det)
-  cmedm<-getcm(prtout_edm)
+  cmdet<-getcm(prtout_det[,1])
+  cmedm<-getcm(prtout_edm[,1])
   cmtrue<-getcm(datout$true)
   cmobs<-getcm(datout$obs[1:nobs])
 
@@ -267,17 +264,40 @@ for(ifl in 1:length(flst)) {
   summarydat$pc_actual[ifl]<-ilogit(pars0$pcol[1])
   summarydat$pm_actual[ifl]<-sum(datout$noproc>0 & datout$true==0)/sum(datout$noproc>0)
 
-  xt<-datout$true[1:nobs]#datout$noproc[1:nobs]
+  # analytic mortality rates
+  xt<-datout$true[1:nobs]
   std<-parslst$sd_abs
   summarydat$pmtrue_analy[ifl]<-sum(pnorm(0, xt[xt>zero_cutoff], std))/sum(xt>zero_cutoff)
 
-  xtdet<-prtout_det#prtout_det_noproc
-  stddet<-exp(parslst$parsest_det[2,1])
-  summarydat$pmdet_analy[ifl]<-sum(pnorm(0, xtdet[!is.na(xtdet) & xtdet>zero_cutoff], stddet))/sum(!is.na(xtdet) & xtdet>zero_cutoff)
+  smp_det<-getSample(optdat$optout_det, start=1000)
+  smp_EDM<-getSample(optdat$optout_edm, start=1000)
 
-  xtedm<-prtout_edm#prtout_edm_noproc
-  stdedm<-exp(parslst$parsest_edm[2,1])
-  summarydat$pmedm_analy[ifl]<-sum(pnorm(0, xtedm[!is.na(xtedm) & xtedm>zero_cutoff], stdedm))/sum(!is.na(xtedm) & xtedm>zero_cutoff)
+  stdtmp=exp(sample(smp_det[,2], N))
+  xtdet=prtout_det
+  ps = !is.na(xtdet) & xtdet>zero_cutoff
+  summarydat$pmdet_analy[ifl]<-sum(pnorm(0, xtdet[ps], rep(stdtmp, each=nobs)[ps]))/sum(ps)
+
+  stdtmp=exp(sample(smp_EDM[,2], N))
+  xtdet=prtout_edm
+  ps = !is.na(xtdet) & xtdet>zero_cutoff
+  summarydat$pmedm_analy[ifl]<-sum(pnorm(0, xtdet[ps], rep(stdtmp, each=nobs)[ps]))/sum(ps)
+
+  # analytic mortality rates, no process noise
+  xt<-datout$noproc[1:nobs]
+  std<-parslst$sd_abs
+  summarydat$pmtrue_analy_noproc[ifl]<-sum(pnorm(0, xt[xt>zero_cutoff], std))/sum(xt>zero_cutoff)
+
+  stdtmp=exp(sample(smp_det[,2], N))
+  xtdet=prtout_det_noproc
+  ps = !is.na(xtdet) & xtdet>zero_cutoff
+  summarydat$pmdet_analy_noproc[ifl]<-sum(pnorm(0, xtdet[ps], rep(stdtmp, each=nobs)[ps]))/sum(ps)
+
+  stdtmp=exp(sample(smp_EDM[,2], N))
+  xtdet=prtout_edm_noproc
+  ps = !is.na(xtdet) & xtdet>zero_cutoff
+  summarydat$pmedm_analy_noproc[ifl]<-sum(pnorm(0, xtdet[ps], rep(stdtmp, each=nobs)[ps]))/sum(ps)
+
+
 
   if(ifl/100 == floor(ifl/100)) {
     print(round(ifl/length(flst),2))

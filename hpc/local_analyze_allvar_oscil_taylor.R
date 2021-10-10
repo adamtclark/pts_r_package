@@ -146,7 +146,7 @@ pf<-function(x,y,...) {
 
     ps<-is.finite(x)&is.finite(y)
     mod<-loess.sd(x = x[ps], y = y[ps], nsigma = 1)
-    polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), col = adjustcolor(1, alpha.f = 0.2), border = NA)
+    polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), col = adjustcolor(1, alpha.f = 0.2), adjustcolor(1,alpha.f = 0.5))
 }
 
 pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0,wts1=NULL,wts2=NULL,x3=NULL,wts3=NULL,vline=NULL,...) {
@@ -200,13 +200,13 @@ pf2<-function(x1,x2,y,category,labels=NULL,rngx=NULL,rngy=NULL,mnlst=NULL,ladj=0
     lines(mod1$x, mod1$y, lwd=1.5, col="dodgerblue")
     lines(mod2$x, mod2$y, lwd=1.5, col="firebrick")
 
-    polygon(c(mod1$x, rev(mod1$x)), c(mod1$lower, rev(mod1$upper)), col = adjustcolor("dodgerblue", alpha.f = 0.5), border = NA)
-    polygon(c(mod2$x, rev(mod2$x)), c(mod2$lower, rev(mod2$upper)), col = adjustcolor("firebrick", alpha.f = 0.5), border = NA)
+    polygon(c(mod1$x, rev(mod1$x)), c(mod1$lower, rev(mod1$upper)), col = adjustcolor("dodgerblue", alpha.f = 0.5), adjustcolor(1,alpha.f = 0.5))
+    polygon(c(mod2$x, rev(mod2$x)), c(mod2$lower, rev(mod2$upper)), col = adjustcolor("firebrick", alpha.f = 0.5), adjustcolor(1,alpha.f = 0.5))
 
     if(!is.null(x3)) {
       mod3<-loess.sd(x = x3subs[is.finite(x3subs)], y = ysubs[is.finite(x3subs)], nsigma = 1, weights = 1/wts3[psl][is.finite(x3subs)], enp.target=4)
       lines(mod3$x, mod3$y, lwd=1.5, col="gold")
-      polygon(c(mod3$x, rev(mod3$x)), c(mod3$lower, rev(mod3$upper)), col = adjustcolor("gold", alpha.f = 0.5), border = NA)
+      polygon(c(mod3$x, rev(mod3$x)), c(mod3$lower, rev(mod3$upper)), col = adjustcolor("gold", alpha.f = 0.5), adjustcolor(1,alpha.f = 0.5))
     }
 
     if(!is.null(vline)) {
@@ -223,438 +223,191 @@ pf3<-function(x,y,minv=-Inf,span=0.75,...) {
   mod<-loess.sd(x = x[ps], y = y[ps], nsigma = 1, span=span)
 
   points(x,y,...)
-  polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), border = NA, ...)
+  polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), adjustcolor(1,alpha.f = 0.5), ...)
 }
 
+plot_log = function(x,y,minv = 1e-3, axsq = c(0, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5), span=0.75, nobs = 150, vline = TRUE, ...) {
+  x[x<minv] = minv
+  y[y<minv] = minv
 
+  plot(log(x), log(y), axes = FALSE, pch=16, cex=0.8,...)
 
+  axsq[axsq==0] = minv
+  axlbs = as.character(axsq)
+  axlbs[axlbs==as.character(minv)] = paste("<",minv,sep="")
+
+  axis(1, at = log(axsq), labels = axlbs)
+  axis(2, at = log(axsq), labels = axlbs)
+  abline(v=log(minv), h=log(minv), lty=3)
+  box()
+
+  ps<-is.finite(x)&is.finite(y)&x>minv
+  mod<-loess.sd(x = log(x[ps]), y = log(y[ps]), nsigma = 1, span=span)
+
+  polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), adjustcolor(1,alpha.f = 0.5), ...)
+  if(vline)
+    abline(v=log(1/nobs),lty=2)
+}
+
+plot_lin = function(x,y,minv = 0, axsq = c(0, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5), span=0.75, nobs = 150, vline = TRUE, linmod = FALSE, ...) {
+  x[x<minv] = minv
+  y[y<minv] = minv
+
+  plot((x), (y), axes = FALSE, pch=16, cex=0.8,...)
+
+  axsq[axsq==0] = minv
+  axlbs = as.character(axsq)
+  axlbs[axlbs==as.character(minv)] = paste("<",minv,sep="")
+
+  axis(1, at = (axsq), labels = axlbs)
+  axis(2, at = (axsq), labels = axlbs)
+  abline(v=(minv), h=(minv), lty=3)
+  box()
+
+  ps<-is.finite(x)&is.finite(y)&x>minv
+  if(linmod) {
+    ym = y[ps]; xm = x[ps]
+    mod<-lm(ym ~ xm)
+    xsq = seq(min(xm), max(xm), length=100)
+    pred = predict(mod, newdata=data.frame(xm = xsq), interval = "prediction")
+
+    polygon(c(xsq, rev(xsq)), c(pred[,"lwr"], rev(pred[,"upr"])), adjustcolor(1,alpha.f = 0.5), ...)
+  } else {
+    mod<-loess.sd(x = (x[ps]), y = (y[ps]), nsigma = 1, span=span)
+    polygon(c(mod$x, rev(mod$x)), c(mod$lower, rev(mod$upper)), adjustcolor(1,alpha.f = 0.5), ...)
+  }
+
+  if(vline)
+    abline(v=(1/nobs),lty=2)
+}
 
 #total fit
-pdf("plotout/local_analyze_allvar_oscil_taylor_211005_totfit.pdf", width=4, height=5, colormodel = "cmyk", useDingbats = FALSE)
+pdf("plotout/totfit.pdf", width=4, height=5, colormodel = "cmyk", useDingbats = FALSE)
   par(mfrow=c(2,1), mar=c(2,2,1,1), oma=c(2,2,0,0))
   ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
 
   plot(range(summarydat$obs0[ps]), c(0, 1), type="n", xlab="", ylab="")
-  pf3(summarydat$obs0[ps], summarydat$cor0[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$obs0[ps], summarydat$cor_det[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$obs0[ps], summarydat$cor_edm[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$obs0[ps], summarydat$cor0[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.8)
+  pf3(summarydat$obs0[ps], summarydat$cor_det[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
+  pf3(summarydat$obs0[ps], summarydat$cor_edm[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
   abline(h=c(0,1), v=c(0), lty=3)
   mtext(expression(paste("Pearson Correlation, ", rho)), 2, line=2.8)
   title("a.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 
   plot(range(summarydat$obs0[ps]), c(0, 1), type="n", xlab="", ylab="")
-  pf3(summarydat$obs0[ps], (1-summarydat$rmse0/summarydat$proc_true_mu)[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$obs0[ps], (1-summarydat$rmse_det/summarydat$proc_true_mu)[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$obs0[ps], (1-summarydat$rmse_edm/summarydat$proc_true_mu)[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$obs0[ps], (1-summarydat$rmse0/summarydat$proc_true_mu)[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.8)
+  pf3(summarydat$obs0[ps], (1-summarydat$rmse_det/summarydat$proc_true_mu)[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
+  pf3(summarydat$obs0[ps], (1-summarydat$rmse_edm/summarydat$proc_true_mu)[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
   abline(h=c(0,1), v=c(0), lty=3)
   mtext(expression(paste("Coefficient of Efficiency, ", E[2])), 2, line=2.8)
   title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 
-  mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
+  mtext(expression(paste("Observation Error, ", sigma[italic(O)])), 1, line=2.8)
 dev.off()
 
 #obs error and proc noise
-pdf("plotout/local_analyze_allvar_oscil_taylor_211005_totfit.pdf", width=4, height=5, colormodel = "cmyk", useDingbats = FALSE)
-  par(mfrow=c(2,1), mar=c(2,2,1,1), oma=c(2,2,0,0))
-  ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
+pdf("plotout/obsproc.pdf", width=4, height=7.5, colormodel = "cmyk", useDingbats = FALSE)
+  par(mfrow=c(3,1), mar=c(4,2,1,1), oma=c(0,3,0,0))
 
+  ps = which(!is.na(summarydat$gelmandet) & summarydat$gelmandet<1.1)
   rng = range(c(summarydat$obs0[ps], summarydat$det_obs_mu0[ps], summarydat$edm_obs_mu0[ps]))
   plot(rng, rng, type="n", xlab="", ylab="")
-  pf3(summarydat$det_obs_mu0[ps], summarydat$obs0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$edm_obs_mu0[ps], summarydat$obs0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
+  pf3(summarydat$det_obs_mu0[ps], summarydat$obs0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
+  ps = which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1)
+  pf3(summarydat$edm_obs_mu0[ps], summarydat$obs0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
   abline(h=c(0,1), v=c(0), lty=3)
   abline(a=0, b=1, lty=2)
-  mtext(expression(paste("Observation Error, ", paste(sigma[O]))), 2, line=2.8)
+  mtext(expression(paste("True Obs. Error, ", sigma[italic(O)])), 2, line=2.8)
+  title("a.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+  mtext(expression(paste("Estimated Obs. Error, ", hat(sigma)[italic(O)])), 1, line=2.8)
+
+  ps<-which(!is.na(summarydat$gelmandet) & summarydat$gelmandet<1.1 & summarydat$obs0<0.1)
+  rng = c(0, 0.8)#range(c(summarydat$proc0[ps], summarydat$det_proc_mu0[ps], summarydat$edm_proc_mu0[ps]))
+  plot(rng, rng, type="n", xlab="", ylab="")
+  pf3(summarydat$det_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
+  ps<-which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0<0.1)
+  pf3(summarydat$edm_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
+
+  abline(h=c(0,1), v=c(0), lty=3)
+  abline(a=0, b=1, lty=2)
+  mtext(expression(paste("True Proc. Noise, ", sigma[italic(P)], " = ", sigma^2,italic(lambda),"/",2,italic(r))), 2, line=0.8, adj = 0.33, outer = TRUE)
+  title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+  mtext(expression(paste("Estimated Proc. Noise, ", hat(sigma)[italic(P)])), 1, line=2.8)
+  text(rng[1]+diff(rng)*0.15, rng[2]*.92, expression(paste(sigma[italic(O)], " < 0.1")), cex=1.2)
+
+  ps<-which(!is.na(summarydat$gelmandet) & summarydat$gelmandet<1.1 & summarydat$obs0>0.1)
+  #rng = range(c(summarydat$proc0[ps], summarydat$det_proc_mu0[ps], summarydat$edm_proc_mu0[ps]))
+  plot(rng, rng, type="n", xlab="", ylab="")
+  pf3(summarydat$det_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
+  ps<-which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0>0.1)
+  pf3(summarydat$edm_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
+  abline(h=c(0,1), v=c(0), lty=3)
+  abline(a=0, b=1, lty=2)
+  #mtext(expression(paste("True Proc. Noise, ", sigma[italic(P)])), 2, line=2.8)
+  title("c.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+
+  mtext(expression(paste("Estimated Proc. Noise, ", hat(sigma)[italic(P)])), 1, line=2.8)
+  text(rng[1]+diff(rng)*0.15, rng[2]*.92, expression(paste(sigma[italic(O)], " > 0.1")), cex=1.2)
+dev.off()
+
+
+
+
+#mortality rate
+pdf("plotout/mort.pdf", width=5, height=6.5, colormodel = "cmyk", useDingbats = FALSE)
+  rng = c(log(0.001), log(0.5))
+  par(mfcol=c(3,2), mar=c(2.2,2,1,1), oma=c(3,3.5,2,0))
+  ps = which(!is.na(summarydat$gelmandet) & summarydat$gelmandet<1.1 & summarydat$obs0<0.1)
+  plot_log(summarydat$pmdet_analy_noproc[ps], summarydat$pm_actual[ps],
+           xlab = "det est", ylab = "true", col=adjustcolor("dodgerblue", alpha.f = 0.5),
+           xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
+  mtext(expression(paste(sigma[italic(O)], " > 0.1")), 3, line=0.8)
   title("a.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 
-
-  ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1 &
-    summarydat$obs0<0.1
-  rng = range(c(summarydat$proc0[ps], summarydat$det_proc_mu0[ps], summarydat$edm_proc_mu0[ps]))
-  plot(rng, rng, type="n", xlab="", ylab="")
-  pf3(summarydat$det_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$edm_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
-  abline(h=c(0,1), v=c(0), lty=3)
-  abline(a=0, b=1, lty=2)
-  mtext(expression(paste("Process Noise, ", sigma[P])), 2, line=2.8)
+  ps = which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0<0.1)
+  plot_log(summarydat$pmedm_analy_noproc[ps], summarydat$pm_actual[ps], xlab = "edm est", ylab = "true", col=adjustcolor("firebrick", alpha.f = 0.5),
+           xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
   title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 
-  mtext(expression(paste("Estimated Value")), 1, line=2.8)
+  ps = which(summarydat$obs0<0.1)
+  plot_log(summarydat$pmobs[ps], summarydat$pm_actual[ps], xlab = "obs est", ylab = "true", col=adjustcolor("gold", alpha.f = 0.5),
+           xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
+  title("c.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 
-  ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1 &
-    summarydat$obs0>0.1
-  rng = range(c(summarydat$proc0[ps], summarydat$det_proc_mu0[ps], summarydat$edm_proc_mu0[ps]))
-  plot(rng, rng, type="n", xlab="", ylab="")
-  pf3(summarydat$det_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5)
-  pf3(summarydat$edm_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5)
-  abline(h=c(0,1), v=c(0), lty=3)
-  abline(a=0, b=1, lty=2)
-  mtext(expression(paste("Process Noise, ", sigma[P])), 2, line=2.8)
+  ps = which(!is.na(summarydat$gelmandet) & summarydat$gelmandet<1.1 & summarydat$obs0>0.1)
+  plot_log(summarydat$pmdet_analy_noproc[ps], summarydat$pm_actual[ps], xlab = "det est", ylab = "true", col=adjustcolor("dodgerblue", alpha.f = 0.5),
+           xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
+  mtext(expression(paste(sigma[italic(O)], " > 0.1")), 3, line=0.8)
+  title("d.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+
+  ps = which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0>0.1)
+  plot_log(summarydat$pmedm_analy_noproc[ps], summarydat$pm_actual[ps], xlab = "edm est", ylab = "true", col=adjustcolor("firebrick", alpha.f = 0.5),
+           xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
+  title("e.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+
+  ps = which(summarydat$obs0>0.1)
+  plot_log(summarydat$pmobs[ps], summarydat$pm_actual[ps], xlab = "obs est", ylab = "true", col=adjustcolor("gold", alpha.f = 0.5),
+           xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
+  title("f.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
+
+  mtext(expression(paste("Estimated Mortality Probability, ", hat("Pr")[mor])), 1, line=1.5, outer = TRUE)
+  mtext(expression(paste("True Mortality Probability, ", "Pr"[mor])), 2, line=1.5, outer = TRUE)
+dev.off()
+
+
+
+
+# total variance and biase
+pdf("plotout/totvar.pdf", width=4, height=3.5, colormodel = "cmyk", useDingbats = FALSE)
+  par(mfcol=c(1,1),mar=c(4,4,2,2))
+  plot_lin((summarydat$edm_var^2-summarydat$obs0^2)[ps], (summarydat$edm_proc_mu0^2)[ps],
+           xlim=c(0,0.55), ylim=c(0,0.55),
+           axsq = c(seq(0,1,by=0.05)), minv = -1,
+           xlab = "", ylab = "", col=adjustcolor("firebrick", alpha.f = 0.5),
+           vline = FALSE); abline(a=0, b=1, lty=2)
+  mtext(expression(paste("Est. Proc. Noise, ", hat(sigma)[italic(P)["EDM"]]^2)), 2, line=2)
+  mtext(expression(paste("Resudual EDM Error, ", epsilon["EDM"]^2-sigma[italic(O)]^2)), 1, line=2.8)
   title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
-
-  mtext(expression(paste("Estimated Value")), 1, line=2.8)
 dev.off()
 
 
-#mortality rates (break apart by observation error)
-#note: must account for re-colonization
-ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1 &
-  summarydat$obs0<0.1
-rng = range(c(summarydat$pm_actual[ps], summarydat$pmdet_analy[ps], summarydat$pmedm_analy[ps]))+1e-3
-plot(rng, rng, type="n", xlab="", ylab="", log="xy")
-pf3(summarydat$pmobs[ps], summarydat$pm_actual[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.5, span = 2)
-pf3(summarydat$pmdet_analy[ps], summarydat$pm_actual[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5, span = 0.75)
-pf3(summarydat$pmedm_analy[ps], summarydat$pm_actual[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5, span = 0.75)
-abline(h=c(0,1), v=c(0), lty=3)
-abline(a=0, b=1, lty=2)
-mtext(expression(paste("Mortality Rate", m)), 2, line=2.8)
-title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
-
-mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
-
-
-ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1 &
-  summarydat$obs0>0.1
-rng = range(c(summarydat$pm_actual[ps], summarydat$pmdet_analy[ps], summarydat$pmedm_analy[ps]))+1e-3
-plot(rng, rng, type="n", xlab="", ylab="", log="xy")
-pf3(summarydat$pmobs[ps], summarydat$pm_actual[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.5, span = 2)
-pf3(summarydat$pmdet_analy[ps], summarydat$pm_actual[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.5, span = 0.75)
-pf3(summarydat$pmedm_analy[ps], summarydat$pm_actual[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.5, span = 0.75)
-abline(h=c(0,1), v=c(0), lty=3)
-abline(a=0, b=1, lty=2)
-mtext(expression(paste("Mortality Rate", m)), 2, line=2.8)
-title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
-
-mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
-
-
-
-
-# add in case for low mortality rates
-
-
-
-
-# error in process error term
-ps<-!is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
-p0_error = summarydat$edm_proc_mu0[ps]^2-summarydat$proc0[ps]^2
-edm_error = (summarydat$edm_var[ps]^2)-(summarydat$summed_obs_error[ps]^2+summarydat$summed_proc_error[ps]^2)
-
-
-plot(edm_error, p0_error)
-abline(a=0, b=1, lty=3)
-
-
-# total variability in true values is still correct
-plot(summarydat$proc_edm_mu, summarydat$proc_true_mu); abline(a=0, b=1, lty=2)
-coplot(summarydat$proc_true_mu~summarydat$proc_edm_mu|summarydat$edm_obs_mu0)
-
-
-
-
-
-
-
-
-
-#Make plots
-summarydat$lvl<-1
-ctlvlslin<-(c(0, 0.15, 0.3, 0.7))
-ctlvlslin2<-(c(0, 0.3, 0.7))
-ctlvls<-lf(c(1e-6, 0.15, 0.3, 0.7))
-
-### obs
-psg = !is.na(summarydat$gelmandet) & summarydat$gelmandet<=1.1
-rhokern_obs0_det<-rhokernel(x=summarydat[psg,]$det_obs_mu0,
-         y=summarydat[psg,]$obs0,
-         byvar=summarydat[psg,]$summed_proc_error,
-         nsteps = 20)
-psg = !is.na(summarydat$gelmanedm) & summarydat$gelmanedm<=1.1
-rhokern_obs0_edm<-rhokernel(x=summarydat[psg,]$edm_obs_mu0,
-         y=summarydat[psg,]$obs0,
-         byvar=summarydat[psg,]$summed_proc_error,
-         nsteps = 20)
-
-pdf("plotout/local_analyze_allvar_oscil_taylor_211005_obs0.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
-  m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
-  layout(m)
-  par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.06, 0.6), ylim=c(-1,1.05), xlab="", ylab="", type="n")
-  mtext(expression(paste("Goodness of Fit, ", italic(beta)[obs])), 2, line=2.5)
-  mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 1, line=2.8)
-
-  polygon(c(rhokern_obs0_det$bylst, rev(rhokern_obs0_det$bylst)),
-          c(rhokern_obs0_det$rhoout[,1], rev(rhokern_obs0_det$rhoout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_obs0_det$bylst, rhokern_obs0_det$rhoout[,2],
-        col="dodgerblue", lwd=1.5, lty=1)
-  polygon(c(rhokern_obs0_edm$bylst, rev(rhokern_obs0_edm$bylst)),
-          c(rhokern_obs0_edm$rhoout[,1], rev(rhokern_obs0_edm$rhoout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_obs0_edm$bylst, rhokern_obs0_edm$rhoout[,2],
-        col="firebrick", lwd=1.5, lty=1)
-
-  polygon(c(rhokern_obs0_det$bylst, rev(rhokern_obs0_det$bylst)),
-          c(rhokern_obs0_det$eiout[,1], rev(rhokern_obs0_det$eiout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_obs0_det$bylst, rhokern_obs0_det$eiout[,2],
-        col="dodgerblue", lwd=1.5, lty=2)
-  polygon(c(rhokern_obs0_edm$bylst, rev(rhokern_obs0_edm$bylst)),
-          c(rhokern_obs0_edm$eiout[,1], rev(rhokern_obs0_edm$eiout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_obs0_edm$bylst, rhokern_obs0_edm$eiout[,2],
-        col="firebrick", lwd=1.5, lty=2)
-
-  legend(0.228, -0.5,
-         c("Analytical Function","EDM Estimate",
-           expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[2]))),
-         fill = c("dodgerblue", "firebrick", NA, NA), border = c(1, 1, NA, NA),
-         lty=c(NA, NA, 1:2), lwd=c(NA, NA, 1.5,1.5), col=c(NA, NA, 1,1), bty="n")
-
-  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-
-  abline(h=0, lty=2)
-  abline(h=c(-1,1), lty=3)
-
-
-  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
-  pf2(x1 = (summarydat$det_obs_mu0[ps]),
-      x2 = (summarydat$edm_obs_mu0[ps]),
-      y = (summarydat$obs0[ps]),
-      wts1=(summarydat$det_obs_qt0.3[ps]-summarydat$det_obs_qt0.2[ps]),
-      wts2=(summarydat$edm_obs_qt0.3[ps]-summarydat$edm_obs_qt0.2[ps]),
-      category = cut((summarydat[ps,]$summed_proc_error),ctlvlslin),
-      rngx = (c(0,0.5)), rngy = (c(0,0.5)), ladj = 1,
-      mnlst = c(expression(paste(sigma[italic(P)[tot]] %in% "(0,0.15]")),
-                 expression(paste(sigma[italic(P)[tot]] %in% "(0.15,0.3]")),
-                 expression(paste(sigma[italic(P)[tot]] %in% "(0.3,0.6]"))))
-
-  mtext(expression(paste("True ", italic(beta)[obs])), 2, outer = TRUE, line=-32)
-  mtext(expression(paste("Predicted ", italic(beta)[obs])), 1, line=2.8)
-dev.off()
-
-### proc0
-rhokern_proc0_det<-rhokernel(x=summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu0,
-                            y=summarydat[summarydat$gelmandet<=1.1,]$proc0,
-                            byvar=summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error,
-                            nsteps = 20)
-rhokern_proc0_edm<-rhokernel(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu0,
-                            y=summarydat[summarydat$gelmanedm<=1.1,]$proc0,
-                            byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error,
-                            nsteps = 20)
-
-pdf("plotout/local_analyze_allvar_oscil_taylor_211005_proc0.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
-  m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
-  layout(m)
-  par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.006, 0.6), ylim=c(-1,1.05), xlab="", ylab="", type="n")
-  mtext(expression(paste("Goodness of Fit, ", italic(beta)[proc[0]])), 2, line=2.5)
-  mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
-
-  polygon(c(rhokern_proc0_det$bylst, rev(rhokern_proc0_det$bylst)),
-          c(rhokern_proc0_det$rhoout[,1], rev(rhokern_proc0_det$rhoout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_proc0_det$bylst, rhokern_proc0_det$rhoout[,2],
-        col="dodgerblue", lwd=1.5, lty=1)
-  polygon(c(rhokern_proc0_edm$bylst, rev(rhokern_proc0_edm$bylst)),
-          c(rhokern_proc0_edm$rhoout[,1], rev(rhokern_proc0_edm$rhoout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_proc0_edm$bylst, rhokern_proc0_edm$rhoout[,2],
-        col="firebrick", lwd=1.5, lty=1)
-
-  polygon(c(rhokern_proc0_det$bylst, rev(rhokern_proc0_det$bylst)),
-          c(rhokern_proc0_det$eiout[,1], rev(rhokern_proc0_det$eiout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_proc0_det$bylst, rhokern_proc0_det$eiout[,2],
-        col="dodgerblue", lwd=1.5, lty=2)
-  polygon(c(rhokern_proc0_edm$bylst, rev(rhokern_proc0_edm$bylst)),
-          c(rhokern_proc0_edm$eiout[,1], rev(rhokern_proc0_edm$eiout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_proc0_edm$bylst, rhokern_proc0_edm$eiout[,2],
-        col="firebrick", lwd=1.5, lty=2)
-
-  legend(0, -0.5,
-         c("Analytical Function","EDM Estimate",
-           expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[2]))),
-         fill = c("dodgerblue", "firebrick", NA, NA), border = c(1, 1, NA, NA),
-         lty=c(NA, NA, 1:2), lwd=c(NA, NA, 1.5,1.5), col=c(NA, NA, 1,1), bty="n")
-
-  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-
-  abline(h=0, lty=2)
-  abline(h=c(-1,1), lty=3)
-
-
-  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
-  pf2(x1 = (summarydat$det_proc_mu0[ps]),
-      x2 = (summarydat$edm_proc_mu0[ps]),
-      y = (summarydat$proc0[ps]),
-      wts1=(summarydat$det_proc_qt0.3[ps]-summarydat$det_proc_qt0.2[ps]),
-      wts2=(summarydat$edm_proc_qt0.3[ps]-summarydat$edm_proc_qt0.2[ps]),
-      category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
-      rngx = (c(0,0.5)), rngy = (c(0,0.5)), ladj = 1,
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.15]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.15,0.3]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6]"))))
-
-  mtext(expression(paste("True ", italic(beta)[proc[0]])), 2, outer = TRUE, line=-32)
-  mtext(expression(paste("Predicted ", italic(beta)[proc[0]])), 1, line=2.8)
-dev.off()
-
-
-
-#proc1
-pskp = summarydat$gelmandet<=1.1 & summarydat$gelmanedm<=1.1
-rhokern_proc1_det<-rhokernel_2d(x=summarydat[pskp,]$det_proc_mu1,
-                             y=summarydat[pskp,]$proc1,
-                             byvar=cbind(summarydat[pskp,]$summed_obs_error,
-                                         summarydat[pskp,]$summed_proc_error), nsteps = 20, niter = 1000)
-rhokern_proc1_edm<-rhokernel_2d(x=summarydat[pskp,]$edm_proc_mu1,
-                             y=summarydat[pskp,]$proc1,
-                             byvar=cbind(summarydat[pskp,]$summed_obs_error,
-                                         summarydat[pskp,]$summed_proc_error), nsteps = 20, niter = 1000)
-
-
-pdf("plotout/local_analyze_allvar_oscil_taylor_211005_proc1.pdf", width=7, height=4, colormodel = "cmyk", useDingbats = FALSE)
-  m<-cbind(c(1,1,1,2,2,2), c(1,1,1,2,2,2),
-           c(1,1,1,2,2,2), c(1,1,1,2,2,2),
-           c(3,3,3,4,4,4),c(3,3,3,4,4,4),
-           c(3,3,3,4,4,4),c(3,3,3,4,4,4),
-           c(5,5,5,6,6,6),c(5,5,5,6,6,6),
-           c(5,5,5,6,6,6),c(5,5,5,6,6,6))
-  layout(m)
-  par(mar=c(2,2,2,2), oma=c(2,2,0,0.5))
-
-  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$rhoout[2,,],
-          levels = seq(0, 1, by=0.15), col="firebrick", method="flattest")
-  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$rhoout[2,,],
-          levels = seq(0, 1, by=0.15), method="flattest", col="dodgerblue", add=TRUE)
-  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-  title(expression(paste("Pearson Correlation, ", rho)))
-
-  contour(rhokern_proc1_edm$bylst[,1], rhokern_proc1_edm$bylst[,2], rhokern_proc1_edm$eiout[2,,],
-          levels = seq(-2, 1, by=0.15), lty=2, col="firebrick", method="flattest")
-  contour(rhokern_proc1_det$bylst[,1], rhokern_proc1_det$bylst[,2], rhokern_proc1_det$eiout[2,,],
-          levels = seq(0, 1, by=0.15), lty=2, col="dodgerblue", method="flattest", add=TRUE)
-  title("b.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-  title(expression(paste("Coefficient of Efficiency, ", E[2])))
-
-  mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 2, line=0, outer=TRUE)
-  mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
-
-  par(mar=c(2,2,2,1))
-  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
-  pf2(x1 = (summarydat$det_proc_mu1[ps]),
-      x2 = (summarydat$edm_proc_mu1[ps]),
-      y = (summarydat$proc1[ps]),
-      wts1=(summarydat$det_proc_qt1.3[ps]-summarydat$det_proc_qt1.2[ps]),
-      wts2=(summarydat$edm_proc_qt1.3[ps]-summarydat$edm_proc_qt1.2[ps]),
-      category = paste(cut((summarydat[ps,]$summed_obs_error),ctlvlslin2), cut((summarydat[ps,]$summed_proc_error),ctlvlslin2+c(0,0,0.2))),
-      rngx = (c(0.5,3)), rngy = (c(0.5,3)), ladj = 2,
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.3], ", sigma[italic(P)[tot]] %in% "(0,0.3]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0,0.3], ", sigma[italic(P)[tot]] %in% "(0.3,0.6]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6], ", sigma[italic(P)[tot]] %in% "(0,0.3]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6], ", sigma[italic(P)[tot]] %in% "(0.3,0.6]"))))
-
-  mtext(expression(paste("True ", italic(beta)[proc[1]])), 2, outer = TRUE, line=-17)
-  mtext(expression(paste("Predicted ", italic(beta)[proc[1]])), 1, line=0.9, outer = TRUE, adj = 0.7)
-dev.off()
-
-
-
-
-
-#Analytical times to extinction
-libl<-150
-rhokern_mor_det<-rhokernel(x=lf(summarydat[summarydat$gelmandet<=1.1,]$pmdet_analy),
-                             y=lf(summarydat[summarydat$gelmandet<=1.1,]$pmtrue_analy),
-                             byvar=summarydat[summarydat$gelmandet<=1.1,]$summed_obs_error,
-                             nsteps = 20)
-rhokern_mor_edm<-rhokernel(x=lf(summarydat[summarydat$gelmanedm<=1.1,]$pmedm_analy),
-                           y=lf(summarydat[summarydat$gelmanedm<=1.1,]$pmtrue_analy),
-                           byvar=summarydat[summarydat$gelmanedm<=1.1,]$summed_obs_error,
-                           nsteps = 20)
-rhokern_mor_obs<-rhokernel(x=lf(pmax(summarydat$pmobs, 1/libl)),
-                           y=lf(summarydat$pmtrue_analy),
-                           byvar=summarydat$summed_obs_error,
-                           nsteps = 20)
-
-pdf("plotout/local_analyze_allvar_oscil_taylor_211005_mor.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
-  m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
-  layout(m)
-
-  par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
-  matplot(1,1, xlim=c(0.006, 0.6), ylim=c(-1,1.05), xlab="", ylab="", type="n")
-  mtext(expression(paste("Goodness of Fit, ", Pr[mor])), 2, line=2.5)
-  mtext(expression(paste("Observation Error, ", sigma[italic(O)[italic(tot)]])), 1, line=2.8)
-
-  polygon(c(rhokern_mor_det$bylst, rev(rhokern_mor_det$bylst)),
-          c(rhokern_mor_det$rhoout[,1], rev(rhokern_mor_det$rhoout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_mor_det$bylst, rhokern_mor_det$rhoout[,2],
-        col="dodgerblue", lwd=1.5, lty=1)
-
-  polygon(c(rhokern_mor_edm$bylst, rev(rhokern_mor_edm$bylst)),
-          c(rhokern_mor_edm$rhoout[,1], rev(rhokern_mor_edm$rhoout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_mor_edm$bylst, rhokern_mor_edm$rhoout[,2],
-        col="firebrick", lwd=1.5, lty=1)
-
-  polygon(c(rhokern_mor_obs$bylst, rev(rhokern_mor_obs$bylst)),
-          c(rhokern_mor_obs$rhoout[,1], rev(rhokern_mor_obs$rhoout[,3])),
-          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
-  lines(rhokern_mor_obs$bylst, rhokern_mor_obs$rhoout[,2],
-        col="gold", lwd=1.5, lty=1)
-
-
-  polygon(c(rhokern_mor_det$bylst, rev(rhokern_mor_det$bylst)),
-          c(rhokern_mor_det$eiout[,1], rev(rhokern_mor_det$eiout[,3])),
-          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
-  lines(rhokern_mor_det$bylst, rhokern_mor_det$eiout[,2],
-        col="dodgerblue", lwd=1.5, lty=2)
-
-  polygon(c(rhokern_mor_edm$bylst, rev(rhokern_mor_edm$bylst)),
-          c(rhokern_mor_edm$eiout[,1], rev(rhokern_mor_edm$eiout[,3])),
-          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
-  lines(rhokern_mor_edm$bylst, rhokern_mor_edm$eiout[,2],
-        col="firebrick", lwd=1.5, lty=2)
-
-  polygon(c(rhokern_mor_obs$bylst, rev(rhokern_mor_obs$bylst)),
-          c(rhokern_mor_obs$eiout[,1], rev(rhokern_mor_obs$eiout[,3])),
-          col=adjustcolor("gold", alpha.f = 0.5), border=NA)
-  lines(rhokern_mor_obs$bylst, rhokern_mor_obs$eiout[,2],
-        col="gold", lwd=1.5, lty=2)
-
-  abline(h=0, lty=2)
-  abline(h=c(-1,1), lty=3)
-
-  legend(0.196, -0.5,
-         c("Analytical Function","EDM Estimate", "Raw Observation",
-           expression(paste("Pearson Correlation, ", rho)),
-           expression(paste("Coefficient of Efficiency, ", E[2]))),
-         fill = c("dodgerblue", "firebrick", "gold", NA, NA), border = c(1, 1, 1, NA, NA),
-         lty=c(NA, NA, NA, 1:2), lwd=c(NA, NA, NA, 1.5,1.5), col=c(NA, NA, NA, 1,1), bty="n")
-  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
-
-
-  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
-  pf2(x1 = lf(summarydat$pmdet_analy[ps]),
-      x2 = lf(summarydat$pmedm_analy[ps]),
-      x3 = lf(pmax(summarydat$pmobs[ps], 1/libl)),
-      y = lf(summarydat$pmtrue_analy[ps]),
-      category = cut((summarydat[ps,]$summed_obs_error),ctlvlslin),
-      rngx = (c(-22,-0.5)), rngy = (c(-22,-0.5)), ladj = 1,vline = lf(1/libl),
-      mnlst = c(expression(paste(sigma[italic(O)[tot]] %in% "(0,0.15]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.15,0.3]")),
-                expression(paste(sigma[italic(O)[tot]] %in% "(0.3,0.6]"))))
-
-  mtext(expression(paste("True ", log[10], "(", Pr[mor], ")")), 2, outer = TRUE, line=-32)
-  mtext(expression(paste("Predicted ", log[10], "(", Pr[mor], ")")), 1, line=2.8)
-dev.off()
-
-
-
-#save.image("datout/plotting_save_210109.rda", version = 2)
-#load("datout/plotting_save_210109.rda")
