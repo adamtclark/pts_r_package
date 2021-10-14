@@ -327,6 +327,8 @@ pdf("plotout/obsproc.pdf", width=4, height=7.5, colormodel = "cmyk", useDingbats
   pf3(summarydat$det_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
   ps<-which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0<0.1)
   pf3(summarydat$edm_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
+  ps<-which(summarydat$obs0<0.1)
+  pf3(summarydat$proc0_mu[ps], summarydat$proc0[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.8)
 
   abline(h=c(0,1), v=c(0), lty=3)
   abline(a=0, b=1, lty=2)
@@ -341,6 +343,9 @@ pdf("plotout/obsproc.pdf", width=4, height=7.5, colormodel = "cmyk", useDingbats
   pf3(summarydat$det_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("dodgerblue", alpha.f = 0.5), pch=16, cex=0.8)
   ps<-which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0>0.1)
   pf3(summarydat$edm_proc_mu0[ps], summarydat$proc0[ps], col=adjustcolor("firebrick", alpha.f = 0.5), pch=16, cex=0.8)
+  ps<-which(summarydat$obs0>0.1)
+  pf3(summarydat$proc0_mu[ps], summarydat$proc0[ps], col=adjustcolor("gold", alpha.f = 0.5), pch=16, cex=0.8)
+
   abline(h=c(0,1), v=c(0), lty=3)
   abline(a=0, b=1, lty=2)
   #mtext(expression(paste("True Proc. Noise, ", sigma[italic(P)])), 2, line=2.8)
@@ -349,6 +354,81 @@ pdf("plotout/obsproc.pdf", width=4, height=7.5, colormodel = "cmyk", useDingbats
   mtext(expression(paste("Estimated Proc. Noise, ", hat(sigma)[italic(P)])), 1, line=2.8)
   text(rng[1]+diff(rng)*0.15, rng[2]*.92, expression(paste(sigma[italic(O)], " > 0.1")), cex=1.2)
 dev.off()
+
+
+
+#proc noise by obs error
+rhokern_proc0_det<-rhokernel(x=summarydat[summarydat$gelmandet<=1.1,]$det_proc_mu0,
+                             y=summarydat[summarydat$gelmandet<=1.1,]$proc0,
+                             byvar=summarydat[summarydat$gelmandet<=1.1,]$obs0,
+                             nsteps = 20)
+rhokern_proc0_edm<-rhokernel(x=summarydat[summarydat$gelmanedm<=1.1,]$edm_proc_mu0,
+                             y=summarydat[summarydat$gelmanedm<=1.1,]$proc0,
+                             byvar=summarydat[summarydat$gelmanedm<=1.1,]$obs0,
+                             nsteps = 20)
+pdf("plotout/proc_by_obs.pdf", width=6, height=4, colormodel = "cmyk", useDingbats = FALSE)
+  m<-cbind(c(1,1,1), c(1,1,1), c(2,3,4))
+  layout(m)
+  par(mar=c(2,4,2,1), oma=c(2,0.5,0,0))
+  matplot(1,1, xlim=c(0.006, 0.5), ylim=c(0,1.05), xlab="", ylab="", type="n")
+  mtext(expression(paste("Goodness of Fit, ", sigma[italic(P)])), 2, line=2.5)
+  mtext(expression(paste("Observation Error, ", sigma[italic(O)])), 1, line=2.8)
+
+  polygon(c(rhokern_proc0_det$bylst, rev(rhokern_proc0_det$bylst)),
+          c(rhokern_proc0_det$rhoout[,1], rev(rhokern_proc0_det$rhoout[,3])),
+          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
+  lines(rhokern_proc0_det$bylst, rhokern_proc0_det$rhoout[,2],
+        col="dodgerblue", lwd=1.5, lty=1)
+  polygon(c(rhokern_proc0_edm$bylst, rev(rhokern_proc0_edm$bylst)),
+          c(rhokern_proc0_edm$rhoout[,1], rev(rhokern_proc0_edm$rhoout[,3])),
+          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
+  lines(rhokern_proc0_edm$bylst, rhokern_proc0_edm$rhoout[,2],
+        col="firebrick", lwd=1.5, lty=1)
+
+  polygon(c(rhokern_proc0_det$bylst, rev(rhokern_proc0_det$bylst)),
+          c(rhokern_proc0_det$eiout[,1], rev(rhokern_proc0_det$eiout[,3])),
+          col=adjustcolor("dodgerblue", alpha.f = 0.5), border=NA)
+  lines(rhokern_proc0_det$bylst, rhokern_proc0_det$eiout[,2],
+        col="dodgerblue", lwd=1.5, lty=2)
+  polygon(c(rhokern_proc0_edm$bylst, rev(rhokern_proc0_edm$bylst)),
+          c(rhokern_proc0_edm$eiout[,1], rev(rhokern_proc0_edm$eiout[,3])),
+          col=adjustcolor("firebrick", alpha.f = 0.5), border=NA)
+  lines(rhokern_proc0_edm$bylst, rhokern_proc0_edm$eiout[,2],
+        col="firebrick", lwd=1.5, lty=2)
+
+  legend(0, -0.5,
+         c("Analytical Function","EDM Estimate",
+           expression(paste("Pearson Correlation, ", rho)),
+           expression(paste("Coefficient of Efficiency, ", E[2]))),
+         fill = c("dodgerblue", "firebrick", NA, NA), border = c(1, 1, NA, NA),
+         lty=c(NA, NA, 1:2), lwd=c(NA, NA, 1.5,1.5), col=c(NA, NA, 1,1), bty="n")
+
+  title("a.", line=-1.05, xpd=NA, adj=0.02, cex.main=1.5)
+
+  abline(h=0, lty=2)
+  abline(h=c(-1,1), lty=3)
+
+  ctlvlslin<-(c(0, 0.1, 0.3, 0.5))
+  ps<-summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1
+  pf2(x1 = (summarydat$det_proc_mu0[ps]),
+      x2 = (summarydat$edm_proc_mu0[ps]),
+      y = (summarydat$proc0[ps]),
+      wts1=(summarydat$det_proc_qt0.3[ps]-summarydat$det_proc_qt0.2[ps]),
+      wts2=(summarydat$edm_proc_qt0.3[ps]-summarydat$edm_proc_qt0.2[ps]),
+      category = cut((summarydat[ps,]$obs0),ctlvlslin),
+      rngx = (c(0,0.5)), rngy = (c(0,0.5)), ladj = 1,
+      mnlst = c(expression(paste(sigma[italic(O)] %in% "(0,0.1]")),
+                expression(paste(sigma[italic(O)] %in% "(0.1,0.3]")),
+                expression(paste(sigma[italic(O)] %in% "(0.3,0.5]"))))
+
+  mtext(expression(paste("True ", sigma[italic(P)])), 2, outer = TRUE, line=-32)
+  mtext(expression(paste("Estimated ", sigma[italic(P)])), 1, line=2.8)
+dev.off()
+
+
+
+
+
 
 
 

@@ -46,7 +46,7 @@ if(length(grep("summarydat", flst))>0) {
   flst<-flst[-grep("summarydat", flst)]
 }
 
-zero_cutoff = 1e-3
+zero_cutoff = 0
 
 
 summarydat<-data.frame(summed_obs_error=NA,
