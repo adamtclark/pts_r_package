@@ -487,7 +487,6 @@ pdf("plotout/totvar.pdf", width=4, height=3.5, colormodel = "cmyk", useDingbats 
            vline = FALSE); abline(a=0, b=1, lty=2)
   mtext(expression(paste("Est. Proc. Noise, ", hat(sigma)[italic(P)["EDM"]]^2)), 2, line=2)
   mtext(expression(paste("Resudual EDM Error, ", epsilon["EDM"]^2-sigma[italic(O)]^2)), 1, line=2.8)
-  title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 dev.off()
 
 
