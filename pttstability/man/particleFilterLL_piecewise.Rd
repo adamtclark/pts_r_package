@@ -13,7 +13,9 @@ particleFilterLL_piecewise(
   Euse,
   tuse,
   colpar = c(logit(1e-06), log(0.1)),
-  nsmp = 1
+  nsmp = 1,
+  lowerbound = -999,
+  maxNuse = 512000
 )
 }
 \arguments{
@@ -34,6 +36,10 @@ particleFilterLL_piecewise(
 \item{colpar}{parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))}
 
 \item{nsmp}{number of sample particle trajectories to return - defaults to 1}
+
+\item{lowerbound}{minimum accepted likelihood - used to automatically select number of particles. Defaults to -999}
+
+\item{maxNuse}{maximum number of particles to simulate - defaults to 512000}
 }
 \value{
 results from particle filter - including mean estimates (Nest) and standard deviations (Nsd), across particles,
@@ -65,7 +71,7 @@ for(i in 1:nrow(trtmat)) {
 
 ## run particle filter
 # select treatment to analyse: enter either "LSA" or "LSP"
-trtuse<-"LSA"
+trtuse<-"HSP"
 # extract library positions for treatment
 libuse<-as.matrix(libmat[libmat$trt==trtuse,c("start", "end")])
 # save abundance data to variable y
@@ -87,8 +93,8 @@ spred<-s_map(y, E=euse, theta=tuse, silent = TRUE,
   lib = libuse_y, stats_only = FALSE, save_smap_coefficients = TRUE)
 
 # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
-minvUSE_edm<-c(log(0.01), log(0.01), log(0.01))  # lower limits
-maxvUSE_edm<-c(log(2), log(2), log(3)) # upper limits
+minvUSE_edm<-c(log(0.001), log(0.001))  # lower limits
+maxvUSE_edm<-c(log(2), log(2)) # upper limits
 
 # density, sampler, and prior functions for EDM function
 # see BayesianTools documentation for details
@@ -101,7 +107,7 @@ prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_US
 ## Run filter
 \dontrun{
   niter<-5e3 # number of steps for the MCMC sampler
-  N<-2e3 # number of particles
+  N<-1e3 # number of particles
   smap_coefs<-spred$smap_coefficients[[1]] # coefficients from s-mapping routine
 
   # likelihood and bayesian set-ups for EDM functions
@@ -125,6 +131,7 @@ prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_US
 
   ## extract abundance estimate from particle filter
   # use final estimate from MCMC chain
+  smp_EDM<-(getSample(out_EDM, start=floor(niter/5)))
   tmp<-particleFilterLL_piecewise(param = smp_EDM[nrow(smp_EDM),], N=N, y = y, libuse_y = libuse_y,
                                   smap_coefs = smap_coefs, Euse = euse, tuse = tuse)
   # mean estimated abundance

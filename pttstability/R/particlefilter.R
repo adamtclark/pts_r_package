@@ -516,6 +516,8 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' @param tuse theta for s-mapping analysis
 #' @param colpar parameters to be passed to the colfun0 - defaults to c(logit(1e-6), log(0.1))
 #' @param nsmp number of sample particle trajectories to return - defaults to 1
+#' @param lowerbound minimum accepted likelihood - used to automatically select number of particles. Defaults to -999
+#' @param maxNuse maximum number of particles to simulate - defaults to 512000
 #' @keywords dewdrop regression particle filter
 #' @return results from particle filter - including mean estimates (Nest) and standard deviations (Nsd), across particles,
 #' and sample particle trajectories with (Nsmp) and without (Nsmp_noproc) process noise
@@ -542,7 +544,7 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'
 #' ## run particle filter
 #' # select treatment to analyse: enter either "LSA" or "LSP"
-#' trtuse<-"LSA"
+#' trtuse<-"HSP"
 #' # extract library positions for treatment
 #' libuse<-as.matrix(libmat[libmat$trt==trtuse,c("start", "end")])
 #' # save abundance data to variable y
@@ -564,8 +566,8 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'   lib = libuse_y, stats_only = FALSE, save_smap_coefficients = TRUE)
 #'
 #' # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
-#' minvUSE_edm<-c(log(0.01), log(0.01), log(0.01))  # lower limits
-#' maxvUSE_edm<-c(log(2), log(2), log(3)) # upper limits
+#' minvUSE_edm<-c(log(0.001), log(0.001))  # lower limits
+#' maxvUSE_edm<-c(log(2), log(2)) # upper limits
 #'
 #' # density, sampler, and prior functions for EDM function
 #' # see BayesianTools documentation for details
@@ -578,7 +580,7 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' ## Run filter
 #' \dontrun{
 #'   niter<-5e3 # number of steps for the MCMC sampler
-#'   N<-2e3 # number of particles
+#'   N<-1e3 # number of particles
 #'   smap_coefs<-spred$smap_coefficients[[1]] # coefficients from s-mapping routine
 #'
 #'   # likelihood and bayesian set-ups for EDM functions
@@ -602,6 +604,7 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'
 #'   ## extract abundance estimate from particle filter
 #'   # use final estimate from MCMC chain
+#'   smp_EDM<-(getSample(out_EDM, start=floor(niter/5)))
 #'   tmp<-particleFilterLL_piecewise(param = smp_EDM[nrow(smp_EDM),], N=N, y = y, libuse_y = libuse_y,
 #'                                   smap_coefs = smap_coefs, Euse = euse, tuse = tuse)
 #'   # mean estimated abundance
@@ -617,7 +620,8 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'   abline(h=0, lty=3)
 #' }
 
-particleFilterLL_piecewise<-function(param, N, y, libuse_y, smap_coefs, Euse, tuse, colpar=c(logit(1e-6), log(0.1)), nsmp=1) {
+particleFilterLL_piecewise<-function(param, N, y, libuse_y, smap_coefs, Euse, tuse, colpar=c(logit(1e-6), log(0.1)), nsmp=1, lowerbound = -999, maxNuse = 512000) {
+  # piecewise particle filter function with automatic N selection for each time series chunk
   pars<-parseparam0(param, colparam=colpar)
   tuse_edm<-tuse
 
@@ -626,14 +630,26 @@ particleFilterLL_piecewise<-function(param, N, y, libuse_y, smap_coefs, Euse, tu
     ysegment<-y[libuse_y[i,1]:libuse_y[i,2]]
     smap_coefs_segment<-smap_coefs[libuse_y[i,1]:libuse_y[i,2],]
 
-    tmp<-particleFilterLL(ysegment, pars, N=N, detfun = EDMfun0,
-                          edmdat = list(E=Euse, theta=tuse_edm, smp_cf=smap_coefs_segment),
-                          dotraceback = TRUE, fulltraceback = TRUE)
+    Nuse = N
+    LLtmp = -Inf
+    while(LLtmp <=lowerbound & Nuse <= maxNuse) {
+      tmp<-try(particleFilterLL(ysegment, pars, N=N, detfun = EDMfun0,
+                            edmdat = list(E=Euse, theta=tuse_edm, smp_cf=smap_coefs_segment),
+                            dotraceback = TRUE, fulltraceback = TRUE))
+      if(is.character(tmp)) {
+        LLtmp = -Inf
+      } else {
+        LLtmp = tmp$LL
+      }
+      Nuse = 2*Nuse
+    }
+
+
     pfout$Nest[libuse_y[i,1]:libuse_y[i,2]]<-tmp$Nest
     pfout$Nsd[libuse_y[i,1]:libuse_y[i,2]]<-tmp$Nsd
     pfout$rep[libuse_y[i,1]:libuse_y[i,2]]<-i
-    pfout$Nsmp[libuse_y[i,1]:libuse_y[i,2]]<-c(indexsort(tmp$fulltracemat, tmp$fulltraceindex, nsmp=nsmp))
-    pfout$Nsmp_noproc[libuse_y[i,1]:libuse_y[i,2]]<-c(indexsort(tmp$fulltracemat_noproc, tmp$fulltraceindex, nsmp=nsmp))
+    pfout$Nsmp[libuse_y[i,1]:libuse_y[i,2]]<-c(indexsort(tmp$fulltracemat, tmp$fulltraceindex, nsmp=1))
+    pfout$Nsmp_noproc[libuse_y[i,1]:libuse_y[i,2]]<-c(indexsort(tmp$fulltracemat_noproc, tmp$fulltraceindex, nsmp=1))
   }
 
   return(pfout)
