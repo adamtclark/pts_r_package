@@ -441,7 +441,7 @@ pdf("plotout/mort.pdf", width=5, height=6.5, colormodel = "cmyk", useDingbats = 
   plot_log(summarydat$pmdet_analy_noproc[ps], summarydat$pm_actual[ps],
            xlab = "det est", ylab = "true", col=adjustcolor("dodgerblue", alpha.f = 0.5),
            xlim=rng, ylim=rng); abline(a=0, b=1, lty=2)
-  mtext(expression(paste(sigma[italic(O)], " > 0.1")), 3, line=0.8)
+  mtext(expression(paste(sigma[italic(O)], " < 0.1")), 3, line=0.8)
   title("a.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
 
   ps = which(!is.na(summarydat$gelmanedm) & summarydat$gelmanedm<1.1 & summarydat$obs0<0.1)
