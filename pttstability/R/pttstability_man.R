@@ -72,13 +72,17 @@
 #' plot(y, type = "l", xlab="time", ylab="observed abundance")
 #'
 #' #get theta paramter for s-mapping
+#' # assume best E = 4
+#' # alternatively, we could run e.g. s_map(y, E=(2:5), silent = TRUE)
+#' # to test a range of potential E values
 #' Euse = 4
+#' #run leave-one-out cross validation
 #' s<-s_map(y, E=Euse, silent = TRUE)
-#' tuse<-s$theta[which.min(s$rmse)]
+#' tuse<-s$theta[which.min(s$rmse)] # retain best theta
 #' plot(s$theta, s$rho, type="b")
 #'
-#' ## Run filter
-#' N = 1e3
+#' ## Run filter with "correct" parameter values
+#' N = 1e3 # number of particles
 #' #based on detful0
 #' filterout_det<-particleFilterLL(y, pars=pars_filter, N, detfun = detfun0_sin, procfun = procfun0,
 #'                                 dotraceback = TRUE, fulltraceback = TRUE)
@@ -90,12 +94,14 @@
 #' #plot filter output
 #' par(mar=c(4,4,2,2), mfrow=c(3,1))
 #' #plot 30 of the 1000 particles to show general trend
+#' # correct deterministic function
 #' matplot(1:length(y), filterout_det$fulltracemat[,1:30], col=adjustcolor(1,alpha.f = 0.5), lty=3,
 #'         type="l", xlab="time", ylab="abund", main="detfun0")
 #' lines(1:length(y), y, col=2, lwd=1.5) #observations
 #' lines(1:length(y), datout$true, col="blue", lwd=1.5, lty=2) #true values
 #' lines(1:length(y), filterout_det$Nest, col=3, lwd=1.5) #mean estimate from filter
 #'
+#' # EDM function
 #' matplot(1:length(y), filterout_edm$fulltracemat[,1:30], col=adjustcolor(1,alpha.f = 0.5), lty=3,
 #'         type="l", xlab="time", ylab="abund", main="EDM")
 #' lines(1:length(y), y, col=2, lwd=1.5)
