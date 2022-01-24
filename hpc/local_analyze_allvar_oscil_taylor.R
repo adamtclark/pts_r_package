@@ -479,6 +479,7 @@ dev.off()
 
 # total variance and biase
 pdf("plotout/totvar.pdf", width=4, height=3.5, colormodel = "cmyk", useDingbats = FALSE)
+  ps = which(!is.na(summarydat$gelmandet) & summarydat$gelmandet<1.1)
   par(mfcol=c(1,1),mar=c(4,4,2,2))
   plot_lin((summarydat$edm_var^2-summarydat$obs0^2)[ps], (summarydat$edm_proc_mu0^2)[ps],
            xlim=c(0,0.55), ylim=c(0,0.55),
@@ -486,7 +487,7 @@ pdf("plotout/totvar.pdf", width=4, height=3.5, colormodel = "cmyk", useDingbats 
            xlab = "", ylab = "", col=adjustcolor("firebrick", alpha.f = 0.5),
            vline = FALSE); abline(a=0, b=1, lty=2)
   mtext(expression(paste("Est. Proc. Noise, ", hat(sigma)[italic(P)["EDM"]]^2)), 2, line=2)
-  mtext(expression(paste("Resudual EDM Error, ", epsilon["EDM"]^2-sigma[italic(O)]^2)), 1, line=2.8)
+  mtext(expression(paste("Residual EDM Error, ", epsilon["EDM"]^2-sigma[italic(O)]^2)), 1, line=2.8)
 dev.off()
 
 
