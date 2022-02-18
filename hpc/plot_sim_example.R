@@ -137,7 +137,7 @@ pdf("plotout/example_timeseries.pdf",
   axis(2, at = tmp, labels = rev(colnames(bardat)), cex.axis=1.2, las=2)
   title("b.", line=0.3, xpd=NA, adj=0.0, cex.main=1.5)
   mtext("Temporal Variance", 1, line = 2.4)
-  box()
+  #box()
   legend(0.275, 5.8, legend = c("Observation Error", "Process Noise", "Deterministic Variation"),
          fill = acol("black"),
          border = 1,
