@@ -108,7 +108,7 @@ pdf("plotout/example_timeseries.pdf",
            col=c(NA, NA, collst[1], 1),
            bty="n", cex=1.2)
   mtext("Time", side = 1, line=2.5)
-  mtext("Abundance", side = 2, line=2.5)
+  mtext("Abundance", side = 2, line=2.6, cex=1.4)
 
   bardat = cbind(c(mean((exp(parslst$parsest_det[1])*pfout1_opt$Nest)^2),
                         exp(parslst$parsest_det[2])^2,
