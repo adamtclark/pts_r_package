@@ -49,8 +49,8 @@ if(length(grep("summarydat", flst))>0) {
 
 #Plot an example run
 load("datout/summarydat_211005.rda")
-#pspos = which(summarydat$obs0>0.1 & summarydat$obs0<0.2 & summarydat$proc0<0.2 & summarydat$proc0>0.1 & !is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1)
-psuse<-510
+pspos = which(summarydat$obs0>0.1 & summarydat$obs0<0.15 & summarydat$proc0<0.2 & summarydat$proc0>0.1 & !is.na(summarydat$gelmandet) & !is.na(summarydat$gelmanedm) & summarydat$gelmandet<1.1 & summarydat$gelmanedm<1.1)
+psuse<-559 #pspos[17]
 load(paste("datout/", flst[psuse], sep=""))
 (cdet<-summarydat$cor_det[psuse])
 (cedm<-summarydat$cor_edm[psuse])
@@ -86,92 +86,60 @@ collst<-c("gold", "firebrick", "dodgerblue")
 
 pdf("plotout/example_timeseries.pdf",
     width=8, height=5, colormodel = "cmyk", useDingbats = FALSE)
-  m<-cbind(c(1,1,1,5,5,5), c(1,1,1,5,5,5), c(1,1,1,5,5,5), c(2,2,3,3,4,4), c(2,2,3,3,4,4))
+  m = cbind(c(1,1,1,2),c(1,1,1,2),c(1,1,1,2),
+            c(1,1,1,2),c(1,1,1,2),c(1,1,1,2),
+            c(1,1,1,2),
+            c(1,1,1,3),c(1,1,1,3))
   layout(m)
 
-  par(mar=c(3,2,1,3), oma=c(1,2,0.5,0))
+  par(mar=c(3,2,1,1), oma=c(1,3.4,0.5,0))
   plot(1,1, type="n", ylim=c(0, 3), xlim=c(0, 50), xlab="", ylab="", xaxs="i")
   polygon(c(1:150, 150:1), c(qprt_det[,1], rev(qprt_det[,3])), col=adjustcolor(collst[3], alpha.f = 0.3), border=NA)
   polygon(c(1:150, 150:1), c(qprt_edm[,1], rev(qprt_edm[,3])), col=adjustcolor(collst[2], alpha.f = 0.3), border=NA)
   lines(y, col=collst[1], lwd=1.5)
   lines(datout$true, lwd=1.5, lty = 2)
   abline(h=0, lty=3)
-  title("a.", line=0.3, xpd=NA, adj=0.02, cex.main=1.5)
+  title("a.", line=0.3, xpd=NA, adj=0.0, cex.main=1.5)
 
   legend("topright", legend = c("Analytical Function", "EDM Estimate", "Raw Observation", "True Dynamics"),
            fill = c(collst[3], collst[2], NA, NA),
            border = c(1,1, NA, NA),
            lty=c(NA, NA, 1, 2), lwd=c(NA, NA, 1.5, 1.5),
            col=c(NA, NA, collst[1], 1),
-           bty="n")
+           bty="n", cex=1.2)
   mtext("Time", side = 1, line=2.5)
   mtext("Abundance", side = 2, line=2.5)
 
-  par(mar=c(3.5,1.5,1,1))
-  parnames<-c(expression(paste("Observation Error, ", sigma[italic(O)])),
-              expression(paste("Process Noise, ", sigma[italic(P)])))
-  lnnum<-c(2.6, 2.6)
-  for(i in 1:length(ptrue)) {
-    #det
-    xrng<-exp(range(c(smp_detfun0[,i], ptrue[i], p0[[i]])))
-    dns<-density(exp(smp_detfun0[,i]), from = xrng[1], to = xrng[2], bw = diff(range(xrng))*0.02)
-    plot(dns$x, dns$y, xlim=xrng, col=collst[3], lwd=1.5, type="l",
-          xlab="", ylab="")
-    title(paste(letters[i+1], ".", sep=""), line=0.3, xpd=NA, adj=0.01, cex.main=1.5)
+  bardat = cbind(c(mean((exp(parslst$parsest_det[1])*pfout1_opt$Nest)^2),
+                        exp(parslst$parsest_det[2])^2,
+                        var(pfout1_opt$Nest_noproc,na.rm=TRUE)),
+                      c(mean((exp(parslst$parsest_edm[1])*pfout2_opt$Nest)^2),
+                        exp(parslst$parsest_edm[2])^2,
+                        var(pfout2_opt$Nest_noproc,na.rm=TRUE)),
+                 c(0,var(y),0),
+                 c(mean((exp(pars_true[1])*simdat$datout$true)^2),
+                   exp(pars_true[2])^2,
+                   var(simdat$datout$noproc)))
+  bardat[3,-3] = var(y)-colSums(bardat[-3,-3]) # standardize to constant variance
 
-    #edm
-    xrng<-exp(range(c(smp_EDM[,i], ptrue[i], p0_edm[[i]])))
-    dns<-density(exp(smp_EDM[,i]), from = xrng[1], to = xrng[2], bw = diff(range(xrng))*0.02)
-    lines(dns$x, dns$y,col=collst[2], lwd=1.5)
+  colnames(bardat) = c("Analytical Fun.", "EDM Estimate", "Observation","True Dynamic")
 
-    abline(v=exp(p0[[i]]), h=0, col=c(1), lty=3)
-    abline(v=exp(ptrue[i]), col=c(1), lty=2, lwd=1.5)
-
-    if(i==2) {
-      mtext("Probability Density", side = 2, line=2.2, adj = 0.5)
-    }
-    mtext(parnames[i], side=1, adj = 0.55, line=lnnum[i], outer=FALSE, xpd=NA)
+  acol = function(col, a=c(0.9, 0.4, 0)) {
+    c(adjustcolor(col, a[1]),
+      adjustcolor(col, a[2]),
+      adjustcolor(col, a[3]))
   }
 
-  # scaled abundance
-  #det
-  xrng<-c(0,2.5)
-  dns<-density(pfout1_opt$Nest, from = xrng[1], to = xrng[2], bw = diff(range(xrng))*0.02)
-  plot(dns$x, dns$y, xlim=xrng, col=collst[3], lwd=1.5, type="l",
-       xlab="", ylab="")
-  title(paste(letters[4], ".", sep=""), line=0.3, xpd=NA, adj=0.01, cex.main=1.5)
-
-  #edm
-  dns<-density(pfout2_opt$Nest, from = xrng[1], to = xrng[2], bw = diff(range(xrng))*0.02)
-  lines(dns$x, dns$y,col=collst[2], lwd=1.5)
-
-  #true
-  dns<-density(simdat$datout$true[1:nobs], from = xrng[1], to = xrng[2], bw = diff(range(xrng))*0.02)
-  lines(dns$x, dns$y,col="black", lwd=1.5, lty=2)
-
-  #obs
-  dns<-density(simdat$datout$obs[1:nobs], from = xrng[1], to = xrng[2], bw = diff(range(xrng))*0.02)
-  lines(dns$x, dns$y,col=collst[1], lwd=1.5, lty=2)
-
-
-  abline(v=0, lty=3)
-  mtext(expression(paste("Abundance, ", italic(A), "(", italic(t), ")")), side=1, adj = 0.55, line=lnnum[i], outer=FALSE, xpd=NA)
-
-
-  # true vs. predicted
-  par(mar=c(3,2,1,3))
-  mxy<-max(c(datout$true, y, pfout1_opt$Nest, pfout2_opt$Nest))
-  plot(y, datout$true[1:nobs], col=adjustcolor(collst[1], alpha.f = 0.5), xlim=c(0, mxy), ylim=c(0, mxy), cex=0.9, pch=18, xlab="", ylab="")
-  points(pfout1_opt$Nest, datout$true[1:nobs], col=adjustcolor(collst[3], alpha.f = 0.5), cex=0.9, pch=16)
-  points(pfout2_opt$Nest, datout$true[1:nobs], col=adjustcolor(collst[2], alpha.f = 0.5), cex=0.9, pch=17)
-  abline(a=0, b=1, lty=2, lwd=1.5)
-  title("e.", line=0.3, xpd=NA, adj=0.02, cex.main=1.5)
-
-  legend("bottomright",
-         legend=c(as.expression(bquote(rho==.(paste(round(cdet,2), ";", sep="")) ~ E[2] ~ "=" ~ .(round(eifun(pfout1_opt$Nest, datout$true[1:nobs]), 2)))),
-                  as.expression(bquote(rho==.(paste(round(cedm,2), ";", sep="")) ~ E[2] ~ "=" ~ .(round(eifun(pfout2_opt$Nest, datout$true[1:nobs]), 2)))),
-                  as.expression(bquote(rho==.(paste(round(c0,2), ";", sep="")) ~ E[2] ~ "=" ~ .(round(eifun(y, datout$true[1:nobs]), 2))))),
-         pch=16:18, col=c(collst[3], collst[2], collst[1]), bty="n")
-  mtext("Estimated Abundance", side = 1, line=2.5)
-  mtext("True Abundance", side = 2, line=2.5)
+  par(mar=c(3,5.5,1,1))
+  tmp = barplot(bardat[,4:1], axes=F, names.arg = rep("", ncol(bardat)),
+                col = cbind(acol("black")), horiz = TRUE)
+  axis(1)
+  axis(2, at = tmp, labels = rev(colnames(bardat)), cex.axis=1.2, las=2)
+  title("b.", line=0.3, xpd=NA, adj=0.0, cex.main=1.5)
+  mtext("Temporal Variance", 1, line = 2.4)
+  box()
+  legend(0.275, 5.8, legend = c("Observation Error", "Process Noise", "Deterministic Variation"),
+         fill = acol("black"),
+         border = 1,
+         bty="n", xpd = NA, cex=1.2)
 dev.off()
