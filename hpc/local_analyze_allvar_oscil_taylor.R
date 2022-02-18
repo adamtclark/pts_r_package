@@ -332,7 +332,7 @@ pdf("plotout/obsproc.pdf", width=4, height=7.5, colormodel = "cmyk", useDingbats
 
   abline(h=c(0,1), v=c(0), lty=3)
   abline(a=0, b=1, lty=2)
-  mtext(expression(paste("True Proc. Noise, ", sigma[italic(P)], " = ", sigma^2,italic(lambda),"/",2,italic(r))), 2, line=0.8, adj = 0.33, outer = TRUE)
+  mtext(expression(paste("True Proc. Noise, ", sigma[italic(P)])), 2, line=0.8, adj = 0.33, outer = TRUE)
   title("b.", line=0.2, xpd=NA, adj=0.02, cex.main=1.5)
   mtext(expression(paste("Estimated Proc. Noise, ", hat(sigma)[italic(P)])), 1, line=2.8)
   text(rng[1]+diff(rng)*0.15, rng[2]*.92, expression(paste(sigma[italic(O)], " < 0.1")), cex=1.2)
