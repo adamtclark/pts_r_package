@@ -1,4 +1,4 @@
-error
+#error
 rm(list=ls())
 setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 
@@ -6,12 +6,6 @@ setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/hpc/")
 require(rEDM)
 require(scatterplot3d)
 require(pttstability)
-
-#set up simulations
-#seeduse<-round(runif(1)*1e5)
-#69663
-#37519
-set.seed(37519)
 
 stm<-1.7
 detfun0_sin<-function(sdet, xt, time=NULL) {
@@ -22,7 +16,7 @@ detfun0_sin<-function(sdet, xt, time=NULL) {
 
 
 pars_sim<-pars_true<-list(obs=c(log(0.3)),
-                          proc=c(log(0.1), log(1.5)),
+                          proc=c(log(0.15)),
                           pcol=c(logit(0.2), log(0.1)),
                           det=c(log(1.2),log(1)))
 
@@ -37,6 +31,13 @@ layout(rbind(c(1,1),
              c(4,5),
              c(4,5)))
 par(mar=c(3,3,2,2), oma=c(2,2,0,0))
+
+#set up simulations
+#seeduse<-round(runif(1)*1e5)
+#63824
+#37519
+set.seed(63824)
+
 
 #step 1: make and plot the time series:
 n<-500
@@ -92,24 +93,24 @@ nt<-trprdfull[(1+2*stepsize):(nsq)]
 psuse<-1:150
 etmp<-s_map((datout$obs/mnx)[psuse], E=2, theta=2, silent = TRUE, stats_only = FALSE)
 plot(etmp$model_output[[1]]$Predictions, (datout$true/mnx)[psuse],
-     xlim=c(0,2.8), ylim=c(0, 2.8))
+     xlim=c(0,2), ylim=c(0, 2))
 abline(a=0, b=1, lty=2, lwd=1.5)
 
 mtext(expression(paste("Takens Prediction, ", italic(N)[Takens])), 1, line = 3.2, cex=1.2)
 mtext(expression(paste("True Abundance, ", italic(N)[true])), 2, line = 2.4, cex=1.2)
 title(main="c.", cex.main=1.6, adj=0.02, line=-1)
 
-#cor(etmp$model_output[[1]]$pred, (datout$true/mnx)[psuse], use = "pairwise")
-#1-mean((etmp$model_output[[1]]$pred-(datout$true/mnx)[psuse])^2, na.rm=T)/mean((mean((datout$true/mnx)[psuse],na.rm=T)-(datout$true/mnx)[psuse])^2, na.rm=T)
+#cor(etmp$model_output[[1]]$Predictions, (datout$true/mnx)[psuse], use = "pairwise")
+#1-mean((etmp$model_output[[1]]$Predictions-(datout$true/mnx)[psuse])^2, na.rm=T)/mean((mean((datout$true/mnx)[psuse],na.rm=T)-(datout$true/mnx)[psuse])^2, na.rm=T)
 
-legend("bottomright", c(expression(paste(rho, " = 0.83")),
-                     expression(paste(E[2], " = 0.67"))), cex=1.4,
+legend("bottomright", c(expression(paste(rho, " = 0.85")),
+                     expression(paste(E[2], " = 0.68"))), cex=1.4,
        col=c("black", "gold"), bty="n")
 
 #step 3: run particle filter
 #run filter
 nparts<-30  # number of points to sample
-tmps<-23:30 # positions to draw
+tmps<-3:10 # positions to draw
 pfout<-particleFilterLL(y = datout$obs[psuse], pars = pars_sim, N = 2e3, detfun = detfun0_sin, dotraceback = TRUE, fulltraceback = TRUE)
 
 #simulate new point at position 8
@@ -145,9 +146,9 @@ lines(conv*3+8.4, pr_ntp1_g_proc$x, col="grey40")
 abline(h=0, lty=3)
 
 text(9.8, 1.6, expression(paste(italic(N),"(", italic(t), ") ~ ", italic(sigma)[italic(P)])), cex=1.2, col="dodgerblue")
-text(11.8, 0.12, expression(paste(italic(N),"(", italic(t), ") ~ ", italic(N)[obs])), cex=1.2, col="gold")
-text(14.45, 0.25, expression(paste(italic(N),"(", italic(t), ") ~ {", italic(N)[obs], ", ", italic(sigma)[italic(P)], "}")), cex=1.2, col="grey40")
-text(15, 1.0, expression(paste(italic(N)[true],"(", italic(t), ")")), cex=1.2, col="black")
+text(11.8, 0.43, expression(paste(italic(N),"(", italic(t), ") ~ ", italic(N)[obs])), cex=1.2, col="gold")
+text(14.45, 0.65, expression(paste(italic(N),"(", italic(t), ") ~ {", italic(N)[obs], ", ", italic(sigma)[italic(P)], "}")), cex=1.2, col="grey40")
+text(15, 1.2, expression(paste(italic(N)[true],"(", italic(t), ")")), cex=1.2, col="black")
 
 
 mtext(expression(paste("Time")), 1, line = 2.4, cex=1.2, adj=1/4)
@@ -167,7 +168,7 @@ title(main="e.", cex.main=1.6, adj=0.99, line=-1.2)
 
 
 #step 4: calculate extinction probability
-tmps2<-27:36
+tmps2<-9:18
 
 par(mar=c(3,3,2,2))
 plot(c(1,length(tmps2)), c(0, 2), type="n", xlab="", ylab="", axes=F)
@@ -201,16 +202,16 @@ mtext(expression(paste("Abundance")), 2, line = 2.4, cex=1.2)
 #mu vs. sd
 par(mar=c(3,3,2,4))
 musq<-c(0, exp(seq(log(1e-6), log(2), length=1000)))
-sdsq<-sqrt(exp(pars_sim$proc[1])*musq^exp(pars_sim$proc[2]))
+sdsq<-(exp(pars_sim$proc[1]))
 pmor<-pnorm(0, musq, sdsq)
 
-plot(musq,pmor, type="l", col="sienna", lwd=1.5, log="y", xlab="", ylab="",lty=2, xlim=c(-0.08, 2))
+plot(musq,pmor, type="l", col="sienna", lwd=1.5, log="", xlab="", ylab="",lty=2, xlim=c(-0.08, 2))
+abline(h=0, v=0, lty=3)
 
 par(new=TRUE)
-plot(musq,sdsq, type="l", lwd=1.5, xlab="", ylab="",  axes=F, col="green1", xlim=c(-0.08, 2))
+plot(musq,rep(sdsq, length(musq)), type="l", lwd=1.5, xlab="", ylab="",  axes=F, col="green1", xlim=c(-0.08, 2))
 axis(4)
 
-abline(h=0, v=0, lty=3)
 
 legend(0.01, 0.57, c(expression(paste("Pr"[mor])), expression(paste(sigma[italic(P)[italic(tot)]]))), cex=1.4,
        lty=c(2,1), lwd=c(1.5, 1.5),
@@ -219,7 +220,7 @@ title(main="g.", cex.main=1.6, adj=0.01, line=-1.2)
 
 
 mtext(expression(paste("Pre-Disturbane Abundance")), 1, line = 2.4, cex=1.2)
-mtext(expression(paste("Process Noise, ", sigma[italic(P)[italic(tot)]])), 4, line = 2.9, cex=1.2)
+mtext(expression(paste("Process Noise, ", sigma[italic(P)])), 4, line = 2.9, cex=1.2)
 mtext(expression(paste("Mortality Probability, Pr"[mor])), 2, line = 2.4, cex=1.2)
 
 
