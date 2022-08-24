@@ -5,31 +5,26 @@
 
 ## Load functions:
 #setwd("~/Dropbox/Projects/041_Powerscaling_stability/src/pts_r_package/pttstability/")
+#Load packages
 require(BayesianTools)
 require(rEDM)
-source("R/bayesfun.R")
-source("R/fake_data.R")
-source("R/logit_funs.R")
-source("R/particlefilter.R")
+require(pttstability)
 
 #Set seed
-set.seed(2110)
+set.seed(5826)
 
 ## Simulate data
-pars_true<-list(obs=log(0.2),
-            proc=c(log(0.25), log(1.2)),
+pars_true<-list(obs=log(0.15),
+            proc=c(log(0.1)),
             pcol=c(logit(0.2), log(0.1)),
             det=c(log(1.2),log(1)))
-#abstracted process noise standard dev., based on formula for
-#a linear process: see ?sdproc_abstract for details.
-sd_abs = sdproc_abstract(exp(pars_true$proc[1]), exp(pars_true$proc[2]))
 #parameters for the filter
-pars_filter<-pars_true; pars_filter$proc = pars_true$proc[1]
+pars_filter<-pars_true
 
 #generate random parameter values
 datout<-makedynamics_general(n = 100, n0 = exp(pars_true$det[2]), pdet=pars_true$det,
                              proc = pars_true$proc, obs = pars_true$obs, pcol = pars_true$pcol,
-                             detfun = detfun0_sin, procfun = procfun_ct, obsfun=obsfun0, colfun=colfun0)
+                             detfun = detfun0_sin, procfun = procfun0, obsfun=obsfun0, colfun=colfun0)
 y<-datout$obs
 plot(y, type = "l", xlab="time", ylab="observed abundance")
 
@@ -82,7 +77,6 @@ cor(datout$true, filterout_det$Nest)^2 #deterministic filter
 cor(datout$true, filterout_edm$Nest)^2 #EDM filter
 
 ## Run optimizers
-#\dontrun{
 #create priors
 minvUSE<-c(-4, -4) #minimum interval for obs and proc
 maxvUSE<-c(0, 0) #maximum interval for obs and proc
@@ -119,6 +113,7 @@ likelihood_EDM<-function(x) {
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM, prior = prior_edm)
 
 #run MCMC optimization
+#\dontrun{
 out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0, settings = list(iterations=niter, consoleUpdates=20))
 out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM, settings = list(iterations=niter, consoleUpdates=20))
 
@@ -131,17 +126,27 @@ smp_detfun0<-getSample(out_detfun0, start = 1000, thin = 2)
 smp_EDM<-getSample(out_EDM, start=1000, thin = 2)
 
 par(mfrow=c(2,2))
-hist(exp(smp_detfun0[,1]), main="det. function", xlab="obs", breaks = 20); abline(v=exp(pars_true$obs), col=2)
-hist(exp(smp_detfun0[,2]), main="det. function", xlab="proc", breaks = 20); abline(v=sd_abs, col=2)
+hist(exp(smp_detfun0[,1]), xlim=c(exp(minvUSE[1]), exp(maxvUSE[1])), main="det. function", xlab="obs", breaks = 20)
+abline(v=exp(pars_true$obs), col=2) # true value
+abline(v=c(exp(minvUSE[1]), exp(maxvUSE[1])), col=1, lty=2)# Priors
 
-hist(exp(smp_EDM[,1]), main="EDM function", xlab="obs", breaks = 20); abline(v=exp(pars_true$obs), col=2)
-hist(exp(smp_EDM[,2]), main="EDM function", xlab="proc", breaks = 20); abline(v=sd_abs, col=2)
+hist(exp(smp_detfun0[,2]), xlim=c(exp(minvUSE[2]), exp(maxvUSE[2])), main="det. function", xlab="proc", breaks = 20)
+abline(v=exp(pars_true$proc), col=2) # true value
+abline(v=c(exp(minvUSE[2]), exp(maxvUSE[2])), col=1, lty=2)# Priors
+
+hist(exp(smp_EDM[,1]), xlim=c(exp(minvUSE_edm[1]), exp(maxvUSE_edm[1])), main="EDM function", xlab="obs", breaks = 20)
+abline(v=exp(pars_true$obs), col=2) # true value
+abline(v=c(exp(minvUSE_edm[1]), exp(maxvUSE_edm[1])), col=1, lty=2)# Priors
+
+hist(exp(smp_EDM[,2]), xlim=c(exp(minvUSE_edm[2]), exp(maxvUSE_edm[2])), main="EDM function", xlab="proc", breaks = 20)
+abline(v=exp(pars_true$proc), col=2) # true value
+abline(v=c(exp(minvUSE_edm[2]), exp(maxvUSE_edm[2])), col=1, lty=2)# Priors
 
 ## compare total EDM coefficient prediction error to total model error
 s_full<-s_map(y, E=Euse, theta=tuse, silent = TRUE)
 
 # over-estimation of stochastic variance by EDM
-(mean(exp(smp_EDM[,1])^2 + exp(smp_EDM[,2])^2)-(sd_abs^2+exp(pars_true$obs[1])^2))
+(mean(exp(smp_EDM[,1])^2 + exp(smp_EDM[,2])^2)-(exp(pars_true$proc)^2+exp(pars_true$obs[1])^2))
 # rmse due to EDM fitting error
-s_full$rmse[[1]]^2-(sd_abs^2+exp(pars_true$obs[1])^2)
+s_full$rmse[[1]]^2-(exp(pars_true$proc)^2+exp(pars_true$obs[1])^2)
 #}
