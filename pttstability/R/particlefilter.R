@@ -90,7 +90,7 @@ EDMfun0<-function(smp_cf, yp, x, minest=0, maxest=NULL, time) {
 #' and so if you find that predictions are no longer working in this package, it is likely that this is
 #' due to another change in reporting format, in which case you may need to update this function
 #' accordingly (e.g. to re-align columns or rows).
-#' @param smap_coefs a matrix of s-map coefficients, taken from the s_map function.
+#' @param smap_coefs a matrix of s-map coefficients, taken from the SMap function.
 #' @return a matrix of s-mapping coefficients
 #' @export
 
@@ -297,7 +297,7 @@ colfun0<-function(co, xt) {
 #' @param obsfun An observation function, which takes in up to five variables, including so (a vector of parameter values, inherited from pars$obs), yt (a number, showing observed abundance at time t), xt (predicted abundances), binary value "inverse", and number "N". If inverse = TRUE,
 #' then function should simulate N draws from the observation function, centered around value yt. If inverse = FALSE, then function should return log probability denisty of observed value yt given predicted values in xt. Defaults to obsfun0.
 #' @param colfun A function simulating colonization events, that takes in two arguments: co, a vector of parameter values taken from pars$pcol, and xt, a number or numeric vector of abundances at time t, before colonization has occurred. Returns predicted abundances after colonization has occurred. Defaults to colful0.
-#' @param edmdat A list including arguments to be passed to block_lnlp from rEDM package - see block_lnlp help file for details. Can also include optional matrix "extra_columns", a matrix with length(y) rows including extra covariates for attractor reconstruction, which defaults to NULL (i.e. no additional columns).
+#' @param edmdat A list including arguments to be passed to SMap from rEDM package - see SMap help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
 #' Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.
 #' @param dotraceback A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE
 #' @param fulltraceback A logical, indicating whether full matrix of particles for all time steps should be returned.
@@ -341,9 +341,9 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
         stop("Package \"rEDM\" needed for this function to work. Please either install it, or provide an \"smp_cf\" matrix in the \"edmdat\" list.",
              call. = FALSE)
       }
-
-      smp<-rEDM::s_map(y, E=edmdat$E, theta = edmdat$theta, silent = TRUE, save_smap_coefficients = TRUE)
-      smp_cf<-process_scof(smap_coefs = smp$smap_coefficients[[1]])
+      ydf = data.frame(Index = 1:length(y), y = y)
+      smp<-rEDM::SMap(dataFrame = ydf, E=edmdat$E, theta = edmdat$theta, lib = c(1, nrow(ydf)), pred = c(1, nrow(ydf)), columns = "y")
+      smp_cf<-process_scof(smap_coefs = smp$coefficients)
     } else {
       smp_cf<-edmdat$smp_cf
     }
@@ -525,7 +525,10 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' @examples
 #' # load data
 #' data(dat)
-#'
+#' # sort by index
+#' dat = dat[order(dat$treatment, dat$number, dat$time),]
+#' 
+#' \donttest{
 #' # make list of starting and ending positions for each replicate in the dat list
 #' libmat<-NULL
 #' trtmat<-data.frame(trt=as.character(sort(unique(dat$treatment))))
@@ -557,19 +560,31 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' # get EDM parameters
 #' require(rEDM) # load rEDM package
 #' sout<-NULL
+#' ydf = data.frame(Index = 1:length(y), y=y)
 #' for(E in 2:4) {
-#'   sout<-rbind(sout, s_map(y, E=E, silent = TRUE, lib = libuse_y))
+#'   # note: ignore disjoint predictions warning
+#'   sout<-rbind(sout, data.frame(E = E, PredictNonlinear(dataFrame = ydf, E = E,
+#'                                                        columns = "y",
+#'                                                        lib = c(t(libuse_y)), pred = c(t(libuse_y)),
+#'                                                        showPlot = FALSE)))
 #' }
-#' tuse<-sout$theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
+#' tuse<-sout$Theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
 #' euse<-sout$E[which.max(sout$rho)] # find embedding dimension
-#' spred<-s_map(y, E=euse, theta=tuse, silent = TRUE,
-#'   lib = libuse_y, stats_only = FALSE, save_smap_coefficients = TRUE)
+#' spred<-SMap(dataFrame = ydf, E = euse,
+#'             theta = tuse,
+#'             columns = "y", lib = c(t(libuse_y)), pred = c(t(libuse_y)))
 #'
 #' # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
 #' minvUSE_edm<-c(log(0.001), log(0.001))  # lower limits
 #' maxvUSE_edm<-c(log(2), log(2)) # upper limits
-#'
+#' }
+#' 
+#' \dontrun{
+#' ## Run filter
 #' # density, sampler, and prior functions for EDM function
+#' # Commented-out code: Install BayesianTools package from GitHub if needed
+#' #require(devtools)
+#' #install_github("florianhartig/BayesianTools/BayesianTools")
 #' # see BayesianTools documentation for details
 #' require(BayesianTools)
 #' density_fun_USE_edm<-function(param) density_fun0(param = param,
@@ -577,11 +592,9 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
 #' prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
 #'                          lower = minvUSE_edm, upper = maxvUSE_edm)
-#' ## Run filter
-#' \dontrun{
 #'   niter<-5e3 # number of steps for the MCMC sampler
 #'   N<-1e3 # number of particles
-#'   smap_coefs<-spred$smap_coefficients[[1]] # coefficients from s-mapping routine
+#'   smap_coefs<-process_scof(spred$coefficients) # coefficients from s-mapping routine
 #'
 #'   # likelihood and bayesian set-ups for EDM functions
 #'   likelihood_EDM_piecewise_use<-function(x) {

@@ -29,7 +29,7 @@ likelihood0(
 \item{detfun}{A function that simulates deterministic dynamics, which takes in arguments sdet (parameters for deterministic model, taken from pars$proc), and xt, observed abundances at time t.
 Returns estimated abundances at time t+1 based on deterministic function (either a parametric function or an EDM function). Defaults to detfun0.}
 
-\item{edmdat}{A list including arguments to be passed to block_lnlp from rEDM package - see block_lnlp help file for details.
+\item{edmdat}{A list including arguments to be passed to SMap from rEDM package - see SMap help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
 Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.}
 
 \item{obsfun}{The observation error function to be used: defaults to obsfun0}

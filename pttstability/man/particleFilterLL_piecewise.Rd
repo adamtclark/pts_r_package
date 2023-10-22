@@ -52,7 +52,10 @@ Requires several implicitely defined variables to run:
 \examples{
 # load data
 data(dat)
+# sort by index
+dat = dat[order(dat$treatment, dat$number, dat$time),]
 
+\donttest{
 # make list of starting and ending positions for each replicate in the dat list
 libmat<-NULL
 trtmat<-data.frame(trt=as.character(sort(unique(dat$treatment))))
@@ -84,19 +87,31 @@ timesteps<-dat$time[yps]
 # get EDM parameters
 require(rEDM) # load rEDM package
 sout<-NULL
+ydf = data.frame(Index = 1:length(y), y=y)
 for(E in 2:4) {
-  sout<-rbind(sout, s_map(y, E=E, silent = TRUE, lib = libuse_y))
+  # note: ignore disjoint predictions warning
+  sout<-rbind(sout, data.frame(E = E, PredictNonlinear(dataFrame = ydf, E = E,
+                                                       columns = "y",
+                                                       lib = c(t(libuse_y)), pred = c(t(libuse_y)),
+                                                       showPlot = FALSE)))
 }
-tuse<-sout$theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
+tuse<-sout$Theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
 euse<-sout$E[which.max(sout$rho)] # find embedding dimension
-spred<-s_map(y, E=euse, theta=tuse, silent = TRUE,
-  lib = libuse_y, stats_only = FALSE, save_smap_coefficients = TRUE)
+spred<-SMap(dataFrame = ydf, E = euse,
+            theta = tuse,
+            columns = "y", lib = c(t(libuse_y)), pred = c(t(libuse_y)))
 
 # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
 minvUSE_edm<-c(log(0.001), log(0.001))  # lower limits
 maxvUSE_edm<-c(log(2), log(2)) # upper limits
+}
 
+\dontrun{
+## Run filter
 # density, sampler, and prior functions for EDM function
+# Commented-out code: Install BayesianTools package from GitHub if needed
+#require(devtools)
+#install_github("florianhartig/BayesianTools/BayesianTools")
 # see BayesianTools documentation for details
 require(BayesianTools)
 density_fun_USE_edm<-function(param) density_fun0(param = param,
@@ -104,11 +119,9 @@ density_fun_USE_edm<-function(param) density_fun0(param = param,
 sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
 prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
                          lower = minvUSE_edm, upper = maxvUSE_edm)
-## Run filter
-\dontrun{
   niter<-5e3 # number of steps for the MCMC sampler
   N<-1e3 # number of particles
-  smap_coefs<-spred$smap_coefficients[[1]] # coefficients from s-mapping routine
+  smap_coefs<-process_scof(spred$coefficients) # coefficients from s-mapping routine
 
   # likelihood and bayesian set-ups for EDM functions
   likelihood_EDM_piecewise_use<-function(x) {

@@ -62,15 +62,15 @@ obs<-obs/mnx
 plot(tm-min(tm)+1, x, type="l", lwd=1.5, xlab="", ylab="",
      ylim=c(0, 2.8))
 abline(h=0, lty=3)
-points(tm-min(tm)+1, obs, col="gold", pch=18, cex=1.2)
-segments(tm-min(tm)+1, x, tm-min(tm)+1, obs, col="gold", lwd=1.5)
+points(tm-min(tm)+1, obs, col="goldenrod", pch=18, cex=1.2)
+segments(tm-min(tm)+1, x, tm-min(tm)+1, obs, col="goldenrod", lwd=1.5)
 mtext(expression(paste("Time")), 1, line = 2.4, cex=1.2)
 mtext(expression(paste("Abundance")), 2, line = 2.4, cex=1.2)
 title(main="a.", cex.main=1.6, adj=0.01, line=-1)
 
 legend("topright", c(expression(paste("True Value, ", italic(N)[true])), expression(paste("Observation, ", italic(N)[obs]))), cex=1.4,
        pch=c(NA, 18), lty=c(1, 1), lwd=c(1.5, 1.5),
-       col=c("black", "gold"), bty="n")
+       col=c("black", "goldenrod"), bty="n")
 
 #step 2: plot the embedding
 #nmx<-161:310
@@ -105,7 +105,7 @@ title(main="c.", cex.main=1.6, adj=0.02, line=-1)
 
 legend("bottomright", c(expression(paste(rho, " = 0.85")),
                      expression(paste(E[2], " = 0.68"))), cex=1.4,
-       col=c("black", "gold"), bty="n")
+       col=c("black", "goldenrod"), bty="n")
 
 #step 3: run particle filter
 #run filter
@@ -129,15 +129,15 @@ matlines((length(tmps)-1):length(tmps), rbind(rep(pfout$Nest[tm[tmps[length(tmps
          col=adjustcolor("dodgerblue", alpha.f = 0.2), lty=1)
 points(rep(8, nparts), newpoints, col=adjustcolor("dodgerblue", 0.2), pch=16, cex=0.6)
 
-points(1:8, datout$obs[tm[tmps]], col="gold", pch=18, cex=1.2)
-segments(1:8, datout$true[tm[tmps]], 1:8, datout$obs[tm[tmps]], col="gold", lwd=1.5)
+points(1:8, datout$obs[tm[tmps]], col="goldenrod", pch=18, cex=1.2)
+segments(1:8, datout$true[tm[tmps]], 1:8, datout$obs[tm[tmps]], col="goldenrod", lwd=1.5)
 
 #density functions
 pr_ntp1_g_proc<-density(pfout$fulltracemat[tm[tmps[length(tmps)]],], bw = 0.15, from = 0, to=2.5)
 pr_ntp1_g_obs<-density(obsfun0(so=pars_sim$obs, yt = datout$obs[tm[tmps[length(tmps)]]], inverse=TRUE, N=ncol(pfout$fulltracemat)), bw = 0.15, from = 0, to=2.5)
 
 lines(pr_ntp1_g_proc$y*3+8.4, pr_ntp1_g_proc$x, col="dodgerblue")
-lines(pr_ntp1_g_obs$y*3+8.4, pr_ntp1_g_obs$x, col="gold")
+lines(pr_ntp1_g_obs$y*3+8.4, pr_ntp1_g_obs$x, col="goldenrod")
 
 conv<-pr_ntp1_g_proc$y*pr_ntp1_g_obs$y
 conv<-conv/max(conv)
@@ -146,7 +146,7 @@ lines(conv*3+8.4, pr_ntp1_g_proc$x, col="grey40")
 abline(h=0, lty=3)
 
 text(9.8, 1.6, expression(paste(italic(N),"(", italic(t), ") ~ ", italic(sigma)[italic(P)])), cex=1.2, col="dodgerblue")
-text(11.8, 0.43, expression(paste(italic(N),"(", italic(t), ") ~ ", italic(N)[obs])), cex=1.2, col="gold")
+text(11.8, 0.43, expression(paste(italic(N),"(", italic(t), ") ~ ", italic(N)[obs])), cex=1.2, col="goldenrod")
 text(14.45, 0.65, expression(paste(italic(N),"(", italic(t), ") ~ {", italic(N)[obs], ", ", italic(sigma)[italic(P)], "}")), cex=1.2, col="grey40")
 text(15, 1.2, expression(paste(italic(N)[true],"(", italic(t), ")")), cex=1.2, col="black")
 

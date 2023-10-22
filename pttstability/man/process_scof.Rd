@@ -7,7 +7,7 @@
 process_scof(smap_coefs)
 }
 \arguments{
-\item{smap_coefs}{a matrix of s-map coefficients, taken from the s_map function.}
+\item{smap_coefs}{a matrix of s-map coefficients, taken from the SMap function.}
 }
 \value{
 a matrix of s-mapping coefficients

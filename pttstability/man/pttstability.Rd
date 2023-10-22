@@ -5,6 +5,8 @@
 \alias{pttstability}
 \title{pttstability: Methods for Measuring Stability in Systems Without Static Equilibria}
 \source{
+Adam T. Clark, Lina K. Mühlbauer, Helmut Hillebrand, and Canan Karakoç. (2022). Measuring Stability in Ecological Systems Without Static Equilibria. Ecosphere 13(12):e4328.
+
 Knape, J., and Valpine, P. (2012). Fitting complex population models by combining particle filters with Markov chain Monte Carlo. Ecology 93:256-263.
 
 Ye, H., Sugihara, G., et al. (2015). Equation-free ecosystem forecasting. PNAS 112:E1569-E1576.
@@ -43,7 +45,7 @@ observed time series given modeled dynamics.
 Second, it applies empirical dynamic modeling (EDM) methods from the rEDM package to estimate deterministic
 dynamics even in cases where the underlying equations governing system behavior are not known.
 These models are based on Takens delay-embedding theorem, from which this package takes its name.
-Finally, it uses the MCMC fitting methods from the BayesianTools package to estimate paramter values for
+Finally, it (optionally) uses the MCMC fitting methods from the BayesianTools package to estimate paramter values for
 the observation error, process noise, and (optionally) deterministic functions underlying observed dynamics.
 
 The default observation error and process noise functions in this package (obsfun0 and procfun0)
@@ -58,7 +60,6 @@ their own (including for observation error, process noise, deterministic dynamic
 
 \examples{
 #Load packages
-require(BayesianTools)
 require(rEDM)
 
 #Set seed
@@ -83,13 +84,18 @@ plot(y, type = "l", xlab="time", ylab="observed abundance")
 
 #get theta paramter for s-mapping
 # assume best E = 4
-# alternatively, we could run e.g. s_map(y, E=(2:5), silent = TRUE)
+# alternatively, we could use the EmbedDimension() function in rEDM
 # to test a range of potential E values
 Euse = 4
 #run leave-one-out cross validation
-s<-s_map(y, E=Euse, silent = TRUE)
-tuse<-s$theta[which.min(s$rmse)] # retain best theta
-plot(s$theta, s$rho, type="b")
+ydf = data.frame(time = 1:length(y), y=y)
+s_find_theta<-PredictNonlinear(dataFrame = ydf, E = Euse,
+                               columns = "y", lib = c(1, nrow(ydf)), pred = c(1, nrow(ydf)))
+
+tuse<-s_find_theta$Theta[which.max(s_find_theta$rho)] # retain best theta
+s <- SMap(dataFrame = ydf, E = Euse,
+          theta = tuse,
+          columns = "y", lib = c(1, nrow(ydf)), pred = c(1, nrow(ydf)))
 
 ## Run filter with "correct" parameter values
 N = 1e3 # number of particles
@@ -104,7 +110,7 @@ filterout_edm<-particleFilterLL(y, pars=pars_filter, N, detfun = EDMfun0,
                                 fulltraceback = TRUE)
 
 #plot filter output
-par(mar=c(4,4,2,2), mfrow=c(3,1))
+op = par(mar=c(4,4,2,2), mfrow=c(3,1))
 #plot 30 of the 1000 particles to show general trend
 # correct deterministic function
 matplot(1:length(y), filterout_det$fulltracemat[,1:30],
@@ -134,7 +140,14 @@ legend("topleft", c("detfun0", "EDM", "obs"), pch=1, col=c(4,2,3), bty="n")
 cor(datout$true, datout$obs)^2 #observations
 cor(datout$true, filterout_det$Nest)^2 #deterministic filter
 cor(datout$true, filterout_edm$Nest)^2 #EDM filter
+par(op) # reset plotting parameters
 
+\dontrun{
+# Commented-out code: Install BayesianTools package from GitHub if needed
+#require(devtools)
+#install_github("florianhartig/BayesianTools/BayesianTools")
+# see BayesianTools documentation for details
+require(BayesianTools)
 ## Run optimizers
 #create priors
 minvUSE<-c(-4, -4) #minimum interval for obs and proc
@@ -180,8 +193,6 @@ likelihood_EDM<-function(x) {
 
 bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM,
                          prior = prior_edm)
-
-\dontrun{
 #run MCMC optimization
 out_detfun0 <- runMCMC(bayesianSetup = bayesianSetup_detfun0,
                    settings = list(iterations=niter, consoleUpdates=20))
@@ -196,7 +207,7 @@ plot(out_EDM, start = 1000, thin = 2)
 smp_detfun0<-getSample(out_detfun0, start = 1000, thin = 2)
 smp_EDM<-getSample(out_EDM, start=1000, thin = 2)
 
-par(mfrow=c(2,2))
+op = par(mfrow=c(2,2))
 hist(exp(smp_detfun0[,1]), xlim=c(exp(minvUSE[1]), exp(maxvUSE[1])),
                     main="det. function", xlab="obs", breaks = 20)
 abline(v=exp(pars_true$obs), col=2) # true value
@@ -216,14 +227,8 @@ hist(exp(smp_EDM[,2]), xlim=c(exp(minvUSE_edm[2]), exp(maxvUSE_edm[2])),
                     main="EDM function", xlab="proc", breaks = 20)
 abline(v=exp(pars_true$proc), col=2) # true value
 abline(v=c(exp(minvUSE_edm[2]), exp(maxvUSE_edm[2])), col=1, lty=2)# Priors
-
-## compare total EDM coefficient prediction error to total model error
-s_full<-s_map(y, E=Euse, theta=tuse, silent = TRUE)
-
-# over-estimation of stochastic variance by EDM
-(mean(exp(smp_EDM[,1])^2 + exp(smp_EDM[,2])^2)-
-                    (exp(pars_true$proc)^2+exp(pars_true$obs[1])^2))
-# rmse due to EDM fitting error
-s_full$rmse[[1]]^2-(exp(pars_true$proc)^2+exp(pars_true$obs[1])^2)
+par(op) # reset plotting parameters
 }
 }
+\keyword{"_PACKAGE"}
+\keyword{internal}
