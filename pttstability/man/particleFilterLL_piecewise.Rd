@@ -84,22 +84,17 @@ libuse_y<-libuse-min(libuse)+1 # translate positions in dat to positions in y ve
 y<-y/sd(y) # standardize to mean of one
 timesteps<-dat$time[yps]
 
-# get EDM parameters
-require(rEDM) # load rEDM package
-sout<-NULL
-ydf = data.frame(Index = 1:length(y), y=y)
-for(E in 2:4) {
-  # note: ignore disjoint predictions warning
-  sout<-rbind(sout, data.frame(E = E, PredictNonlinear(dataFrame = ydf, E = E,
-                                                       columns = "y",
-                                                       lib = c(t(libuse_y)), pred = c(t(libuse_y)),
-                                                       showPlot = FALSE)))
+# get S-mapping parameters
+sout<-data.frame(E = 2:4, theta = NA, RMSE = NA)
+for(i in 1:nrow(sout)) {
+  optout = optimize(f = function(x) {S_map_Sugihara1994(Y = y, E = sout$E[i],
+      theta = x, lib = libuse_y)$RMSE}, interval = c(0,10))
+  sout$theta[i] = optout$minimum
+  sout$RMSE[i] = optout$objective
 }
-tuse<-sout$Theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
-euse<-sout$E[which.max(sout$rho)] # find embedding dimension
-spred<-SMap(dataFrame = ydf, E = euse,
-            theta = tuse,
-            columns = "y", lib = c(t(libuse_y)), pred = c(t(libuse_y)))
+tuse<-sout$theta[which.min(sout$RMSE)] # find theta (nonlinerity) parameter
+euse<-sout$E[which.max(sout$RMSE)] # find embedding dimension
+spred<-S_map_Sugihara1994(Y = y, E = euse, theta = tuse, lib = libuse_y)
 
 # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
 minvUSE_edm<-c(log(0.001), log(0.001))  # lower limits
@@ -107,21 +102,18 @@ maxvUSE_edm<-c(log(2), log(2)) # upper limits
 }
 
 \dontrun{
-## Run filter
-# density, sampler, and prior functions for EDM function
-# Commented-out code: Install BayesianTools package from GitHub if needed
-#require(devtools)
-#install_github("florianhartig/BayesianTools/BayesianTools")
-# see BayesianTools documentation for details
-require(BayesianTools)
-density_fun_USE_edm<-function(param) density_fun0(param = param,
-  minv = minvUSE_edm, maxv=maxvUSE_edm)
-sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
-prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
+  ## Run filter
+  # Commented-out code: Install BayesianTools package if needed
+  #install.packages("BayesianTools")
+  require(BayesianTools)
+  density_fun_USE_edm<-function(param) density_fun0(param = param,
+    minv = minvUSE_edm, maxv=maxvUSE_edm)
+  sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
+  prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
                          lower = minvUSE_edm, upper = maxvUSE_edm)
-  niter<-5e3 # number of steps for the MCMC sampler
+  niter<-1e4 # number of steps for the MCMC sampler
   N<-1e3 # number of particles
-  smap_coefs<-process_scof(spred$coefficients) # coefficients from s-mapping routine
+  smap_coefs<-process_scof(spred$C) # coefficients from s-mapping routine
 
   # likelihood and bayesian set-ups for EDM functions
   likelihood_EDM_piecewise_use<-function(x) {
@@ -134,7 +126,7 @@ prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_US
   bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM_piecewise_use,
      prior = prior_edm)
 
-  # run MCMC optimization (will take ~ 15-20 min)
+  # run MCMC optimization (will take ~ 5 min)
   out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
      settings = list(iterations=niter, consoleUpdates=20))
   burnin<-floor(niter/5) # burnin period

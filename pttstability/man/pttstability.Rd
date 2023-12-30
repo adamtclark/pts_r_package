@@ -42,7 +42,7 @@ effects of process noise, this package can be used to compute a dynamic analog o
 This package builds on three existing toolkits. First, it applies an updated version of the
 "particleFilterLL" particle filter function of Knape and Valpine (2012) to calculate likelihoods of
 observed time series given modeled dynamics.
-Second, it applies empirical dynamic modeling (EDM) methods from the rEDM package to estimate deterministic
+Second, it applies empirical dynamic modeling (EDM) methods to estimate deterministic
 dynamics even in cases where the underlying equations governing system behavior are not known.
 These models are based on Takens delay-embedding theorem, from which this package takes its name.
 Finally, it (optionally) uses the MCMC fitting methods from the BayesianTools package to estimate paramter values for
@@ -59,9 +59,6 @@ their own (including for observation error, process noise, deterministic dynamic
 }
 
 \examples{
-#Load packages
-require(rEDM)
-
 #Set seed
 set.seed(5826)
 
@@ -82,20 +79,18 @@ datout<-makedynamics_general(n = 100, n0 = exp(pars_true$det[2]),
 y<-datout$obs
 plot(y, type = "l", xlab="time", ylab="observed abundance")
 
-#get theta paramter for s-mapping
-# assume best E = 4
-# alternatively, we could use the EmbedDimension() function in rEDM
-# to test a range of potential E values
-Euse = 4
-#run leave-one-out cross validation
-ydf = data.frame(time = 1:length(y), y=y)
-s_find_theta<-PredictNonlinear(dataFrame = ydf, E = Euse,
-                               columns = "y", lib = c(1, nrow(ydf)), pred = c(1, nrow(ydf)))
-
-tuse<-s_find_theta$Theta[which.max(s_find_theta$rho)] # retain best theta
-s <- SMap(dataFrame = ydf, E = Euse,
-          theta = tuse,
-          columns = "y", lib = c(1, nrow(ydf)), pred = c(1, nrow(ydf)))
+#get parameters for S-mapping
+sout<-data.frame(E = 2:5, theta = NA, RMSE = NA)
+for(i in 1:nrow(sout)) {
+  optout = optimize(f = function(x) {S_map_Sugihara1994(Y = y, E = sout$E[i],
+    theta = x)$RMSE}, interval = c(0,10))
+  sout$theta[i] = optout$minimum
+  sout$RMSE[i] = optout$objective
+}
+tuse<-sout$theta[which.min(sout$RMSE)] # find theta (nonlinerity) parameter
+Euse<-sout$E[which.max(sout$RMSE)] # find embedding dimension
+spred<-S_map_Sugihara1994(Y = y, E = Euse, theta = tuse) # fit S-mapping for best paramter set
+plot(spred$Y, spred$Y_hat); abline(a=0, b=1, lty=2) # observed vs. predicted
 
 ## Run filter with "correct" parameter values
 N = 1e3 # number of particles
@@ -143,10 +138,8 @@ cor(datout$true, filterout_edm$Nest)^2 #EDM filter
 par(op) # reset plotting parameters
 
 \dontrun{
-# Commented-out code: Install BayesianTools package from GitHub if needed
-#require(devtools)
-#install_github("florianhartig/BayesianTools/BayesianTools")
-# see BayesianTools documentation for details
+# Commented-out code: Install BayesianTools if needed
+#install.packages("BayesianTools")
 require(BayesianTools)
 ## Run optimizers
 #create priors

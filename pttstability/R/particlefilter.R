@@ -48,7 +48,7 @@ sdproc_abstract<-function(sd_proc, rgr, waiting_time = 1) {
   sqrt((sd_proc^2/waiting_time)/(2*rgr))
 }
 
-#' REDM deterministic function
+#' EDM deterministic function
 #'
 #' Estimates future states of xt based on based behaviour
 #' @param smp_cf a matrix of s-map coefficients. Columns correspond to intercept and time lags, rows to observations. Final column corresponds to intercept term.
@@ -78,42 +78,6 @@ EDMfun0<-function(smp_cf, yp, x, minest=0, maxest=NULL, time) {
 
   out<-out*(x>0)
   out
-}
-
-#' Process s-mapping coefficients
-#'
-#' Processes s-mapping coefficients from rEDM into a matrix of form C1, C2, C3, ... C0, where C0 is the intercept,
-#' C1 is the current time step t, C2 is timestep t-1, C3 is timestep t-2, and so on.
-#' Rows correspond to the time step used to produce the prediction, e.g. row 4 is used to calculate
-#' predicted value for time step 5. This is the format expected by the EDMfun0 function.
-#' Note - the format produced by the rEDM package has changed substantially over time,
-#' and so if you find that predictions are no longer working in this package, it is likely that this is
-#' due to another change in reporting format, in which case you may need to update this function
-#' accordingly (e.g. to re-align columns or rows).
-#' @param smap_coefs a matrix of s-map coefficients, taken from the SMap function.
-#' @return a matrix of s-mapping coefficients
-#' @export
-
-process_scof <- function(smap_coefs) {
-  ps <- which(colnames(smap_coefs)=="Index")
-  if(length(ps) > 0) {
-    index = smap_coefs[,ps]
-    smap_coefs = smap_coefs[,-ps]
-
-    ps2 <- which(colnames(smap_coefs)=="C0")
-    if(length(ps2) > 0) {
-      smap_coefs = smap_coefs[,c(c(1:ncol(smap_coefs))[-ps2], ps2)]
-    }
-    colnames(smap_coefs) <- paste("C", c(1:(ncol(smap_coefs)-1), 0), sep="")
-
-    if(min(index) > 2) {
-      for(i in 1:(min(index)-2)) {
-        smap_coefs = rbind(rep(NA, ncol(smap_coefs)), smap_coefs)
-      }
-    }
-  }
-
-  smap_coefs
 }
 
 #' default process noise function
@@ -297,7 +261,7 @@ colfun0<-function(co, xt) {
 #' @param obsfun An observation function, which takes in up to five variables, including so (a vector of parameter values, inherited from pars$obs), yt (a number, showing observed abundance at time t), xt (predicted abundances), binary value "inverse", and number "N". If inverse = TRUE,
 #' then function should simulate N draws from the observation function, centered around value yt. If inverse = FALSE, then function should return log probability denisty of observed value yt given predicted values in xt. Defaults to obsfun0.
 #' @param colfun A function simulating colonization events, that takes in two arguments: co, a vector of parameter values taken from pars$pcol, and xt, a number or numeric vector of abundances at time t, before colonization has occurred. Returns predicted abundances after colonization has occurred. Defaults to colful0.
-#' @param edmdat A list including arguments to be passed to SMap from rEDM package - see SMap help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
+#' @param edmdat A list including arguments to be passed to the S_map_Sugihara1994 function - see S_map_Sugihara1994 help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
 #' Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.
 #' @param dotraceback A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE
 #' @param fulltraceback A logical, indicating whether full matrix of particles for all time steps should be returned.
@@ -337,13 +301,8 @@ particleFilterLL<-function(y, pars, N=1e3, detfun=detfun0, procfun=procfun0, obs
 
   if(!is.null(edmdat)) {
     if(is.null(edmdat$smp_cf)) {
-      if (!requireNamespace("rEDM", quietly = TRUE)) {
-        stop("Package \"rEDM\" needed for this function to work. Please either install it, or provide an \"smp_cf\" matrix in the \"edmdat\" list.",
-             call. = FALSE)
-      }
-      ydf = data.frame(Index = 1:length(y), y = y)
-      smp<-rEDM::SMap(dataFrame = ydf, E=edmdat$E, theta = edmdat$theta, lib = c(1, nrow(ydf)), pred = c(1, nrow(ydf)), columns = "y")
-      smp_cf<-process_scof(smap_coefs = smp$coefficients)
+      smp<-S_map_Sugihara1994(Y = y, E=edmdat$E, theta = edmdat$theta)
+      smp_cf<-process_scof(smap_coefs = smp$C)
     } else {
       smp_cf<-edmdat$smp_cf
     }
@@ -557,22 +516,17 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' y<-y/sd(y) # standardize to mean of one
 #' timesteps<-dat$time[yps]
 #'
-#' # get EDM parameters
-#' require(rEDM) # load rEDM package
-#' sout<-NULL
-#' ydf = data.frame(Index = 1:length(y), y=y)
-#' for(E in 2:4) {
-#'   # note: ignore disjoint predictions warning
-#'   sout<-rbind(sout, data.frame(E = E, PredictNonlinear(dataFrame = ydf, E = E,
-#'                                                        columns = "y",
-#'                                                        lib = c(t(libuse_y)), pred = c(t(libuse_y)),
-#'                                                        showPlot = FALSE)))
+#' # get S-mapping parameters
+#' sout<-data.frame(E = 2:4, theta = NA, RMSE = NA)
+#' for(i in 1:nrow(sout)) {
+#'   optout = optimize(f = function(x) {S_map_Sugihara1994(Y = y, E = sout$E[i],
+#'       theta = x, lib = libuse_y)$RMSE}, interval = c(0,10))
+#'   sout$theta[i] = optout$minimum
+#'   sout$RMSE[i] = optout$objective
 #' }
-#' tuse<-sout$Theta[which.max(sout$rho)] # find theta (nonlinerity) parameter
-#' euse<-sout$E[which.max(sout$rho)] # find embedding dimension
-#' spred<-SMap(dataFrame = ydf, E = euse,
-#'             theta = tuse,
-#'             columns = "y", lib = c(t(libuse_y)), pred = c(t(libuse_y)))
+#' tuse<-sout$theta[which.min(sout$RMSE)] # find theta (nonlinerity) parameter
+#' euse<-sout$E[which.max(sout$RMSE)] # find embedding dimension
+#' spred<-S_map_Sugihara1994(Y = y, E = euse, theta = tuse, lib = libuse_y)
 #'
 #' # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
 #' minvUSE_edm<-c(log(0.001), log(0.001))  # lower limits
@@ -580,21 +534,18 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #' }
 #' 
 #' \dontrun{
-#' ## Run filter
-#' # density, sampler, and prior functions for EDM function
-#' # Commented-out code: Install BayesianTools package from GitHub if needed
-#' #require(devtools)
-#' #install_github("florianhartig/BayesianTools/BayesianTools")
-#' # see BayesianTools documentation for details
-#' require(BayesianTools)
-#' density_fun_USE_edm<-function(param) density_fun0(param = param,
-#'   minv = minvUSE_edm, maxv=maxvUSE_edm)
-#' sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
-#' prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
+#'   ## Run filter
+#'   # Commented-out code: Install BayesianTools package if needed
+#'   #install.packages("BayesianTools")
+#'   require(BayesianTools)
+#'   density_fun_USE_edm<-function(param) density_fun0(param = param,
+#'     minv = minvUSE_edm, maxv=maxvUSE_edm)
+#'   sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
+#'   prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
 #'                          lower = minvUSE_edm, upper = maxvUSE_edm)
-#'   niter<-5e3 # number of steps for the MCMC sampler
+#'   niter<-1e4 # number of steps for the MCMC sampler
 #'   N<-1e3 # number of particles
-#'   smap_coefs<-process_scof(spred$coefficients) # coefficients from s-mapping routine
+#'   smap_coefs<-process_scof(spred$C) # coefficients from s-mapping routine
 #'
 #'   # likelihood and bayesian set-ups for EDM functions
 #'   likelihood_EDM_piecewise_use<-function(x) {
@@ -607,7 +558,7 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'   bayesianSetup_EDM <- createBayesianSetup(likelihood = likelihood_EDM_piecewise_use,
 #'      prior = prior_edm)
 #'
-#'   # run MCMC optimization (will take ~ 15-20 min)
+#'   # run MCMC optimization (will take ~ 5 min)
 #'   out_EDM <- runMCMC(bayesianSetup = bayesianSetup_EDM,
 #'      settings = list(iterations=niter, consoleUpdates=20))
 #'   burnin<-floor(niter/5) # burnin period

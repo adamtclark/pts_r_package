@@ -2,7 +2,7 @@
 % Please edit documentation in R/particlefilter.R
 \name{EDMfun0}
 \alias{EDMfun0}
-\title{REDM deterministic function}
+\title{EDM deterministic function}
 \source{
 Adapted from Ye, Sugihara, et al. (2015), PNAS 112:E1569-E1576.
 }

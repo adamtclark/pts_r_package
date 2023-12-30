@@ -36,7 +36,7 @@ then function should simulate N draws from the observation function, centered ar
 
 \item{colfun}{A function simulating colonization events, that takes in two arguments: co, a vector of parameter values taken from pars$pcol, and xt, a number or numeric vector of abundances at time t, before colonization has occurred. Returns predicted abundances after colonization has occurred. Defaults to colful0.}
 
-\item{edmdat}{A list including arguments to be passed to SMap from rEDM package - see SMap help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
+\item{edmdat}{A list including arguments to be passed to the S_map_Sugihara1994 function - see S_map_Sugihara1994 help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
 Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.}
 
 \item{dotraceback}{A logical, indicating whether estimated values and demographic rates should be reported - defaults to FALSE}
