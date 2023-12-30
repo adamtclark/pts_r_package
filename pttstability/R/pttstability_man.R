@@ -209,6 +209,7 @@
 #'                     main="EDM function", xlab="proc", breaks = 20)
 #' abline(v=exp(pars_true$proc), col=2) # true value
 #' abline(v=c(exp(minvUSE_edm[2]), exp(maxvUSE_edm[2])), col=1, lty=2)# Priors
+#' # note slight over-estimate of process noise due to EDM error
 #' par(op) # reset plotting parameters
 #' }
 NULL
