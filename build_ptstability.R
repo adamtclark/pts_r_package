@@ -16,7 +16,7 @@ load_all()
 # The code still includes two instances of \dontrun, and one
 # instance of \donttest. The \dontrun examples (in the main help page,
 # and the particleFilterLL_piecewise function) are both optional
-# package extensions which use the BayesianTools package. If this
+# package extensions which use the recommended BayesianTools package. If this
 # is not acceptable, then I can also simply remove these examples.
 # The only usage of \donttest is for the "particleFilterLL_piecewise" function,
 # for running a piece of very slow code - I'm afraid there is no short toy example
