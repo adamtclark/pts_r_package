@@ -63,7 +63,7 @@ parseparam0<-function(param, colparam=c(logit(0.2), log(0.1)), detparam=c(log(1.
 #' @param N Number of particles to simulate. Defaults to 1e3.
 #' @param detfun A function that simulates deterministic dynamics, which takes in arguments sdet (parameters for deterministic model, taken from pars$proc), and xt, observed abundances at time t.
 #' Returns estimated abundances at time t+1 based on deterministic function (either a parametric function or an EDM function). Defaults to detfun0.
-#' @param edmdat A list including arguments to be passed to SMap from rEDM package - see SMap help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
+#' @param edmdat A list including arguments to be passed to S_map_Sugihara1994 - see S_map_Sugihara1994 help file for details. Alternatively, the user can provide a matrix of pre-computed S-map coefficients, in element "smp_cf".
 #' Default for edmdat is NULL, which implies that EDM will not be applied - instead, a detfun and pars$det must be included.
 #' @param obsfun The observation error function to be used: defaults to obsfun0
 #' @param procfun The process noise function to be used: defaults to procfun0
