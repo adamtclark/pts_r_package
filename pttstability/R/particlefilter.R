@@ -525,7 +525,7 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'   sout$RMSE[i] = optout$objective
 #' }
 #' tuse<-sout$theta[which.min(sout$RMSE)] # find theta (nonlinerity) parameter
-#' euse<-sout$E[which.max(sout$RMSE)] # find embedding dimension
+#' euse<-sout$E[which.min(sout$RMSE)] # find embedding dimension
 #' spred<-S_map_Sugihara1994(Y = y, E = euse, theta = tuse, lib = libuse_y)
 #'
 #' # set priors (log-transformed Beta_obs, Beta_proc1, and Beta_proc2)
@@ -537,14 +537,15 @@ likelihood_EDM_piecewise<-function(param, y, libuse_y, smap_coefs, Euse, tuse, N
 #'   ## Run filter
 #'   # Commented-out code: Install BayesianTools package if needed
 #'   #install.packages("BayesianTools")
+#'   set.seed(2343)
 #'   require(BayesianTools)
 #'   density_fun_USE_edm<-function(param) density_fun0(param = param,
 #'     minv = minvUSE_edm, maxv=maxvUSE_edm)
 #'   sampler_fun_USE_edm<-function(x) sampler_fun0(n = 1, minv = minvUSE_edm, maxv=maxvUSE_edm)
 #'   prior_edm <- createPrior(density = density_fun_USE_edm, sampler = sampler_fun_USE_edm,
 #'                          lower = minvUSE_edm, upper = maxvUSE_edm)
-#'   niter<-1e4 # number of steps for the MCMC sampler
-#'   N<-1e3 # number of particles
+#'   niter<-5e3 # number of steps for the MCMC sampler
+#'   N<-2e3 # number of particles
 #'   smap_coefs<-process_scof(spred$C) # coefficients from s-mapping routine
 #'
 #'   # likelihood and bayesian set-ups for EDM functions

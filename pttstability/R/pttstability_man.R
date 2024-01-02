@@ -69,7 +69,7 @@
 #' plot(y, type = "l", xlab="time", ylab="observed abundance")
 #'
 #' #get parameters for S-mapping
-#' sout<-data.frame(E = 2:5, theta = NA, RMSE = NA)
+#' sout<-data.frame(E = 2:4, theta = NA, RMSE = NA)
 #' for(i in 1:nrow(sout)) {
 #'   optout = optimize(f = function(x) {S_map_Sugihara1994(Y = y, E = sout$E[i],
 #'     theta = x)$RMSE}, interval = c(0,10))
@@ -77,7 +77,7 @@
 #'   sout$RMSE[i] = optout$objective
 #' }
 #' tuse<-sout$theta[which.min(sout$RMSE)] # find theta (nonlinerity) parameter
-#' Euse<-sout$E[which.max(sout$RMSE)] # find embedding dimension
+#' Euse<-sout$E[which.min(sout$RMSE)] # find embedding dimension
 #' spred<-S_map_Sugihara1994(Y = y, E = Euse, theta = tuse) # fit S-mapping for best paramter set
 #' plot(spred$Y, spred$Y_hat); abline(a=0, b=1, lty=2) # observed vs. predicted
 #' 

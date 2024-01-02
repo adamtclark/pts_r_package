@@ -12,6 +12,9 @@ check(cran = TRUE)
 build()
 load_all()
 
+#setwd("~/Dropbox/GitProjects/R_packages/pts_r_package/")
+#install.packages("pttstability_1.4.tar.gz", type = "source", repos = NULL)
+
 
 # The code still includes three instances of \dontrun, and one
 # instance of \donttest. The \dontrun examples (in the main help page,
